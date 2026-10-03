@@ -1,0 +1,163 @@
+{
+  "extName": {
+    "message": "autoGroup"
+  },
+  "extDescription": {
+    "message": "Raggruppa le tab con l'AI che scegli tu, con anteprima e annulla."
+  },
+  "actionTitle": {
+    "message": "Organizza le tab"
+  },
+  "popupTitle": {
+    "message": "Organizza le tab"
+  },
+  "popupComputing": {
+    "message": "Calcolo della proposta…"
+  },
+  "popupNoGroups": {
+    "message": "Nessun gruppo da proporre."
+  },
+  "popupRecompute": {
+    "message": "Ricalcola"
+  },
+  "popupApply": {
+    "message": "Applica"
+  },
+  "popupApplied": {
+    "message": "Gruppi creati."
+  },
+  "popupTabCount": {
+    "message": "$COUNT$ tab",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "provenance_list": {
+    "message": "lista"
+  },
+  "provenance_existing": {
+    "message": "esistente"
+  },
+  "provenance_ai": {
+    "message": "nuovo AI"
+  },
+  "provenance_domain": {
+    "message": "dominio"
+  },
+  "color_grey": {
+    "message": "grigio"
+  },
+  "color_blue": {
+    "message": "blu"
+  },
+  "color_red": {
+    "message": "rosso"
+  },
+  "color_yellow": {
+    "message": "giallo"
+  },
+  "color_green": {
+    "message": "verde"
+  },
+  "color_pink": {
+    "message": "rosa"
+  },
+  "color_purple": {
+    "message": "viola"
+  },
+  "color_cyan": {
+    "message": "ciano"
+  },
+  "color_orange": {
+    "message": "arancione"
+  },
+  "errorPropose": {
+    "message": "Non è stato possibile calcolare la proposta."
+  },
+  "errorApply": {
+    "message": "Non è stato possibile creare i gruppi."
+  },
+  "popupUndo": {
+    "message": "Annulla ultima organizzazione"
+  },
+  "popupUndone": {
+    "message": "Organizzazione annullata."
+  },
+  "errorUndo": {
+    "message": "Non è stato possibile annullare l'organizzazione."
+  },
+  "popupChangeColor": {
+    "message": "Cambia colore"
+  },
+  "popupGroupName": {
+    "message": "Nome del gruppo"
+  },
+  "popupDiscardGroup": {
+    "message": "Scarta il gruppo (le tab restano libere)"
+  },
+  "popupMoveTab": {
+    "message": "Sposta la tab in un altro gruppo"
+  },
+  "popupMoveTo": {
+    "message": "Sposta in…"
+  },
+  "popupRemoveTab": {
+    "message": "Togli dal gruppo (la tab resta libera)"
+  },
+  "popupUnnamed": {
+    "message": "(senza nome)"
+  },
+  "optionsTitle": {
+    "message": "Impostazioni di autoGroup"
+  },
+  "optionsSaved": {
+    "message": "Salvato"
+  },
+  "optionsBehavior": {
+    "message": "Comportamento"
+  },
+  "optionsMinTabs": {
+    "message": "Numero minimo di tab per creare un gruppo nuovo"
+  },
+  "optionsMinTabsHint": {
+    "message": "Le tab possono comunque entrare da sole in un gruppo già esistente."
+  },
+  "optionsMinTabsInvalid": {
+    "message": "Inserisci un numero intero maggiore o uguale a 1."
+  },
+  "optionsPrivacy": {
+    "message": "Privacy"
+  },
+  "optionsExcludedDomains": {
+    "message": "Domini esclusi"
+  },
+  "optionsExcludedDomainsHint": {
+    "message": "Le tab di questi domini, e dei loro sottodomini, non vengono mai proposte né inviate all'AI e restano libere."
+  },
+  "optionsDomainPlaceholder": {
+    "message": "es. banca.it"
+  },
+  "optionsAdd": {
+    "message": "Aggiungi"
+  },
+  "optionsRemove": {
+    "message": "Rimuovi"
+  },
+  "optionsDomainInvalid": {
+    "message": "Non sembra un dominio valido."
+  },
+  "optionsDomainDuplicate": {
+    "message": "Questo dominio è già nella lista."
+  },
+  "optionsNoExcludedDomains": {
+    "message": "Nessun dominio escluso."
+  },
+  "popupOpenSettings": {
+    "message": "Impostazioni"
+  },
+  "errorUnexpected": {
+    "message": "Si è verificato un errore imprevisto. Riprova."
+  }
+}

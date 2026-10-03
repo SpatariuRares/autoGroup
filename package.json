@@ -1,0 +1,30 @@
+{
+  "name": "autogroup",
+  "description": "__MSG_extDescription__",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "tsc --noEmit && vitest run && wxt build",
+    "postinstall": "wxt prepare",
+    "smoke": "wxt build && node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@wxt-dev/module-react": "^1.2.2",
+    "puppeteer": "^25.12.0",
+    "typescript": "~5.9",
+    "vitest": "^5.0.3",
+    "wxt": "^0.21.4"
+  }
+}

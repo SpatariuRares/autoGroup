@@ -1,0 +1,20 @@
+body { font-size: 14px; }
+main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+h1 { font-size: 22px; margin: 0 0 8px; }
+h2 { font-size: 16px; margin: 0 0 12px; }
+h3 { font-size: 14px; margin: 0 0 4px; }
+section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 16px 0; }
+.saved { color: var(--muted); font-size: 13px; min-height: 1em; }
+.field { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+input[type='text'], input[type='number'] { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
+input[type='number'] { width: 80px; }
+input[aria-invalid='true'] { border-color: var(--error); }
+.row { display: flex; gap: 8px; }
+.row input { flex: 1; min-width: 0; }
+.hint { color: var(--muted); font-size: 13px; margin: 6px 0; }
+.hint.error { color: var(--error); }
+.empty { color: var(--muted); font-style: italic; }
+.domains { list-style: none; padding: 0; margin: 8px 0 0; }
+.domains li { display: flex; align-items: center; justify-content: space-between; padding: 6px 4px; border-bottom: 1px solid var(--border); }
+.domains li:last-child { border-bottom: none; }

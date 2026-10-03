@@ -1,0 +1,163 @@
+{
+  "extName": {
+    "message": "autoGroup"
+  },
+  "extDescription": {
+    "message": "Group your tabs with the AI of your choice, with preview and undo."
+  },
+  "actionTitle": {
+    "message": "Organize tabs"
+  },
+  "popupTitle": {
+    "message": "Organize tabs"
+  },
+  "popupComputing": {
+    "message": "Computing the proposal…"
+  },
+  "popupNoGroups": {
+    "message": "No groups to suggest."
+  },
+  "popupRecompute": {
+    "message": "Recompute"
+  },
+  "popupApply": {
+    "message": "Apply"
+  },
+  "popupApplied": {
+    "message": "Groups created."
+  },
+  "popupTabCount": {
+    "message": "$COUNT$ tabs",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "provenance_list": {
+    "message": "list"
+  },
+  "provenance_existing": {
+    "message": "existing"
+  },
+  "provenance_ai": {
+    "message": "new AI"
+  },
+  "provenance_domain": {
+    "message": "domain"
+  },
+  "color_grey": {
+    "message": "grey"
+  },
+  "color_blue": {
+    "message": "blue"
+  },
+  "color_red": {
+    "message": "red"
+  },
+  "color_yellow": {
+    "message": "yellow"
+  },
+  "color_green": {
+    "message": "green"
+  },
+  "color_pink": {
+    "message": "pink"
+  },
+  "color_purple": {
+    "message": "purple"
+  },
+  "color_cyan": {
+    "message": "cyan"
+  },
+  "color_orange": {
+    "message": "orange"
+  },
+  "errorPropose": {
+    "message": "The proposal could not be computed."
+  },
+  "errorApply": {
+    "message": "The groups could not be created."
+  },
+  "popupUndo": {
+    "message": "Undo last organization"
+  },
+  "popupUndone": {
+    "message": "Organization undone."
+  },
+  "errorUndo": {
+    "message": "The organization could not be undone."
+  },
+  "popupChangeColor": {
+    "message": "Change color"
+  },
+  "popupGroupName": {
+    "message": "Group name"
+  },
+  "popupDiscardGroup": {
+    "message": "Discard group (tabs stay free)"
+  },
+  "popupMoveTab": {
+    "message": "Move the tab to another group"
+  },
+  "popupMoveTo": {
+    "message": "Move to…"
+  },
+  "popupRemoveTab": {
+    "message": "Remove from group (the tab stays free)"
+  },
+  "popupUnnamed": {
+    "message": "(unnamed)"
+  },
+  "optionsTitle": {
+    "message": "autoGroup settings"
+  },
+  "optionsSaved": {
+    "message": "Saved"
+  },
+  "optionsBehavior": {
+    "message": "Behavior"
+  },
+  "optionsMinTabs": {
+    "message": "Minimum number of tabs to create a new group"
+  },
+  "optionsMinTabsHint": {
+    "message": "A single tab can still join a group that already exists."
+  },
+  "optionsMinTabsInvalid": {
+    "message": "Enter a whole number greater than or equal to 1."
+  },
+  "optionsPrivacy": {
+    "message": "Privacy"
+  },
+  "optionsExcludedDomains": {
+    "message": "Excluded domains"
+  },
+  "optionsExcludedDomainsHint": {
+    "message": "Tabs from these domains, and their subdomains, are never suggested or sent to the AI and stay free."
+  },
+  "optionsDomainPlaceholder": {
+    "message": "e.g. mybank.com"
+  },
+  "optionsAdd": {
+    "message": "Add"
+  },
+  "optionsRemove": {
+    "message": "Remove"
+  },
+  "optionsDomainInvalid": {
+    "message": "This does not look like a valid domain."
+  },
+  "optionsDomainDuplicate": {
+    "message": "This domain is already in the list."
+  },
+  "optionsNoExcludedDomains": {
+    "message": "No excluded domains."
+  },
+  "popupOpenSettings": {
+    "message": "Settings"
+  },
+  "errorUnexpected": {
+    "message": "An unexpected error occurred. Please try again."
+  }
+}
