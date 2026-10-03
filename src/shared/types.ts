@@ -13,6 +13,16 @@ export const GROUP_COLORS = [
 
 export type GroupColor = (typeof GROUP_COLORS)[number];
 
+/** Una categoria della lista fissa dell'utente. */
+export interface Category {
+  /** ID stabile, usato dall'interfaccia per modifiche e riordino. */
+  id: string;
+  name: string;
+  /** Spiega all'AI cosa rientra nella categoria. */
+  description: string;
+  color: GroupColor;
+}
+
 /** Da dove viene un gruppo proposto. */
 export type Provenance = 'list' | 'existing' | 'ai' | 'domain';
 
@@ -39,7 +49,17 @@ export interface ProposedGroup {
 export interface ProposalWarning {
   level: 'classifier' | 'generator';
   provider: string;
-  cause: 'unreachable' | 'invalid-key' | 'rate-limit' | 'timeout' | 'invalid-response' | 'invalid-request' | 'unavailable';
+  cause:
+    | 'unreachable'
+    | 'invalid-key'
+    | 'rate-limit'
+    | 'timeout'
+    | 'invalid-response'
+    | 'invalid-request'
+    | 'unavailable'
+    | 'no-permission'
+    | 'needs-download'
+    | 'downloading';
 }
 
 export interface Proposal {

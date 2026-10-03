@@ -14,6 +14,9 @@ Un solo seam: **l'interfaccia dell'Organizzatore** (`propose`, `apply`, `state`,
   - `tabs.ungroup` porta la tab subito dopo la fine del gruppo;
   - `tabs.move` fa entrare in un gruppo una tab che finisce tra due sue tab e fa uscire dal gruppo una tab che non è più accanto a nessuna tab del gruppo;
   - i gruppi rimasti vuoti spariscono; raggruppare una tab fissata è un errore.
+- **`tests/fake-i18n.ts`**: il fake di WXT non implementa `i18n`. Questo fake legge i veri file `public/_locales/<lingua>/messages.json` e implementa `getMessage` (con i segnaposto) e `getUILanguage`. Ogni test parte in italiano; `installFakeI18n('en')` passa all'inglese.
+- **`tests/fake-network.ts`**: `installFakePermissions(concessi)` sostituisce `permissions` (non implementato dal fake di WXT); `installFakeFetch(...risposte)` sostituisce `fetch` con una coda di risposte (o errori, o funzioni) e registra URL, intestazioni e corpo di ogni richiesta; `openAiReply(contenuto)` e `httpError(status)` costruiscono risposte nel formato OpenAI.
+- **`tests/fake-nano.ts`**: stub dell'oggetto globale `LanguageModel` con i quattro stati di disponibilità, una finestra di contesto configurabile (un "token" ogni 4 caratteri), `measureContextUsage`, `clone`, e una funzione che risponde a ogni prompt registrando sistema, opzioni, tab e schema.
 - Helper per i test: `addTab`, `addGroup`, `closeTab`, `groupsIn()` (gruppi con titoli delle tab, in ordine) e `layout()` (la barra come elenco di titoli).
 
 ## Scenari coperti (AG-01)
@@ -58,8 +61,77 @@ Un solo seam: **l'interfaccia dell'Organizzatore** (`propose`, `apply`, `state`,
 - Riaprendo il popup la proposta viene ricalcolata se le tab libere sono cambiate, e mantenuta (con le modifiche) se non lo sono.
 - Lo stato indica sempre la finestra.
 
+## Scenari coperti (AG-05)
+
+- Al primo avvio le 10 categorie predefinite in italiano, con descrizione e colore; in inglese con il browser in inglese.
+- Aggiunta, modifica (nome con spazi ripuliti, colore), eliminazione e riordino; la lista finisce in `storage.sync`.
+- Nomi duplicati (maiuscole e spazi ignorati) e nomi vuoti rifiutati, senza salvare nulla.
+- "Ripristina default" riporta la lista iniziale; una lista vuota è ammessa.
+- Modificare le categorie rende non più attuale una proposta salvata.
+
+## Scenari coperti (AG-06), in `tests/generator.test.ts`
+
+- Assegnazione a categoria (colore fisso), a gruppo aperto (anche una tab, nome e colore del gruppo) e a gruppo nuovo (primo colore libero), con le provenienze.
+- Privacy sulla richiesta reale: solo ID brevi, titoli e URL ripuliti; nessuna query, frammento, credenziale, ID di Chrome né tab dei domini esclusi.
+- Opzioni: categorie più gruppi aperti, corrispondenza per nome senza distinguere maiuscole, descrizione "Gruppo creato dall'utente".
+- Contratto della richiesta: URL `/chat/completions`, `Bearer`, modello, `json_schema`, lingua del browser.
+- Nuovo tentativo senza structured output dopo un 400; risposta in un blocco ```json.
+- Validazione: ID inesistenti, tab duplicate, nomi vuoti od oltre le 2 parole.
+- Regole: minimo per gruppi nuovi e categorie, non per i gruppi esistenti.
+- "Applica" estende un gruppo esistente senza cambiarne nome e colore; "Annulla" lo riporta alla composizione originale.
+- Fallback al dominio con avviso per 500, 401, 429, errore di rete, JSON illeggibile e JSON fuori schema.
+- Permesso host mancante: nessuna richiesta, proposta per dominio, avviso `no-permission`.
+- La chiave API sta in `storage.local` e mai in `sync` né nello stato di sessione.
+
+## Scenari coperti (AG-07), in `tests/nano.test.ts`
+
+- Nessun Generatore configurato e Nano disponibile: Nano usato con lo schema JSON, nessuna richiesta di rete, stessi dati ripuliti, lingua del browser.
+- Il Generatore configurato ha la precedenza su Nano; uno configurato senza permesso lascia il posto a Nano con l'avviso.
+- Nano da scaricare, in download o non supportato: proposta per dominio, Nano mai usato, avviso nei primi due casi; senza Prompt API nessun avviso.
+- Divisione in blocchi con un contesto piccolo: tutte le tab inviate una sola volta, il nome inventato nel primo blocco tra le opzioni del secondo, gruppi omonimi uniti.
+- Nano in errore: proposta per dominio con avviso.
+- Stessa validazione degli altri Generatori.
+
+## Scenari coperti (AG-08), in `tests/classifier.test.ts`
+
+`installFakeFetch` riceve una funzione che risponde secondo l'URL: `/v1/systemone` nel formato System One (`systemOneReply`), `/chat/completions` nel formato OpenAI.
+
+- Contratto: `POST /v1/systemone`, `state` con la sola tab ripulita, `questions.group` di tipo `choice` con le opzioni (categorie e gruppi aperti) come `criteria` più `none_of_the_above`; `Bearer` solo con la chiave; `model` solo se compilato (Jev).
+- Al massimo 255 opzioni nei `criteria`.
+- Riga 2: assegnazione sopra soglia, tab incerte e categoria sotto il minimo libere, tab singola in un gruppo esistente.
+- Soglia configurabile.
+- Riga 1: al Generatore arrivano solo le rimaste, in modalità "solo nuovi"; un gruppo nuovo di una sola tab viene sciolto; una tab già assegnata al passo 1 non può essere spostata dal passo 2.
+- Nessuna chiamata al Generatore senza tab rimaste.
+- Passo 2 in errore: rimaste libere, avviso.
+- Classificatore in errore: riga 3 con avviso; senza Generatore, riga 4.
+- Permesso mancante: nessuna richiesta, avviso.
+- Strategie: `batch` (una richiesta, una domanda per tab, stesso risultato), limite di parallelismo di `per-tab`, scelta sconosciuta o "nessuna".
+
+Prova di mutazione: togliendo il confronto con la soglia falliscono 3 test; chiamando il passo 2 anche senza rimaste ne fallisce 1.
+
+## Scenari coperti (AG-R2)
+
+- Nomi lunghi accettati quando sono quelli di un gruppo aperto o di una categoria.
+- Senza opzioni il Classificatore non viene interrogato.
+- Il passo 2 non parte con meno tab rimaste del minimo.
+- Smoke test: nessuna query, frammento, tab esclusa né ID di Chrome nelle richieste System One.
+
+`tests/locales.test.ts` controlla che italiano e inglese abbiano le stesse chiavi e che siano tutte nel formato accettato da Chrome (`[A-Za-z0-9_]`).
+
+Prova di mutazione fatta a mano: togliendo lo scarto delle tab duplicate o il controllo del permesso, il test corrispondente fallisce.
+
 ## Prova in Chrome
 
-`npm run smoke` compila e lancia `scripts/smoke.mjs`: apre Chrome for Testing con l'estensione caricata, apre pagine servite da un server locale su `localhost` e `127.0.0.1` (due domini diversi), apre il popup come pagina, ricarica il popup per verificare che la proposta resti, rinomina un gruppo, ne cambia il colore e sposta una tab (salvando uno screenshot in `scripts/smoke-popup.png`), ricarica di nuovo per verificare che le modifiche restino, preme "Applica", poi "Annulla ultima organizzazione" e controlla che ordine delle tab e gruppi tornino come prima; infine apre la pagina opzioni, imposta il minimo a 3 ed esclude `127.0.0.1` (screenshot in `scripts/smoke-options.png`), controlla `storage.sync` e ricalcola la proposta. Stampa i gruppi creati e gli eventuali errori in console del service worker e del popup.
+`npm run smoke` compila e lancia `scripts/smoke.mjs`: apre Chrome for Testing con l'estensione caricata, apre pagine servite da un server locale su `localhost` e `127.0.0.1` (due domini diversi), apre il popup come pagina, ricarica il popup per verificare che la proposta resti, rinomina un gruppo, ne cambia il colore e sposta una tab (salvando uno screenshot in `scripts/smoke-popup.png`), ricarica di nuovo per verificare che le modifiche restino, preme "Applica", poi "Annulla ultima organizzazione" e controlla che ordine delle tab e gruppi tornino come prima; infine apre la pagina opzioni, prova la sezione Categorie (nome duplicato rifiutato, rinomina, aggiunta, riordino, ripristino, controllando `storage.sync`), imposta il minimo a 3 ed esclude `127.0.0.1` (screenshot in `scripts/smoke-options.png`), controlla `storage.sync` e ricalcola la proposta. Stampa i gruppi creati e gli eventuali errori in console del service worker e del popup.
+
+Infine lo script configura il Classificatore (preset Personalizzato verso un finto endpoint System One dello stesso server), lo salva, prova la connessione e ricalcola: la proposta viene dal Classificatore, senza chiamate al Generatore e senza avvisi.
+
+`scripts/measure-classifier.mjs` non fa parte dello smoke test: misura le due strategie del Classificatore su un server System One reale (vedi l'architettura).
+
+Lo script legge anche lo stato di Gemini Nano mostrato nelle impostazioni. In Chrome for Testing headless la Prompt API esiste nel service worker dell'estensione, ma il modello risulta "non supportato": il percorso con Nano disponibile è coperto solo dallo stub e va provato a mano in un Chrome che supporta Gemini Nano.
+
+Dopo le impostazioni lo script configura il Generatore dall'interfaccia (preset Personalizzato verso un finto server compatibile OpenAI dentro lo script stesso), lo salva, preme "Prova connessione", controlla che la chiave sia in `storage.local` e non in `sync`, ricalcola la proposta (gruppo "nuovo AI"), controlla che le richieste non contengano query, frammenti né tab escluse, poi fa fallire il server e verifica il ripiego sul dominio con l'avviso (screenshot in `scripts/smoke-popup-warning.png`).
+
+`npm run smoke` compila con `AUTOGROUP_SMOKE=1`, che aggiunge `http://127.0.0.1/*` ai permessi host: in headless la finestra di Chrome che chiede il permesso non si può accettare. Alla fine ricompila la build normale.
 
 Chrome stabile dalla 137 ignora `--load-extension`, quindi lo script usa Chrome for Testing scaricato da Puppeteer.

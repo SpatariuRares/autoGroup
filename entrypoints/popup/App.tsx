@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
-import { t } from '../../src/shared/i18n';
+import { t, warningKey } from '../../src/shared/i18n';
 import { callOrganizer, onOrganizerState } from '../../src/shared/organizer-client';
 import { GROUP_COLORS, type OrganizerState, type ProposalEdit, type ProposedGroup } from '../../src/shared/types';
+
+/** Apre le impostazioni sulla sezione del provider coinvolto. */
+function openSettings(section: 'generator' | 'classifier') {
+  browser.tabs.create({ url: browser.runtime.getURL(`/options.html#${section}`) });
+}
 
 export function App() {
   const [state, setState] = useState<OrganizerState | null>(null);
@@ -71,6 +76,19 @@ export function App() {
 
       {(!state || state.phase === 'computing') && <p className="status">{t('popupComputing')}</p>}
 
+      {proposal && proposal.warnings.length > 0 && (
+        <ul className="warnings" role="alert">
+          {proposal.warnings.map((w, i) => (
+            <li key={i}>
+              {t('popupWarningFallback')} {t(warningKey(w.cause), w.provider)}{' '}
+              <a href="#" onClick={(e) => { e.preventDefault(); openSettings(w.level); }}>
+                {t('popupWarningSettings')}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {proposal && proposal.groups.length === 0 && <p className="status">{t('popupNoGroups')}</p>}
 
       {proposal && proposal.groups.length > 0 && (
@@ -133,10 +151,14 @@ function GroupCard({ group, others, onEdit }: GroupCardProps) {
     if (name.trim() !== group.name) onEdit({ kind: 'rename', groupId: group.id, name });
   };
 
+  // Un gruppo già aperto in Chrome mantiene nome e colore: "Applica" vi aggiunge solo le tab.
+  const locked = group.provenance === 'existing';
+
   return (
     <li className="group">
       <div className="group-header">
         <button
+          disabled={locked}
           className={`swatch color-${group.color}`}
           title={t('popupChangeColor')}
           aria-label={`${t('popupChangeColor')}: ${t(`color_${group.color}`)}`}
@@ -145,6 +167,7 @@ function GroupCard({ group, others, onEdit }: GroupCardProps) {
         />
         <input
           className="group-name"
+          readOnly={locked}
           value={name}
           aria-label={t('popupGroupName')}
           onChange={(e) => setName(e.target.value)}

@@ -62,7 +62,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
       if (reusable) return current;
 
       await setState({ phase: 'computing', windowId, undo });
-      return await setState({ phase: 'ready', windowId, proposal: buildProposal(inputs), undo });
+      return await setState({ phase: 'ready', windowId, proposal: await buildProposal(inputs), undo });
     } catch (err) {
       console.error('autoGroup: calcolo della proposta fallito', err);
       return await setState({ phase: 'idle', windowId, error: 'errorPropose', undo });

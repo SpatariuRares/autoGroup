@@ -6,9 +6,36 @@ import path from 'node:path';
 import puppeteer from 'puppeteer';
 
 const extPath = path.resolve('.output/chrome-mv3');
-const server = http.createServer((req, res) => {
+// Finto Generatore compatibile OpenAI: mette tutte le tab in "Lettura Veloce", oppure risponde 500.
+const ai = { fail: false, requests: [] };
+const server = http.createServer(async (req, res) => {
+  if (req.url === '/v1/systemone') {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    const request = JSON.parse(body);
+    ai.requests.push({ systemone: request });
+    res.setHeader('content-type', 'application/json');
+    // Tutte le tab nella prima categoria, con confidenza alta.
+    const choice = Object.keys(request.questions.group.criteria)[0];
+    return res.end(JSON.stringify({ answers: { group: { type: 'choice', choice, confidence: 0.95, probabilities: {} } } }));
+  }
+  if (req.url === '/v1/chat/completions') {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    const request = JSON.parse(body);
+    ai.requests.push(request);
+    res.setHeader('content-type', 'application/json');
+    if (ai.fail) {
+      res.statusCode = 500;
+      return res.end('{}');
+    }
+    const tabs = request.messages.length > 1 ? JSON.parse(request.messages[1].content).tabs ?? [] : [];
+    const content = JSON.stringify({ groups: [{ name: 'Lettura Veloce', tabs: tabs.map((t) => t.id) }] });
+    return res.end(JSON.stringify({ choices: [{ message: { role: 'assistant', content } }] }));
+  }
   res.setHeader('content-type', 'text/html');
-  res.end(`<!doctype html><title>Pagina ${req.url}</title><meta name="description" content="Descrizione ${req.url}"><h1>${req.url}</h1>`);
+  const path = req.url.split('?')[0];
+  res.end(`<!doctype html><title>Pagina ${path}</title><meta name="description" content="Descrizione ${req.url}"><h1>${req.url}</h1>`);
 });
 await new Promise((r) => server.listen(0, r));
 const port = server.address().port;
@@ -31,7 +58,7 @@ try {
     `http://127.0.0.1:${port}/b`,
     `http://localhost:${port}/c`,
     `http://127.0.0.1:${port}/d`,
-    `http://localhost:${port}/e`,
+    `http://localhost:${port}/e?segreto=1#frammento`,
   ];
   for (const url of urls) {
     const p = await browser.newPage();
@@ -98,8 +125,32 @@ try {
   await options.type('#privacy input', 'https://127.0.0.1/qualcosa');
   await options.click('#privacy button[type=submit]');
   await options.waitForSelector('.domains li');
+  // Categorie: 10 predefinite, rinomina, duplicato rifiutato, aggiunta, riordino, ripristino.
+  const categoryNames = () => options.$$eval('.category-name', (els) => els.map((el) => el.value));
+  console.log('Categorie predefinite:', (await categoryNames()).join(', '));
+  const firstName = await options.$('.category-name');
+  const retype = async (text) => {
+    await firstName.click();
+    await firstName.evaluate((el) => el.select());
+    await options.keyboard.press('Backspace');
+    await firstName.type(text);
+  };
+  const secondName = await options.$$eval('.category-name', (els) => els[1].value);
+  await retype(` ${secondName.toUpperCase()} `);
+  await options.$eval('.category-description', (el) => el.focus());
+  console.log('Errore sul duplicato:', await options.$eval('#categories .hint.error', (el) => el.textContent).catch(() => 'nessuno'));
+  await retype('Ufficio');
+  await options.$eval('.category-description', (el) => el.focus());
+  await options.click('#categories .actions button:not(.secondary)');
+  await options.click('.category:nth-child(1) .category-actions button:nth-child(2)');
+  await new Promise((r) => setTimeout(r, 200));
+  const stored = await sw.evaluate(() => chrome.storage.sync.get('categories'));
+  console.log('Categorie salvate:', stored.categories.map((c) => `${c.name}/${c.color}`).join(', '));
   await options.screenshot({ path: 'scripts/smoke-options.png', fullPage: true });
-  console.log('storage.sync:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get(null))));
+  await options.click('#categories .actions button.secondary');
+  await new Promise((r) => setTimeout(r, 200));
+  console.log('Dopo il ripristino:', (await categoryNames()).length, 'categorie,', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('categories'))));
+  console.log('storage.sync:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get(['minTabs', 'excludedDomains']))));
   await popup.bringToFront();
   await popup.reload();
   await popup.waitForSelector('footer button');
@@ -108,6 +159,65 @@ try {
   await popup.waitForFunction(() => document.querySelectorAll('.group').length > 0 || document.querySelector('.status'), { timeout: 10000 });
   await new Promise((r) => setTimeout(r, 300));
   console.log('Proposta con le impostazioni:', await popup.$$eval('.group', (els) => els.map((el) => `${el.querySelector('.group-name').value}: ${el.querySelectorAll('.tab').length} tab`)));
+
+  console.log('Gemini Nano:', await options.$eval('#generator .nano', (el) => el.textContent).catch(() => 'stato non mostrato'),
+    '| Prompt API nel service worker:', await sw.evaluate(() => typeof LanguageModel !== 'undefined'));
+
+  // Generatore: preset personalizzato verso il finto server, salvataggio, prova connessione.
+  await options.bringToFront();
+  await options.select('#generator select', 'custom');
+  const fields = await options.$$('#generator input');
+  await fields[0].type(`http://127.0.0.1:${port}/v1`);
+  await fields[1].type('finto-modello');
+  await fields[2].type('sk-smoke');
+  await options.click('#generator .actions button:not(.secondary)');
+  await options.waitForSelector('#generator .hint.ok, #generator .hint.error');
+  console.log('Salvataggio Generatore:', await options.$eval('#generator .hint.ok, #generator .hint.error', (el) => el.textContent));
+  await options.click('#generator .actions button.secondary');
+  await options.waitForFunction(() => /successful|riuscita/.test(document.querySelector('#generator')?.textContent ?? ''), { timeout: 10000 });
+  console.log('Prova connessione: riuscita');
+  console.log('Chiave in local:', JSON.stringify(await sw.evaluate(() => chrome.storage.local.get(null))), '| in sync:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('generator'))));
+  await options.screenshot({ path: 'scripts/smoke-options.png', fullPage: true });
+
+  const repropose = async () => {
+    await popup.bringToFront();
+    await popup.reload();
+    await popup.waitForSelector('footer button');
+    await (await popup.$$('footer button.secondary:not(.undo)'))[0].click();
+    await new Promise((r) => setTimeout(r, 500));
+    return popup.$$eval('.group', (els) => els.map((el) => `${el.querySelector('.group-name').value} (${el.querySelector('.badge').textContent}): ${el.querySelectorAll('.tab').length} tab`));
+  };
+  ai.requests.length = 0;
+  console.log('Proposta dal Generatore:', await repropose());
+  const sent = JSON.parse(ai.requests.at(-1).messages[1].content);
+  console.log('Tab inviate all\'AI:', JSON.stringify(sent.tabs));
+  console.log('Privacy (niente query, frammento, 127.0.0.1 escluso):', !JSON.stringify(ai.requests).match(/segreto|frammento|127\.0\.0\.1:/));
+  ai.fail = true;
+  console.log('Proposta con il Generatore in errore:', await repropose());
+  console.log('Avviso:', await popup.$eval('.warnings', (el) => el.textContent).catch(() => 'nessuno'));
+  await popup.screenshot({ path: 'scripts/smoke-popup-warning.png' });
+
+  // Classificatore: preset personalizzato verso il finto System One; il Generatore resta in errore.
+  await options.bringToFront();
+  await options.reload();
+  await options.waitForSelector('#classifier select');
+  await options.select('#classifier select', 'custom');
+  const cfields = await options.$$('#classifier input[type=text]');
+  await cfields[0].type(`http://127.0.0.1:${port}`);
+  await options.click('#classifier .actions button:not(.secondary)');
+  await options.waitForSelector('#classifier .hint.ok, #classifier .hint.error');
+  console.log('Salvataggio Classificatore:', await options.$eval('#classifier .hint.ok, #classifier .hint.error', (el) => el.textContent));
+  await options.click('#classifier .actions button.secondary');
+  await options.waitForFunction(() => /successful|riuscita/.test(document.querySelector('#classifier')?.textContent ?? ''), { timeout: 10000 });
+  console.log('Prova connessione Classificatore: riuscita');
+  ai.requests.length = 0;
+  console.log('Proposta dal Classificatore:', await repropose());
+  console.log('Richieste: System One', ai.requests.filter((r) => r.systemone).length, '| Generatore', ai.requests.filter((r) => !r.systemone).length);
+  console.log('State inviato al Classificatore:', JSON.stringify(ai.requests[0].systemone.state));
+  console.log('Privacy Classificatore (niente query, frammento, 127.0.0.1 escluso):', !JSON.stringify(ai.requests).match(/segreto|frammento|127\.0\.0\.1:/));
+  const ids = await sw.evaluate(async () => (await chrome.tabs.query({})).map((t) => t.id));
+  console.log('Nessun ID di Chrome nelle richieste:', !ids.some((id) => JSON.stringify(ai.requests).includes(`:${id},`) || JSON.stringify(ai.requests).includes(`"${id}"`)));
+  console.log('Avvisi:', await popup.$eval('.warnings', (el) => el.textContent).catch(() => 'nessuno'));
 } finally {
   await browser.close();
   server.close();

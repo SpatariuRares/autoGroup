@@ -159,5 +159,321 @@
   },
   "errorUnexpected": {
     "message": "Si è verificato un errore imprevisto. Riprova."
+  },
+  "category_work_name": {
+    "message": "Lavoro"
+  },
+  "category_work_description": {
+    "message": "Strumenti e pagine di lavoro: email aziendale, calendario, documenti condivisi, gestione progetti, CRM, riunioni."
+  },
+  "category_dev_name": {
+    "message": "Sviluppo"
+  },
+  "category_dev_description": {
+    "message": "Programmazione e strumenti per sviluppatori: repository di codice, documentazione tecnica, issue, CI, Stack Overflow, console cloud."
+  },
+  "category_ai_name": {
+    "message": "AI"
+  },
+  "category_ai_description": {
+    "message": "Assistenti e servizi di intelligenza artificiale: chat con modelli linguistici, generatori di immagini, piattaforme e notizie sull'AI."
+  },
+  "category_social_name": {
+    "message": "Social"
+  },
+  "category_social_description": {
+    "message": "Social network e community: profili, feed, messaggi, forum e discussioni."
+  },
+  "category_news_name": {
+    "message": "Notizie"
+  },
+  "category_news_description": {
+    "message": "Giornali, siti di notizie, blog di attualità e newsletter."
+  },
+  "category_video_name": {
+    "message": "Video"
+  },
+  "category_video_description": {
+    "message": "Video, streaming, film, serie, musica e podcast."
+  },
+  "category_shopping_name": {
+    "message": "Shopping"
+  },
+  "category_shopping_description": {
+    "message": "Negozi online, schede prodotto, carrelli, confronto prezzi e recensioni di prodotti."
+  },
+  "category_travel_name": {
+    "message": "Viaggi"
+  },
+  "category_travel_description": {
+    "message": "Voli, treni, hotel, alloggi, mappe, guide e prenotazioni di viaggio."
+  },
+  "category_finance_name": {
+    "message": "Finanza"
+  },
+  "category_finance_description": {
+    "message": "Banca, pagamenti, investimenti, criptovalute, tasse e bollette."
+  },
+  "category_study_name": {
+    "message": "Studio"
+  },
+  "category_study_description": {
+    "message": "Corsi, lezioni, articoli scientifici, enciclopedie, dizionari e materiale di studio."
+  },
+  "optionsCategories": {
+    "message": "Categorie"
+  },
+  "optionsCategoriesHint": {
+    "message": "Le categorie sono le opzioni tra cui l'AI sceglie. La descrizione spiega cosa rientra in ciascuna; il colore è quello del gruppo creato."
+  },
+  "optionsCategoryName": {
+    "message": "Nome"
+  },
+  "optionsCategoryDescription": {
+    "message": "Descrizione"
+  },
+  "optionsCategoryColor": {
+    "message": "Colore"
+  },
+  "optionsAddCategory": {
+    "message": "Aggiungi categoria"
+  },
+  "optionsResetCategories": {
+    "message": "Ripristina default"
+  },
+  "optionsMoveUp": {
+    "message": "Sposta su"
+  },
+  "optionsMoveDown": {
+    "message": "Sposta giù"
+  },
+  "optionsDeleteCategory": {
+    "message": "Elimina categoria"
+  },
+  "optionsNewCategoryName": {
+    "message": "Nuova categoria"
+  },
+  "optionsNoCategories": {
+    "message": "Nessuna categoria: l'AI potrà solo inventare gruppi nuovi."
+  },
+  "categoryNameEmpty": {
+    "message": "Il nome della categoria non può essere vuoto."
+  },
+  "categoryNameDuplicate": {
+    "message": "Esiste già una categoria con questo nome."
+  },
+  "categoryNameTooLong": {
+    "message": "Il nome della categoria è troppo lungo (massimo 40 caratteri)."
+  },
+  "categoryDescriptionTooLong": {
+    "message": "La descrizione è troppo lunga (massimo 300 caratteri)."
+  },
+  "categoryInvalid": {
+    "message": "La lista delle categorie non è valida."
+  },
+  "errorSaveSettings": {
+    "message": "Non è stato possibile salvare le impostazioni."
+  },
+  "aiLanguageName": {
+    "message": "italiano"
+  },
+  "userGroupDescription": {
+    "message": "Gruppo creato dall'utente: «$NAME$»",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsGenerator": {
+    "message": "Generatore"
+  },
+  "optionsGeneratorHint": {
+    "message": "Il Generatore sceglie tra le categorie o inventa gruppi nuovi. Gemini Nano gira nel browser, senza chiavi e senza inviare dati; in alternativa puoi usare un modello compatibile OpenAI. Se nessun Generatore è disponibile le tab vengono raggruppate per dominio."
+  },
+  "optionsPreset": {
+    "message": "Provider"
+  },
+  "optionsPresetNone": {
+    "message": "Gemini Nano (integrato in Chrome)"
+  },
+  "optionsPresetCustom": {
+    "message": "Personalizzato"
+  },
+  "optionsBaseUrl": {
+    "message": "URL base"
+  },
+  "optionsModel": {
+    "message": "Modello"
+  },
+  "optionsModelPlaceholder": {
+    "message": "es. openai/gpt-4o-mini"
+  },
+  "optionsApiKey": {
+    "message": "Chiave API"
+  },
+  "optionsApiKeyPlaceholder": {
+    "message": "facoltativa per i server locali"
+  },
+  "optionsApiKeyHint": {
+    "message": "La chiave resta solo su questo computer (non viene sincronizzata)."
+  },
+  "optionsSaveProvider": {
+    "message": "Salva"
+  },
+  "optionsTestConnection": {
+    "message": "Prova connessione"
+  },
+  "optionsTesting": {
+    "message": "Prova in corso…"
+  },
+  "optionsTestOk": {
+    "message": "Connessione riuscita."
+  },
+  "optionsUnsaved": {
+    "message": "Modifiche non salvate."
+  },
+  "optionsGeneratorDisabled": {
+    "message": "Verrà usato Gemini Nano se disponibile, altrimenti il raggruppamento per dominio."
+  },
+  "optionsGeneratorIncomplete": {
+    "message": "Inserisci URL base e modello per usare il Generatore."
+  },
+  "optionsGeneratorBadUrl": {
+    "message": "L'URL base deve iniziare con http:// o https://."
+  },
+  "warning_unreachable": {
+    "message": "$PROVIDER$ non raggiungibile.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_key": {
+    "message": "$PROVIDER$: chiave API non valida.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_rate_limit": {
+    "message": "$PROVIDER$: troppe richieste, riprova tra poco.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_timeout": {
+    "message": "$PROVIDER$ non ha risposto in tempo.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_response": {
+    "message": "$PROVIDER$ ha dato una risposta non valida.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_request": {
+    "message": "$PROVIDER$ ha rifiutato la richiesta (modello o parametri non validi).",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_unavailable": {
+    "message": "$PROVIDER$ non è disponibile.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_no_permission": {
+    "message": "$PROVIDER$: manca il permesso di rete. Salva di nuovo il provider nelle impostazioni e concedi il permesso.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupWarningFallback": {
+    "message": "Proposta meno precisa:"
+  },
+  "popupWarningSettings": {
+    "message": "Impostazioni"
+  },
+  "warning_needs_download": {
+    "message": "$PROVIDER$ va scaricato: avvia il download dalle impostazioni.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_downloading": {
+    "message": "$PROVIDER$ è in download e sarà usato quando è pronto.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "nanoStatus_available": {
+    "message": "Gemini Nano è disponibile e verrà usato."
+  },
+  "nanoStatus_downloadable": {
+    "message": "Gemini Nano è supportato ma va scaricato (circa 2-4 GB)."
+  },
+  "nanoStatus_downloading": {
+    "message": "Download di Gemini Nano in corso…"
+  },
+  "nanoStatus_unavailable": {
+    "message": "Gemini Nano non è supportato da questo browser o computer: le tab verranno raggruppate per dominio."
+  },
+  "nanoDownload": {
+    "message": "Scarica Gemini Nano"
+  },
+  "nanoDownloadFailed": {
+    "message": "Il download di Gemini Nano non è riuscito."
+  },
+  "optionsClassifier": {
+    "message": "Classificatore"
+  },
+  "optionsClassifierHint": {
+    "message": "Un classificatore System One (Jev, Kev, Rizzo Flow) assegna ogni tab a una categoria o a un gruppo aperto, con una confidenza calibrata. È veloce ed economico; le tab incerte passano al Generatore."
+  },
+  "optionsClassifierNone": {
+    "message": "Nessuno"
+  },
+  "optionsClassifierDisabled": {
+    "message": "Classificatore disattivato: decide il Generatore (o il raggruppamento per dominio)."
+  },
+  "optionsClassifierModelPlaceholder": {
+    "message": "es. jev-latest (facoltativo per Kev e Rizzo Flow)"
+  },
+  "optionsSavedProvider": {
+    "message": "Provider salvato e permesso concesso."
+  },
+  "optionsThreshold": {
+    "message": "Soglia di confidenza"
+  },
+  "optionsThresholdHint": {
+    "message": "Le tab con confidenza più bassa non vengono assegnate dal Classificatore e passano al Generatore."
+  },
+  "optionsThresholdInvalid": {
+    "message": "La soglia deve essere un numero tra 0 e 1."
+  },
+  "optionsProviderInvalid": {
+    "message": "La configurazione del provider non è valida."
   }
 }

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { createOrganizer, type Organizer } from '../src/organizer';
-import { DEFAULT_SETTINGS, loadSettings, normalizeDomain, saveSettings } from '../src/settings';
+import { DEFAULT_SETTINGS, loadSettings, normalizeDomain, resetCategories, saveSettings } from '../src/settings';
+import { installFakeI18n } from './fake-i18n';
 import { installFakeTabStrip, type FakeTabStrip } from './fake-tab-strip';
 
 let strip: FakeTabStrip;
@@ -10,6 +11,7 @@ const W = 1;
 
 beforeEach(() => {
   fakeBrowser.reset();
+  installFakeI18n('it');
   strip = installFakeTabStrip({ currentWindowId: W });
   organizer = createOrganizer();
 });
@@ -335,7 +337,7 @@ describe('anteprima modificabile', () => {
 
 describe('impostazioni: comportamento e domini esclusi', () => {
   it('di default il minimo è 2 e non ci sono domini esclusi, salvati in storage.sync', async () => {
-    expect(await loadSettings()).toEqual(DEFAULT_SETTINGS);
+    expect(await loadSettings()).toMatchObject(DEFAULT_SETTINGS);
     await saveSettings({ minTabs: 4, excludedDomains: ['bank.com'] });
     expect(await fakeBrowser.storage.sync.get(['minTabs', 'excludedDomains'])).toEqual({
       minTabs: 4,
@@ -462,5 +464,89 @@ describe('robustezza (review AG-R1)', () => {
     expect((await organizer.propose(W)).windowId).toBe(W);
     expect((await organizer.apply()).windowId).toBe(W);
     expect((await organizer.undo()).windowId).toBe(W);
+  });
+});
+
+describe('catalogo categorie', () => {
+  const names = async () => (await loadSettings()).categories.map((c) => c.name);
+
+  it('al primo avvio ci sono le 10 categorie predefinite in italiano, con descrizione e colore', async () => {
+    const { categories } = await loadSettings();
+
+    expect(categories.map((c) => c.name)).toEqual([
+      'Lavoro', 'Sviluppo', 'AI', 'Social', 'Notizie', 'Video', 'Shopping', 'Viaggi', 'Finanza', 'Studio',
+    ]);
+    for (const c of categories) {
+      expect(c.description.length).toBeGreaterThan(10);
+      expect(c.color).toMatch(/^(grey|blue|red|yellow|green|pink|purple|cyan|orange)$/);
+    }
+  });
+
+  it('con il browser in inglese le categorie predefinite sono in inglese', async () => {
+    installFakeI18n('en');
+
+    expect(await names()).toEqual([
+      'Work', 'Dev', 'AI', 'Social', 'News', 'Video', 'Shopping', 'Travel', 'Finance', 'Study',
+    ]);
+  });
+
+  it('si possono aggiungere, modificare, eliminare e riordinare, e la lista va in storage.sync', async () => {
+    const { categories } = await loadSettings();
+    const [work, dev, ...rest] = categories;
+    const edited = [
+      dev!,
+      { ...work!, name: '  Ufficio ', color: 'red' as const },
+      ...rest.filter((c) => c.name !== 'Shopping'),
+      { id: 'mine', name: 'Cucina', description: 'Ricette e cucina', color: 'orange' as const },
+    ];
+
+    await saveSettings({ categories: edited });
+
+    expect(await names()).toEqual([
+      'Sviluppo', 'Ufficio', 'AI', 'Social', 'Notizie', 'Video', 'Viaggi', 'Finanza', 'Studio', 'Cucina',
+    ]);
+    expect((await loadSettings()).categories[1]!.color).toBe('red');
+    const stored = await fakeBrowser.storage.sync.get('categories');
+    expect((stored.categories as { name: string }[]).map((c) => c.name)).toEqual(await names());
+  });
+
+  it('rifiuta i nomi duplicati senza distinguere maiuscole e minuscole, e i nomi vuoti', async () => {
+    const { categories } = await loadSettings();
+
+    await expect(
+      saveSettings({ categories: [...categories, { id: 'x', name: 'lavoro ', description: '', color: 'red' }] }),
+    ).rejects.toMatchObject({ messageKey: 'categoryNameDuplicate' });
+    await expect(
+      saveSettings({ categories: [...categories, { id: 'y', name: '   ', description: '', color: 'red' }] }),
+    ).rejects.toMatchObject({ messageKey: 'categoryNameEmpty' });
+    expect(await fakeBrowser.storage.sync.get('categories')).toEqual({});
+  });
+
+  it('"Ripristina default" riporta la lista iniziale', async () => {
+    await saveSettings({ categories: [{ id: 'mine', name: 'Cucina', description: '', color: 'orange' }] });
+    expect(await names()).toEqual(['Cucina']);
+
+    const restored = await resetCategories();
+
+    expect(restored.map((c) => c.name)).toEqual(await names());
+    expect(await names()).toHaveLength(10);
+  });
+
+  it('una lista vuota è ammessa', async () => {
+    await saveSettings({ categories: [] });
+
+    expect(await names()).toEqual([]);
+  });
+
+  it('le categorie modificate rendono non più attuale una proposta salvata', async () => {
+    strip.addTab({ url: 'https://a.com/1', title: 'A1' });
+    strip.addTab({ url: 'https://a.com/2', title: 'A2' });
+    const first = await organizer.propose(W);
+
+    await saveSettings({ categories: [] });
+    const second = await organizer.propose(W);
+
+    expect(second.proposal!.createdAt).toBeGreaterThanOrEqual(first.proposal!.createdAt);
+    expect(second.proposal!.signature).not.toBe(first.proposal!.signature);
   });
 });

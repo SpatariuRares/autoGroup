@@ -5,7 +5,7 @@ Documentazione tecnica dell'estensione, aggiornata dopo ogni issue di `issues.js
 - [Architettura](architettura.md): moduli, flusso dei dati, stato e messaggi.
 - [Test](test.md): come si testa l'Organizzatore e il simulatore della barra delle tab.
 - [Lavoro svolto](lavoro-svolto.md): registro delle issue completate, con decisioni e verifiche.
-- Review: [AG-R1](review/AG-R1.md).
+- Review: [AG-R1](review/AG-R1.md), [AG-R2](review/AG-R2.md).
 
 Per i requisiti vedi [PRD.md](../PRD.md); per l'uso vedi il [README](../README.md).
 

@@ -7,6 +7,8 @@ import './style.css';
 
 document.documentElement.lang = navigator.language;
 document.title = t('optionsTitle');
+// Il popup può aprire una sezione precisa, es. options.html#generator.
+window.addEventListener('load', () => document.getElementById(location.hash.slice(1))?.scrollIntoView());
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

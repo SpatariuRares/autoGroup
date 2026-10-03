@@ -21,3 +21,7 @@ h1 { font-size: 15px; margin: 0; }
 .tab-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 footer { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); }
 footer .undo { margin-right: auto; }
+
+.warnings { list-style: none; margin: 6px 10px 0; padding: 8px 10px; border-radius: 8px; background: var(--card); border: 1px solid var(--error); font-size: 12px; }
+.warnings li + li { margin-top: 4px; }
+.warnings a { color: var(--accent); }
