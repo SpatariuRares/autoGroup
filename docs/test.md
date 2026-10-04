@@ -17,6 +17,9 @@ Un solo seam: **l'interfaccia dell'Organizzatore** (`propose`, `apply`, `state`,
 - **`tests/fake-i18n.ts`**: il fake di WXT non implementa `i18n`. Questo fake legge i veri file `public/_locales/<lingua>/messages.json` e implementa `getMessage` (con i segnaposto) e `getUILanguage`. Ogni test parte in italiano; `installFakeI18n('en')` passa all'inglese.
 - **`tests/fake-network.ts`**: `installFakePermissions(concessi)` sostituisce `permissions` (non implementato dal fake di WXT); `installFakeFetch(...risposte)` sostituisce `fetch` con una coda di risposte (o errori, o funzioni) e registra URL, intestazioni e corpo di ogni richiesta; `openAiReply(contenuto)` e `httpError(status)` costruiscono risposte nel formato OpenAI.
 - **`tests/fake-nano.ts`**: stub dell'oggetto globale `LanguageModel` con i quattro stati di disponibilità, una finestra di contesto configurabile (un "token" ogni 4 caratteri), `measureContextUsage`, `clone`, e una funzione che risponde a ogni prompt registrando sistema, opzioni, tab e schema.
+- **`tests/setup.ts`** (in `setupFiles`): prima di ogni test accorcia `TIMINGS` (timeout di 200 ms, attesa del nuovo tentativo di 1 ms), così timeout e nuovi tentativi si provano senza aspettare davvero.
+- `installFakeFetch` rispetta il segnale della richiesta come il `fetch` vero (una richiesta appesa fallisce appena il segnale viene interrotto) e registra il segnale; `HANG` è una risposta che non arriva mai.
+- **`tests/fake-scripting.ts`**: sostituisce `scripting.executeScript` (non implementato dal fake di WXT); ogni tab ha la sua pagina finta con una descrizione e un eventuale ritardo (`Infinity` = non risponde mai); una tab senza pagina simula una pagina non accessibile. Registra le tab lette.
 - Helper per i test: `addTab`, `addGroup`, `closeTab`, `groupsIn()` (gruppi con titoli delle tab, in ordine) e `layout()` (la barra come elenco di titoli).
 
 ## Scenari coperti (AG-01)
@@ -116,13 +119,60 @@ Prova di mutazione: togliendo il confronto con la soglia falliscono 3 test; chia
 - Il passo 2 non parte con meno tab rimaste del minimo.
 - Smoke test: nessuna query, frammento, tab esclusa né ID di Chrome nelle richieste System One.
 
+## Scenari coperti (AG-09), in `tests/save-to-list.test.ts`
+
+- La categoria prende nome e colore attuali del gruppo (dopo rinomina e cambio colore) e la descrizione generata, ripulita; alla descrizione arrivano nome ed esempi con URL ripuliti; il gruppo diventa "lista".
+- La proposta resta valida riaprendo il popup.
+- Generatore in errore: descrizione vuota e avviso.
+- Nome già presente (maiuscole diverse): nessun duplicato, avviso.
+- Solo i gruppi "nuovo AI".
+- La categoria salvata è tra le opzioni dell'organizzazione successiva.
+- Una modifica successiva toglie l'avviso.
+
+## Scenari coperti (AG-10), in `tests/errors.test.ts`
+
+- Nuovo tentativo dopo 429, 529, 500, 503 con la seconda risposta usata; un solo nuovo tentativo (due errori → livello successivo con l'avviso giusto); nessun nuovo tentativo dopo 401, 403, 422, errore di rete e timeout; anche per il Classificatore.
+- Timeout del Generatore (→ dominio) e del Classificatore (→ Generatore), con l'avviso "timeout".
+- Risposte non JSON, senza `choices`, fuori schema, System One senza `answers`: avviso "risposta non valida".
+- "Interrompi": richieste interrotte, nessuna proposta, avviso; interrompe anche l'attesa del nuovo tentativo; dopo si può ricalcolare e "Annulla" resta; senza calcolo in corso non cambia nulla.
+- Classificatore e Generatore entrambi in errore: proposta per dominio con due avvisi.
+
+## Scenari coperti (AG-11), in `tests/descriptions.test.ts`
+
+- Opzione accesa e permesso concesso: descrizioni ripulite al Generatore e, nello `state`, al Classificatore; le pagine senza descrizione restano con titolo e URL.
+- Permesso negato oppure opzione spenta: nessuna pagina letta.
+- Tab sospesa: non letta.
+- Pagina che non risponde: dopo ~500 ms solo titolo e URL per quella tab, senza rallentare le altre.
+- Web Store (vecchio e nuovo) e PDF saltati; una pagina non accessibile non blocca le altre.
+- Domini esclusi mai letti.
+- Senza AI (raggruppamento per dominio) nessuna pagina letta.
+
 `tests/locales.test.ts` controlla che italiano e inglese abbiano le stesse chiavi e che siano tutte nel formato accettato da Chrome (`[A-Za-z0-9_]`).
 
+## Scenari coperti (AG-12), in `tests/locales.test.ts`
+
+- Ogni chiave scritta nel codice (`t('…')`, chiavi di errore e di avviso, `__MSG_…__` nel manifest e nell'HTML) esiste nelle traduzioni. Il test legge i sorgenti di `src/`, `entrypoints/` e `wxt.config.ts` e riconosce le chiavi dai prefissi usati nei file di traduzione.
+- Esistono le chiavi composte a runtime: avvisi per ogni causa, 9 colori, 4 provenienze, 4 stati di Gemini Nano, nome e descrizione delle 10 categorie predefinite.
+- Italiano e inglese usano gli stessi segnaposto (`$PROVIDER$`, `$NAME$`, …).
+
+Prova di mutazione fatta a mano: cambiando `t('popupSaveToListHint')` in una chiave inesistente il test fallisce indicando la chiave.
+
 Prova di mutazione fatta a mano: togliendo lo scarto delle tab duplicate o il controllo del permesso, il test corrispondente fallisce.
+
+## Scenari coperti (AG-R3)
+
+- `tests/classifier.test.ts`: in modalità `per-tab`, al primo errore non partono altre richieste e quelle in corso vengono interrotte (10 tab, 3 in parallelo: 3 richieste).
+- `tests/errors.test.ts`: "Interrompi" ferma anche un calcolo ancora in coda, che non fa richieste; due richieste per la stessa finestra condividono il calcolo; una per un'altra finestra riceve la propria proposta; "Ricalcola" durante un calcolo ne avvia uno nuovo.
+- `tests/nano.test.ts`: un errore di `clone()` diventa `invalid-request`; il tempo massimo vale per ogni blocco (due blocchi da 120 ms con un limite di 200 ms riescono). Il `prompt` finto ora rispetta il segnale di interruzione, come la Prompt API.
+- `tests/save-to-list.test.ts`: una tab aperta mentre si genera la descrizione fa scadere la proposta.
+
+Ogni test nuovo è stato provato con una mutazione: rimettendo il comportamento vecchio, fallisce.
 
 ## Prova in Chrome
 
 `npm run smoke` compila e lancia `scripts/smoke.mjs`: apre Chrome for Testing con l'estensione caricata, apre pagine servite da un server locale su `localhost` e `127.0.0.1` (due domini diversi), apre il popup come pagina, ricarica il popup per verificare che la proposta resti, rinomina un gruppo, ne cambia il colore e sposta una tab (salvando uno screenshot in `scripts/smoke-popup.png`), ricarica di nuovo per verificare che le modifiche restino, preme "Applica", poi "Annulla ultima organizzazione" e controlla che ordine delle tab e gruppi tornino come prima; infine apre la pagina opzioni, prova la sezione Categorie (nome duplicato rifiutato, rinomina, aggiunta, riordino, ripristino, controllando `storage.sync`), imposta il minimo a 3 ed esclude `127.0.0.1` (screenshot in `scripts/smoke-options.png`), controlla `storage.sync` e ricalcola la proposta. Stampa i gruppi creati e gli eventuali errori in console del service worker e del popup.
+
+Poi lo script accende "Leggi la descrizione delle pagine" nella sezione Privacy, ricalcola e controlla che al finto Generatore arrivino le meta description lette dalle pagine con `chrome.scripting`, quindi spegne l'interruttore.
 
 Infine lo script configura il Classificatore (preset Personalizzato verso un finto endpoint System One dello stesso server), lo salva, prova la connessione e ricalcola: la proposta viene dal Classificatore, senza chiamate al Generatore e senza avvisi.
 
@@ -130,8 +180,14 @@ Infine lo script configura il Classificatore (preset Personalizzato verso un fin
 
 Lo script legge anche lo stato di Gemini Nano mostrato nelle impostazioni. In Chrome for Testing headless la Prompt API esiste nel service worker dell'estensione, ma il modello risulta "non supportato": il percorso con Nano disponibile è coperto solo dallo stub e va provato a mano in un Chrome che supporta Gemini Nano.
 
-Dopo le impostazioni lo script configura il Generatore dall'interfaccia (preset Personalizzato verso un finto server compatibile OpenAI dentro lo script stesso), lo salva, preme "Prova connessione", controlla che la chiave sia in `storage.local` e non in `sync`, ricalcola la proposta (gruppo "nuovo AI"), controlla che le richieste non contengano query, frammenti né tab escluse, poi fa fallire il server e verifica il ripiego sul dominio con l'avviso (screenshot in `scripts/smoke-popup-warning.png`).
+Dopo le impostazioni lo script configura il Generatore dall'interfaccia (preset Personalizzato verso un finto server compatibile OpenAI dentro lo script stesso), lo salva, preme "Prova connessione", controlla che la chiave sia in `storage.local` e non in `sync`, ricalcola la proposta (gruppo "nuovo AI"), preme "Salva nella lista" e controlla la categoria salvata in `storage.sync`, controlla che le richieste non contengano query, frammenti né tab escluse, poi fa fallire il server (500) e verifica il nuovo tentativo (2 richieste) e il ripiego sul dominio con l'avviso, poi lascia il server senza risposta e preme "Interrompi" (nessuna proposta, avviso di calcolo interrotto) (screenshot in `scripts/smoke-popup-warning.png`).
 
-`npm run smoke` compila con `AUTOGROUP_SMOKE=1`, che aggiunge `http://127.0.0.1/*` ai permessi host: in headless la finestra di Chrome che chiede il permesso non si può accettare. Alla fine ricompila la build normale.
+Alla fine lo script prova le quattro righe della tabella dei fallback con tutte le tab, accendendo e spegnendo i provider in `storage.sync`. Il finto System One risponde con confidenza bassa per le pagine `/c` e `/d`. Risultati attesi e ottenuti: entrambi → "Work" (lista, 3 tab) + "Nuovo Tema" (nuovo AI, 2 tab), 5 richieste System One e 1 al Generatore; solo Classificatore → "Work" (3 tab), le altre 2 libere, nessuna richiesta al Generatore; solo Generatore → un gruppo da 5 tab; nessuno → due gruppi per dominio. `repropose` conta solo le richieste del calcolo forzato da "Ricalcola", non quelle del calcolo che il popup fa da solo all'apertura. La pagina `/e` ha la meta description vuota e una `og:description`, che deve arrivare all'AI.
+
+`scripts/permissions-check.mjs` (a parte, sulla build normale) controlla che le richieste di permesso partano dentro il gesto dell'utente: il clic su "Salva" del Generatore e sull'interruttore delle descrizioni lasciano aperta la finestra di Chrome, mentre una richiesta dal service worker viene rifiutata. Una richiesta da `page.evaluate` non serve come controprova, perché Puppeteer la esegue come gesto dell'utente. Prova di mutazione: spostando `permissions.request` dopo un'attesa di 6 s, il salvataggio fallisce con "must be called during a user gesture".
+
+All'avvio lo script controlla anche con `chrome.commands.getAll()` che la scorciatoia per il popup sia registrata (su macOS: `⌥⇧G`).
+
+`npm run smoke` compila con `AUTOGROUP_SMOKE=1`, che aggiunge `<all_urls>` ai permessi host: in headless la finestra di Chrome che chiede il permesso non si può accettare. Alla fine ricompila la build normale.
 
 Chrome stabile dalla 137 ignora `--load-extension`, quindi lo script usa Chrome for Testing scaricato da Puppeteer.

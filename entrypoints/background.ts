@@ -21,8 +21,12 @@ export default defineBackground(() => {
         return organizer.propose(request.windowId, { force: request.force });
       case 'organizer/edit':
         return organizer.edit(request.edit);
+      case 'organizer/save-to-list':
+        return organizer.saveToList(request.groupId);
       case 'organizer/apply':
         return organizer.apply();
+      case 'organizer/abort':
+        return organizer.abort();
       case 'organizer/undo':
         return organizer.undo();
     }

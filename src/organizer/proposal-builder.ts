@@ -1,6 +1,7 @@
 import { browser, type Browser } from 'wxt/browser';
 import { nanoAvailability, type NanoAvailability } from '../ai/nano-generator';
 import {
+  hasDescriptionPermission,
   hasHostPermission,
   isProviderConfigured,
   loadApiKey,
@@ -34,6 +35,8 @@ export interface ProposalInputs {
   generator: ProviderInput;
   /** Stato di Gemini Nano; letto solo se il Generatore configurato non è utilizzabile. */
   nano: NanoAvailability;
+  /** Vero se l'opzione "descrizione delle pagine" è accesa e il permesso <all_urls> è concesso. */
+  readDescriptions: boolean;
 }
 
 async function providerInput(role: ProviderRole, settings: ProviderSettings): Promise<ProviderInput> {
@@ -56,6 +59,7 @@ export async function collectInputs(windowId: number): Promise<ProposalInputs> {
     providerInput('generator', settings.generator),
   ]);
   const nano = generator.usable ? 'unavailable' : await nanoAvailability();
+  const readDescriptions = settings.readDescriptions && (await hasDescriptionPermission());
   return {
     windowId,
     candidates: selectCandidateTabs(tabs, settings.excludedDomains),
@@ -64,6 +68,7 @@ export async function collectInputs(windowId: number): Promise<ProposalInputs> {
     classifier,
     generator,
     nano,
+    readDescriptions,
   };
 }
 
@@ -80,6 +85,7 @@ export function signatureOf(inputs: ProposalInputs): string {
     inputs.classifier.usable,
     inputs.generator.usable,
     inputs.nano,
+    inputs.readDescriptions,
   ]);
 }
 

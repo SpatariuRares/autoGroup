@@ -139,6 +139,33 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'Gemini Nano', cause: 'invalid-request' }]);
   });
 
+  it('un errore inatteso della sessione (es. clone) diventa "richiesta rifiutata", non un errore generico', async () => {
+    openPairs();
+    installFakeNano({ availability: 'available', cloneError: new Error('InvalidStateError') });
+
+    const state = await organizer.propose(W);
+
+    expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'Gemini Nano', cause: 'invalid-request' }]);
+  });
+
+  it('il tempo massimo vale per ogni blocco, non per tutti i blocchi insieme', async () => {
+    // Nei test il tempo massimo del Generatore è 200 ms: due blocchi da 120 ms lo superano insieme, non uno per uno.
+    for (let i = 1; i <= 12; i++) strip.addTab({ url: `https://site${i}.com/pagina-con-un-percorso-lungo`, title: `Pagina numero ${i} con un titolo abbastanza lungo` });
+    await saveSettings({ categories: [] });
+    const { calls } = installFakeNano({
+      availability: 'available',
+      contextWindow: 420,
+      delay: 120,
+      respond: (call) => ({ groups: [{ name: 'Lettura', tabs: call.tabs.map((t) => t.id) }] }),
+    });
+
+    const state = await organizer.propose(W);
+
+    expect(calls.length).toBeGreaterThan(1);
+    expect(state.proposal!.warnings).toEqual([]);
+    expect(summary(state)).toHaveLength(1);
+  });
+
   it('valida la risposta di Nano come quella degli altri Generatori', async () => {
     openPairs();
     installFakeNano({

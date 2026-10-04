@@ -208,7 +208,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
     const state = await organizer.propose(W);
 
     expect(summary(state)).toEqual([{ name: 'a.com', provenance: 'domain', color: 'grey', tabs: ['A1', 'A2'] }]);
-    expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'OpenRouter (openrouter.ai)', cause }]);
+    expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'OpenRouter (https://openrouter.ai/api/v1)', cause }]);
   });
 
   it('senza il permesso host il Generatore non è disponibile: nessuna richiesta, proposta per dominio e avviso', async () => {
@@ -220,7 +220,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(summary(state).map((g) => g.provenance)).toEqual(['domain']);
-    expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'OpenRouter (openrouter.ai)', cause: 'no-permission' }]);
+    expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'OpenRouter (https://openrouter.ai/api/v1)', cause: 'no-permission' }]);
   });
 
   it('la chiave API sta in storage.local e non in storage.sync né nello stato', async () => {

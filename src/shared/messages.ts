@@ -5,7 +5,9 @@ export type OrganizerRequest =
   | { type: 'organizer/state' }
   | { type: 'organizer/propose'; windowId: number; force?: boolean }
   | { type: 'organizer/edit'; edit: ProposalEdit }
+  | { type: 'organizer/save-to-list'; groupId: string }
   | { type: 'organizer/apply' }
+  | { type: 'organizer/abort' }
   | { type: 'organizer/undo' };
 
 /** Notifica dal service worker al popup quando lo stato cambia. */
@@ -20,7 +22,9 @@ const REQUEST_TYPES = new Set<string>([
   'organizer/state',
   'organizer/propose',
   'organizer/edit',
+  'organizer/save-to-list',
   'organizer/apply',
+  'organizer/abort',
   'organizer/undo',
 ] satisfies OrganizerRequest['type'][]);
 

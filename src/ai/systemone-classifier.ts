@@ -1,10 +1,10 @@
-import { postJson } from './http';
+import { postJson, TIMINGS } from './http';
 import { ProviderError, type AiOption, type AiTab, type Classification, type Classifier } from './types';
 
 /** Massimo di opzioni per domanda "choice" nel protocollo System One. */
-export const MAX_CHOICE_OPTIONS = 255;
+const MAX_CHOICE_OPTIONS = 255;
 /** Opzione aggiunta alle categorie, come consiglia TypeSafe: la tab non rientra in nessuna. */
-export const NONE_OPTION = 'none_of_the_above';
+const NONE_OPTION = 'none_of_the_above';
 const NONE_DESCRIPTION = 'The tab fits none of the other options.';
 const INSTRUCTIONS = 'Which group should this browser tab go into';
 
@@ -51,7 +51,7 @@ export function createSystemOneClassifier(config: SystemOneConfig): Classifier {
     const json = (await postJson(
       `${config.baseUrl}/v1/systemone`,
       { ...(config.model ? { model: config.model } : {}), ...body },
-      { apiKey: config.apiKey, timeoutMs: config.timeoutMs ?? 5_000, signal },
+      { apiKey: config.apiKey, timeoutMs: config.timeoutMs ?? TIMINGS.classifier, signal },
     )) as { answers?: unknown };
     if (typeof json?.answers !== 'object' || json.answers === null) {
       throw new ProviderError('invalid-response', 'risposta senza answers');
@@ -84,10 +84,17 @@ export function createSystemOneClassifier(config: SystemOneConfig): Classifier {
         return result;
       }
 
-      await mapWithLimit(tabs, config.concurrency ?? 4, async (tab) => {
-        const answers = await call({ state: tabState(tab), questions: { group: question } }, signal);
-        result.set(tab.id, read(answers.group, criteria));
-      });
+      // Al primo errore la pipeline scende di livello: le richieste ancora in corso non servono più.
+      const stop = new AbortController();
+      const shared = signal ? AbortSignal.any([signal, stop.signal]) : stop.signal;
+      try {
+        await mapWithLimit(tabs, config.concurrency ?? 4, async (tab) => {
+          const answers = await call({ state: tabState(tab), questions: { group: question } }, shared);
+          result.set(tab.id, read(answers.group, criteria));
+        });
+      } finally {
+        stop.abort();
+      }
       return result;
     },
   };
@@ -96,8 +103,16 @@ export function createSystemOneClassifier(config: SystemOneConfig): Classifier {
 /** Esegue `task` su ogni elemento con al massimo `limit` esecuzioni insieme; al primo errore si ferma. */
 async function mapWithLimit<T>(items: T[], limit: number, task: (item: T) => Promise<void>): Promise<void> {
   let next = 0;
+  let failed = false;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) await task(items[next++]!);
+    while (!failed && next < items.length) {
+      try {
+        await task(items[next++]!);
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
+    }
   });
   await Promise.all(workers);
 }

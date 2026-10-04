@@ -139,7 +139,7 @@ L'utente decide quali dati vengono inviati: di default titolo e URL ripulito; in
 - **Organizzatore**: il modulo principale, con un'interfaccia piccola: *proponi* (per una finestra: restituisce una proposta), *applica* (una proposta, eventualmente modificata), *annulla* (l'ultima operazione) e *stato* (calcolo in corso, proposta, annulla disponibile). Al suo interno coordina tutti gli altri moduli. È l'unico punto chiamato dal popup.
 - **Selezione tab**: dalla finestra corrente estrae le tab candidate, escludendo fissate, già raggruppate, pagine interne, tab senza titolo e domini esclusi. Elenca anche i gruppi già aperti nella finestra.
 - **Preparazione dati**: per ogni tab produce le informazioni da inviare all'AI: ID breve (`t1`, `t2`, …), titolo, URL ripulito (dominio e percorso, senza query né frammento) e descrizione della pagina se disponibile. Gli ID di Chrome non vengono mai inviati all'AI.
-- **Lettore descrizioni**: attivo solo se l'opzione è accesa e il permesso opzionale `<all_urls>` è stato concesso. Legge la meta description tramite `chrome.scripting`, in parallelo, con un timeout di circa 500 ms per tab. Salta le tab sospese senza risvegliarle e salta le pagine non leggibili; per quelle tab si usano solo titolo e URL.
+- **Lettore descrizioni**: attivo solo se l'opzione è accesa e il permesso opzionale `<all_urls>` è stato concesso. Legge la meta description (o `og:description` se manca o è vuota) tramite `chrome.scripting`, in parallelo, con un timeout di circa 500 ms per tab. Salta le tab sospese senza risvegliarle e salta le pagine non leggibili; per quelle tab si usano solo titolo e URL.
 - **Catalogo categorie**: legge la lista fissa (nome, descrizione, colore) e costruisce le opzioni per la classificazione: categorie della lista più gruppi già aperti. Se un gruppo aperto ha lo stesso nome di una categoria (maiuscole e minuscole non contano), ne prende descrizione e colore; altrimenti la descrizione è "Gruppo creato dall'utente: «nome»".
 - **Adattatore Classificatore (System One)**: interfaccia *classifica(tab, opzioni) → per ogni tab: categoria e confidenza*. Contratto: `POST {URL base}/v1/systemone` con autenticazione `Bearer` (opzionale per i server locali). Il corpo contiene `state`, `model` e `questions`, con domande di tipo `choice` i cui `criteria` mappano nome e descrizione di ogni opzione (massimo 255). La risposta contiene `answers` con `choice`, `confidence` e `probabilities`. Preset: Jev (`https://api.typesafe.ai`, modello `jev-latest`), Kev (`http://127.0.0.1:8009`), Rizzo Flow (`http://127.0.0.1:8017`).
 - **Adattatore Generatore**: interfaccia *genera(tab, categorie note, modalità) → elenco di gruppi {nome, ID brevi delle tab}* e *descrivi(nome categoria, tab di esempio) → descrizione*, usato da "Salva nella lista". Due modalità:
@@ -174,12 +174,12 @@ L'utente decide quali dati vengono inviati: di default titolo e URL ripulito; in
 
 ### Proposta (forma dei dati)
 
-Una proposta è un elenco di gruppi più un elenco di avvisi. Ogni gruppo ha: nome, colore, provenienza (*lista*, *esistente*, *nuovo AI*, *dominio*), il riferimento al gruppo Chrome se è già esistente, le tab assegnate e, per i gruppi *nuovo AI*, la possibilità di essere salvato nella lista. Ogni avviso ha: livello saltato, provider coinvolto, causa (non raggiungibile, chiave non valida, limite di richieste, timeout, risposta non valida).
+Una proposta è un elenco di gruppi più un elenco di avvisi. Ogni gruppo ha: nome, colore, provenienza (*lista*, *esistente*, *nuovo AI*, *dominio*), il riferimento al gruppo Chrome se è già esistente, le tab assegnate e, per i gruppi *nuovo AI*, la possibilità di essere salvato nella lista. Ogni avviso ha: livello saltato, provider coinvolto, causa (non raggiungibile, chiave non valida, limite di richieste, timeout, risposta non valida, richiesta rifiutata, non disponibile, permesso di rete mancante, modello da scaricare o in download).
 
 ### Gestione errori
 
 - Se un provider fallisce, la pipeline scende di un livello nella tabella e aggiunge un avviso alla proposta.
-- Timeout: 5 s per il Classificatore, 30 s per il Generatore.
+- Timeout per singola richiesta: 5 s per il Classificatore, 30 s per il Generatore (con Gemini Nano, per ogni blocco di tab).
 - Un solo nuovo tentativo, con una breve attesa, solo per 429, 529 e 5xx. Per 401 e 403 nessun tentativo, avviso "chiave non valida". Per 422 nessun tentativo, avviso "richiesta non valida".
 - "Interrompi" annulla le richieste in corso e non produce nessuna proposta.
 

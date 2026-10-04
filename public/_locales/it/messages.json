@@ -475,5 +475,50 @@
   },
   "optionsProviderInvalid": {
     "message": "La configurazione del provider non è valida."
+  },
+  "popupSaveToList": {
+    "message": "Salva nella lista"
+  },
+  "popupSaveToListHint": {
+    "message": "Aggiunge questo gruppo alle categorie, con una descrizione generata dall'AI"
+  },
+  "saveToListSaved": {
+    "message": "«$NAME$» è stato aggiunto alle categorie.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "saveToListNoDescription": {
+    "message": "«$NAME$» è stato aggiunto alle categorie senza descrizione: completala nelle impostazioni.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "saveToListDuplicate": {
+    "message": "Esiste già una categoria «$NAME$»: non è stata duplicata.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupAbort": {
+    "message": "Interrompi"
+  },
+  "popupAborted": {
+    "message": "Calcolo interrotto: nessuna proposta. Premi «Ricalcola» per riprovare."
+  },
+  "optionsReadDescriptions": {
+    "message": "Leggi la descrizione delle pagine per una maggiore precisione"
+  },
+  "optionsReadDescriptionsHint": {
+    "message": "Chiede il permesso di leggere i siti che visiti. Viene letta solo la descrizione (meta description) delle pagine, mai il contenuto; le tab sospese, i domini esclusi, le pagine di Chrome, il Web Store e i PDF non vengono letti. Spegnendo l'interruttore il permesso viene tolto."
+  },
+  "optionsReadDescriptionsDenied": {
+    "message": "Permesso non concesso: verranno usati solo titolo e URL."
   }
 }

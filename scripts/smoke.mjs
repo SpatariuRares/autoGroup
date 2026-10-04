@@ -7,7 +7,8 @@ import puppeteer from 'puppeteer';
 
 const extPath = path.resolve('.output/chrome-mv3');
 // Finto Generatore compatibile OpenAI: mette tutte le tab in "Lettura Veloce", oppure risponde 500.
-const ai = { fail: false, requests: [] };
+// Con `unsure` il finto System One risponde con confidenza bassa per le pagine /c e /d.
+const ai = { fail: false, hang: false, unsure: false, requests: [] };
 const server = http.createServer(async (req, res) => {
   if (req.url === '/v1/systemone') {
     let body = '';
@@ -17,7 +18,8 @@ const server = http.createServer(async (req, res) => {
     res.setHeader('content-type', 'application/json');
     // Tutte le tab nella prima categoria, con confidenza alta.
     const choice = Object.keys(request.questions.group.criteria)[0];
-    return res.end(JSON.stringify({ answers: { group: { type: 'choice', choice, confidence: 0.95, probabilities: {} } } }));
+    const confidence = ai.unsure && /Pagina \/[cd]/.test(JSON.stringify(request.state)) ? 0.3 : 0.95;
+    return res.end(JSON.stringify({ answers: { group: { type: 'choice', choice, confidence, probabilities: {} } } }));
   }
   if (req.url === '/v1/chat/completions') {
     let body = '';
@@ -25,17 +27,27 @@ const server = http.createServer(async (req, res) => {
     const request = JSON.parse(body);
     ai.requests.push(request);
     res.setHeader('content-type', 'application/json');
+    if (ai.hang) return; // nessuna risposta: si esce solo con il timeout o con "Interrompi"
     if (ai.fail) {
       res.statusCode = 500;
       return res.end('{}');
     }
+    if (request.messages[0].content.includes('description of a category')) {
+      return res.end(JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'Pagine da leggere con calma.' } }] }));
+    }
     const tabs = request.messages.length > 1 ? JSON.parse(request.messages[1].content).tabs ?? [] : [];
-    const content = JSON.stringify({ groups: [{ name: 'Lettura Veloce', tabs: tabs.map((t) => t.id) }] });
+    // Passo 2 della pipeline ("solo nuovi"): un nome diverso, per riconoscerlo nella proposta.
+    const name = request.messages[0].content.includes('Do not reuse') ? 'Nuovo Tema' : 'Lettura Veloce';
+    const content = JSON.stringify({ groups: [{ name, tabs: tabs.map((t) => t.id) }] });
     return res.end(JSON.stringify({ choices: [{ message: { role: 'assistant', content } }] }));
   }
   res.setHeader('content-type', 'text/html');
   const path = req.url.split('?')[0];
-  res.end(`<!doctype html><title>Pagina ${path}</title><meta name="description" content="Descrizione ${req.url}"><h1>${req.url}</h1>`);
+  // La pagina /e ha la meta description vuota: si usa og:description.
+  const meta = path === '/e'
+    ? `<meta name="description" content=""><meta property="og:description" content="Descrizione og ${path}">`
+    : `<meta name="description" content="Descrizione ${path}">`;
+  res.end(`<!doctype html><title>Pagina ${path}</title>${meta}<h1>${req.url}</h1>`);
 });
 await new Promise((r) => server.listen(0, r));
 const port = server.address().port;
@@ -52,6 +64,14 @@ try {
   const sw = await swTarget.worker();
   sw.on('console', (m) => m.type() === 'error' && errors.push(`[sw] ${m.text()}`));
   const extId = new URL(swTarget.url()).host;
+
+  // Scorciatoia per aprire il popup: registrata da Chrome (su macOS appare come ⌥⇧G).
+  const commands = await sw.evaluate(() => chrome.commands.getAll());
+  const openPopup = commands.find((c) => c.name === '_execute_action');
+  console.log('Scorciatoia:', JSON.stringify(openPopup));
+  if (!openPopup?.shortcut) {
+    throw new Error('Scorciatoia per il popup non registrata');
+  }
 
   const urls = [
     `http://localhost:${port}/a`,
@@ -122,7 +142,7 @@ try {
   await options.waitForSelector('#behavior input');
   await options.$eval('#behavior input', (el) => el.select());
   await options.type('#behavior input', '3');
-  await options.type('#privacy input', 'https://127.0.0.1/qualcosa');
+  await options.type('#privacy input[type=text]', 'https://127.0.0.1/qualcosa');
   await options.click('#privacy button[type=submit]');
   await options.waitForSelector('.domains li');
   // Categorie: 10 predefinite, rinomina, duplicato rifiutato, aggiunta, riordino, ripristino.
@@ -183,19 +203,58 @@ try {
     await popup.bringToFront();
     await popup.reload();
     await popup.waitForSelector('footer button');
+    // All'apertura il popup calcola già una proposta se le impostazioni sono cambiate: si contano
+    // solo le richieste del calcolo forzato da "Ricalcola".
+    await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 15000 });
+    ai.requests.length = 0;
     await (await popup.$$('footer button.secondary:not(.undo)'))[0].click();
-    await new Promise((r) => setTimeout(r, 500));
+    // Aspetta la fine del calcolo (con l'eventuale nuovo tentativo dopo un errore temporaneo).
+    await new Promise((r) => setTimeout(r, 200));
+    await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 15000 });
     return popup.$$eval('.group', (els) => els.map((el) => `${el.querySelector('.group-name').value} (${el.querySelector('.badge').textContent}): ${el.querySelectorAll('.tab').length} tab`));
   };
   ai.requests.length = 0;
   console.log('Proposta dal Generatore:', await repropose());
   const sent = JSON.parse(ai.requests.at(-1).messages[1].content);
+  await popup.click('.group .save');
+  await popup.waitForFunction(() => /categor/i.test(document.querySelector('.notice')?.textContent ?? ''), { timeout: 10000 });
+  console.log('Salva nella lista:', await popup.$eval('.notice', (el) => el.textContent), '| badge:', await popup.$eval('.group .badge', (el) => el.textContent));
+  const savedCategory = (await sw.evaluate(() => chrome.storage.sync.get('categories'))).categories.at(-1);
+  console.log('Categoria salvata:', JSON.stringify({ name: savedCategory.name, description: savedCategory.description, color: savedCategory.color }));
   console.log('Tab inviate all\'AI:', JSON.stringify(sent.tabs));
   console.log('Privacy (niente query, frammento, 127.0.0.1 escluso):', !JSON.stringify(ai.requests).match(/segreto|frammento|127\.0\.0\.1:/));
   ai.fail = true;
-  console.log('Proposta con il Generatore in errore:', await repropose());
+  ai.requests.length = 0;
+  console.log('Proposta con il Generatore in errore:', await repropose(), '| richieste (con il nuovo tentativo):', ai.requests.length);
   console.log('Avviso:', await popup.$eval('.warnings', (el) => el.textContent).catch(() => 'nessuno'));
   await popup.screenshot({ path: 'scripts/smoke-popup-warning.png' });
+
+  // Interrompi: il finto Generatore non risponde, l'utente preme "Interrompi".
+  ai.fail = false;
+  ai.hang = true;
+  await popup.reload();
+  await popup.waitForSelector('footer button');
+  await (await popup.$$('footer button.secondary:not(.undo)'))[0].click();
+  await popup.waitForSelector('.status.computing button', { timeout: 10000 });
+  await popup.click('.status.computing button');
+  await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 10000 });
+  console.log('Dopo Interrompi:', await popup.$eval('.notice', (el) => el.textContent).catch(() => 'nessun avviso'), '| gruppi:', (await popup.$$('.group')).length);
+  ai.hang = false;
+
+  // Descrizione delle pagine: interruttore nella sezione Privacy, poi una nuova proposta.
+  await options.bringToFront();
+  await options.reload();
+  await options.waitForSelector('#privacy .toggle input:not([disabled])');
+  await options.click('#privacy .toggle input');
+  await options.waitForFunction(() => document.querySelector('#privacy .toggle input').checked, { timeout: 5000 });
+  console.log('Descrizioni attive in sync:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('readDescriptions'))));
+  ai.requests.length = 0;
+  await repropose();
+  console.log('Tab con descrizione inviate all\'AI:', JSON.stringify(JSON.parse(ai.requests.at(-1).messages[1].content).tabs));
+  await options.bringToFront();
+  await options.click('#privacy .toggle input');
+  await options.waitForFunction(() => !document.querySelector('#privacy .toggle input').checked, { timeout: 5000 });
+  console.log('Descrizioni spente:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('readDescriptions'))));
 
   // Classificatore: preset personalizzato verso il finto System One; il Generatore resta in errore.
   await options.bringToFront();
@@ -218,8 +277,33 @@ try {
   const ids = await sw.evaluate(async () => (await chrome.tabs.query({})).map((t) => t.id));
   console.log('Nessun ID di Chrome nelle richieste:', !ids.some((id) => JSON.stringify(ai.requests).includes(`:${id},`) || JSON.stringify(ai.requests).includes(`"${id}"`)));
   console.log('Avvisi:', await popup.$eval('.warnings', (el) => el.textContent).catch(() => 'nessuno'));
+
+  // Le quattro righe della tabella dei fallback, con tutte le tab (minimo 2, nessun dominio escluso).
+  // I provider si accendono e spengono direttamente in storage.sync: il salvataggio dall'interfaccia è già provato sopra.
+  await sw.evaluate(() => chrome.storage.sync.set({ minTabs: 2, excludedDomains: [] }));
+  const classifierOn = await sw.evaluate(async () => (await chrome.storage.sync.get('classifier')).classifier);
+  const generatorOn = await sw.evaluate(async () => (await chrome.storage.sync.get('generator')).generator);
+  const none = { preset: 'none', baseUrl: '', model: '' };
+  const rows = [
+    ['Classificatore sì, Generatore sì', classifierOn, generatorOn],
+    ['Classificatore sì, Generatore no', classifierOn, none],
+    ['Classificatore no, Generatore sì', none, generatorOn],
+    ['Classificatore no, Generatore no', none, none],
+  ];
+  ai.unsure = true;
+  for (const [label, classifier, generator] of rows) {
+    await sw.evaluate((c, g) => chrome.storage.sync.set({ classifier: c, generator: g }), classifier, generator);
+    ai.requests.length = 0;
+    const groups = await repropose();
+    const warnings = await popup.$eval('.warnings', (el) => el.textContent).catch(() => '');
+    console.log(`${label}:`, JSON.stringify(groups), '| richieste System One', ai.requests.filter((r) => r.systemone).length,
+      '| Generatore', ai.requests.filter((r) => !r.systemone).length, warnings ? `| avvisi: ${warnings}` : '');
+  }
+  ai.unsure = false;
 } finally {
   await browser.close();
+  // Chiude anche le connessioni lasciate appese apposta (prova di "Interrompi").
+  server.closeAllConnections();
   server.close();
 }
 console.log(errors.length ? `Errori:\n${errors.join('\n')}` : 'Nessun errore in console.');

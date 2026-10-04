@@ -1,6 +1,6 @@
-import { postJson } from './http';
-import { GROUPS_SCHEMA, parseGroups, systemPrompt, userPrompt } from './prompt';
-import { ProviderError, type GenerateRequest, type Generator, type RawGroup } from './types';
+import { postJson, TIMINGS } from './http';
+import { cleanDescription, describePrompt, GROUPS_SCHEMA, parseGroups, systemPrompt, userPrompt } from './prompt';
+import { ProviderError, type DescribeRequest, type GenerateRequest, type Generator, type RawGroup } from './types';
 
 export interface OpenAiGeneratorConfig {
   label: string;
@@ -21,7 +21,7 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
     const json = (await postJson(
       `${config.baseUrl}/chat/completions`,
       { model: config.model, ...body },
-      { apiKey: config.apiKey, timeoutMs: config.timeoutMs ?? 30_000, signal },
+      { apiKey: config.apiKey, timeoutMs: config.timeoutMs ?? TIMINGS.generator, signal },
     )) as { choices?: { message?: { content?: unknown } }[] };
     const content = json?.choices?.[0]?.message?.content;
     if (typeof content !== 'string') throw new ProviderError('invalid-response', 'risposta senza contenuto');
@@ -52,6 +52,15 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
       if (!groups) throw new ProviderError('invalid-response', 'JSON fuori schema');
       return groups as RawGroup[];
     },
+
+    async describe(request: DescribeRequest, signal?: AbortSignal): Promise<string> {
+      const { system, user } = describePrompt(request);
+      const content = await chat(
+        { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0.2, max_tokens: 120 },
+        signal,
+      );
+      return cleanDescription(content);
+    },
   };
 }
 
@@ -60,6 +69,6 @@ export async function testOpenAiConnection(config: OpenAiGeneratorConfig): Promi
   await postJson(
     `${config.baseUrl}/chat/completions`,
     { model: config.model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 1 },
-    { apiKey: config.apiKey, timeoutMs: config.timeoutMs ?? 30_000 },
+    { apiKey: config.apiKey, timeoutMs: config.timeoutMs ?? TIMINGS.generator },
   );
 }

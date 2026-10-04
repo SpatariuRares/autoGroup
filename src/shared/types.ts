@@ -96,4 +96,6 @@ export interface OrganizerState {
   undo?: UndoSnapshot;
   /** Chiave i18n dell'ultimo errore, se il calcolo o l'applicazione sono falliti. */
   error?: string;
+  /** Esito dell'ultima operazione da mostrare nel popup (chiave i18n e argomento), es. dopo "Salva nella lista". */
+  notice?: { key: string; arg?: string };
 }

@@ -1,4 +1,4 @@
-import type { GenerateRequest } from './types';
+import type { DescribeRequest, GenerateRequest } from './types';
 
 /** Schema JSON della risposta del Generatore: un elenco di gruppi con nome e ID brevi delle tab. */
 export const GROUPS_SCHEMA = {
@@ -58,4 +58,29 @@ export function parseGroups(content: string): unknown[] | null {
   } catch {
     return null;
   }
+}
+
+/** Lunghezza massima della descrizione generata, uguale al limite delle categorie. */
+export const MAX_DESCRIPTION_LENGTH = 300;
+
+/** Istruzioni per "descrivi": una frase che dica cosa rientra nella categoria. */
+export function describePrompt(request: DescribeRequest): { system: string; user: string } {
+  return {
+    system: [
+      'You write the description of a category used to sort browser tabs.',
+      `Write one sentence in ${request.language}, at most 25 words, listing the kinds of pages that belong to the category.`,
+      'Reply with the sentence only, without quotes or a leading label.',
+    ].join('\n'),
+    user: JSON.stringify({ category: request.name, example_tabs: request.examples.map(({ title, url }) => ({ title, url })) }),
+  };
+}
+
+/** Ripulisce la descrizione generata: virgolette, spazi, lunghezza massima. */
+export function cleanDescription(text: string): string {
+  return text
+    .trim()
+    .replace(/^["'«“]+|["'»”]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_DESCRIPTION_LENGTH);
 }

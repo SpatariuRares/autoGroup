@@ -7,6 +7,8 @@ export const TAB_GROUP_ID_NONE = -1;
 /** Una tab libera della finestra, candidata a entrare in un gruppo. */
 export interface CandidateTab extends ProposedTab {
   index: number;
+  /** Tab sospesa da Risparmio memoria: non va mai letta né risvegliata. */
+  discarded: boolean;
 }
 
 const WEB_PROTOCOLS = new Set(['http:', 'https:', 'file:']);
@@ -59,5 +61,6 @@ export function selectCandidateTabs(tabs: Browser.tabs.Tab[], excludedDomains: s
       url: tab.url!,
       favIconUrl: tab.favIconUrl,
       index: tab.index,
+      discarded: tab.discarded ?? false,
     }));
 }

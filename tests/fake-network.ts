@@ -27,7 +27,11 @@ export interface RecordedRequest {
   url: string;
   headers: Record<string, string>;
   body: any;
+  signal?: AbortSignal;
 }
+
+/** Una risposta che non arriva mai: la richiesta finisce solo per timeout o "Interrompi". */
+export const HANG = () => new Promise<never>(() => {});
 
 type Reply = Response | Error | ((request: RecordedRequest) => Response | Error | Promise<Response | Error>);
 
@@ -40,11 +44,21 @@ export function installFakeFetch(...replies: Reply[]) {
       url: String(input),
       headers: Object.fromEntries(new Headers(init?.headers).entries()),
       body: init?.body ? JSON.parse(String(init.body)) : undefined,
+      signal: init?.signal ?? undefined,
     };
     requests.push(request);
     const next = queue.length > 1 ? queue.shift()! : queue[0];
     if (!next) throw new Error('fetch inatteso');
-    const reply = typeof next === 'function' ? await next(request) : next;
+    // Come il fetch vero: un segnale interrotto fa fallire subito la richiesta.
+    const aborted = new Promise<never>((_, reject) => {
+      const signal = init?.signal;
+      if (!signal) return;
+      if (signal.aborted) reject(signal.reason);
+      signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+    });
+    // Se la risposta arriva prima, nessuno ascolta più questa promessa: niente rifiuti non gestiti.
+    aborted.catch(() => {});
+    const reply = typeof next === 'function' ? await Promise.race([next(request), aborted]) : next;
     if (reply instanceof Error) throw reply;
     return reply.clone();
   });

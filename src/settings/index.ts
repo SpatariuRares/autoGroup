@@ -26,9 +26,11 @@ export interface Settings {
   classifier: ProviderSettings;
   /** Confidenza minima perché il Classificatore assegni una tab, tra 0 e 1. */
   threshold: number;
+  /** "Leggi la descrizione delle pagine": vale solo se il permesso opzionale <all_urls> è concesso. */
+  readDescriptions: boolean;
 }
 
-const KEYS: (keyof Settings)[] = ['minTabs', 'excludedDomains', 'categories', 'generator', 'classifier', 'threshold'];
+const KEYS: (keyof Settings)[] = ['minTabs', 'excludedDomains', 'categories', 'generator', 'classifier', 'threshold', 'readDescriptions'];
 
 export const DEFAULT_SETTINGS: Omit<Settings, 'categories'> = {
   minTabs: 2,
@@ -36,6 +38,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'categories'> = {
   generator: NO_PROVIDER,
   classifier: NO_PROVIDER,
   threshold: DEFAULT_THRESHOLD,
+  readDescriptions: false,
 };
 
 export async function loadSettings(): Promise<Settings> {
@@ -47,6 +50,7 @@ export async function loadSettings(): Promise<Settings> {
     generator: isProviderSettings('generator', stored.generator) ? stored.generator : NO_PROVIDER,
     classifier: isProviderSettings('classifier', stored.classifier) ? stored.classifier : NO_PROVIDER,
     threshold: isValidThreshold(stored.threshold) ? stored.threshold : DEFAULT_THRESHOLD,
+    readDescriptions: stored.readDescriptions === true,
   };
 }
 
@@ -79,6 +83,13 @@ export async function saveSettings(patch: Partial<Settings>): Promise<void> {
     throw new SettingsError('optionsThresholdInvalid');
   }
   await browser.storage.sync.set(patch);
+}
+
+/** Permesso opzionale per leggere la descrizione delle pagine. */
+export const ALL_URLS = '<all_urls>';
+
+export async function hasDescriptionPermission(): Promise<boolean> {
+  return browser.permissions.contains({ origins: [ALL_URLS] });
 }
 
 /** "Ripristina default": torna alla lista predefinita nella lingua del browser. */

@@ -5,7 +5,7 @@ import { callOrganizer, onOrganizerState } from '../../src/shared/organizer-clie
 import { GROUP_COLORS, type OrganizerState, type ProposalEdit, type ProposedGroup } from '../../src/shared/types';
 
 /** Apre le impostazioni sulla sezione del provider coinvolto. */
-function openSettings(section: 'generator' | 'classifier') {
+function openSettings(section: 'generator' | 'classifier' | 'categories') {
   browser.tabs.create({ url: browser.runtime.getURL(`/options.html#${section}`) });
 }
 
@@ -73,8 +73,31 @@ export function App() {
 
       {(failure ?? state?.error) && <p className="notice error">{t((failure ?? state?.error)!)}</p>}
       {notice && !proposal && <p className="notice">{t(notice)}</p>}
+      {proposal && state?.notice && (
+        <p className="notice" role="status">
+          {t(state.notice.key, state.notice.arg)}
+          {state.notice.key === 'saveToListNoDescription' && (
+            <>
+              {' '}
+              <a href="#" onClick={(e) => { e.preventDefault(); openSettings('categories'); }}>
+                {t('popupWarningSettings')}
+              </a>
+            </>
+          )}
+        </p>
+      )}
 
-      {(!state || state.phase === 'computing') && <p className="status">{t('popupComputing')}</p>}
+      {(!state || state.phase === 'computing') && (
+        <div className="status computing">
+          <span>{t('popupComputing')}</span>
+          {state?.phase === 'computing' && (
+            <button className="secondary small" onClick={() => callOrganizer({ type: 'organizer/abort' }).then(setState).catch(console.error)}>
+              {t('popupAbort')}
+            </button>
+          )}
+        </div>
+      )}
+      {!proposal && state?.phase === 'idle' && state.notice && <p className="notice">{t(state.notice.key, state.notice.arg)}</p>}
 
       {proposal && proposal.warnings.length > 0 && (
         <ul className="warnings" role="alert">
@@ -99,6 +122,8 @@ export function App() {
               group={group}
               others={proposal.groups.filter((g) => g.id !== group.id)}
               onEdit={edit}
+              onSave={() => run({ type: 'organizer/save-to-list', groupId: group.id })}
+              saving={busy}
             />
           ))}
         </ul>
@@ -140,9 +165,11 @@ interface GroupCardProps {
   group: ProposedGroup;
   others: ProposedGroup[];
   onEdit: (edit: ProposalEdit) => void;
+  onSave: () => void;
+  saving: boolean;
 }
 
-function GroupCard({ group, others, onEdit }: GroupCardProps) {
+function GroupCard({ group, others, onEdit, onSave, saving }: GroupCardProps) {
   const [name, setName] = useState(group.name);
   const [paletteOpen, setPaletteOpen] = useState(false);
   useEffect(() => setName(group.name), [group.name]);
@@ -188,6 +215,11 @@ function GroupCard({ group, others, onEdit }: GroupCardProps) {
           ✕
         </button>
       </div>
+      {group.provenance === 'ai' && (
+        <button className="secondary small save" disabled={saving} title={t('popupSaveToListHint')} onClick={onSave}>
+          {t('popupSaveToList')}
+        </button>
+      )}
       {paletteOpen && (
         <div className="palette" role="radiogroup" aria-label={t('popupChangeColor')}>
           {GROUP_COLORS.map((color) => (

@@ -185,7 +185,7 @@ describe('Classificatore System One', () => {
     const state = await organizer.propose(W);
 
     expect(summary(state)).toEqual([['Lavoro', 'list', ['Posta', 'Documento']]]);
-    expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'OpenRouter (openrouter.ai)', cause: 'invalid-response' }]);
+    expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'OpenRouter (https://openrouter.ai/api/v1)', cause: 'invalid-response' }]);
   });
 
   it('se il Classificatore va in errore si passa al Generatore "completo", con un avviso', async () => {
@@ -198,7 +198,7 @@ describe('Classificatore System One', () => {
     const state = await organizer.propose(W);
 
     expect(summary(state)).toEqual([['Lavoro', 'list', ['Posta', 'Documento']]]);
-    expect(state.proposal!.warnings).toEqual([{ level: 'classifier', provider: 'Kev (127.0.0.1:8009)', cause: 'unreachable' }]);
+    expect(state.proposal!.warnings).toEqual([{ level: 'classifier', provider: 'Kev (http://127.0.0.1:8009)', cause: 'unreachable' }]);
     expect(requests.at(-1)!.body.messages[0].content).toContain('Prefer the known options');
   });
 
@@ -210,7 +210,7 @@ describe('Classificatore System One', () => {
     const state = await organizer.propose(W);
 
     expect(summary(state)).toEqual([['a.com', 'domain', ['A1', 'A2']]]);
-    expect(state.proposal!.warnings).toEqual([{ level: 'classifier', provider: 'Kev (127.0.0.1:8009)', cause: 'invalid-key' }]);
+    expect(state.proposal!.warnings).toEqual([{ level: 'classifier', provider: 'Kev (http://127.0.0.1:8009)', cause: 'invalid-key' }]);
   });
 
   it('senza permesso host il Classificatore non è usato, con un avviso', async () => {
@@ -222,7 +222,7 @@ describe('Classificatore System One', () => {
     const state = await organizer.propose(W);
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(state.proposal!.warnings).toEqual([{ level: 'classifier', provider: 'Kev (127.0.0.1:8009)', cause: 'no-permission' }]);
+    expect(state.proposal!.warnings).toEqual([{ level: 'classifier', provider: 'Kev (http://127.0.0.1:8009)', cause: 'no-permission' }]);
   });
 });
 
@@ -268,6 +268,22 @@ describe('strategie di richiesta del Classificatore', () => {
     await createSystemOneClassifier({ label: 'Kev', baseUrl: 'http://k', concurrency: 3 }).classify(many, options);
 
     expect(peak).toBe(3);
+  });
+
+  it('"per-tab" al primo errore non invia altre richieste e interrompe quelle in corso', async () => {
+    const { requests } = installFakeFetch((request: RecordedRequest) =>
+      request.body.state.title === 'T0'
+        ? new Response('{}', { status: 401 })
+        : new Promise<Response>((r) => setTimeout(() => r(systemOneReply({ group: { choice: 'Lavoro', confidence: 0.9 } })), 20)),
+    );
+    const many = Array.from({ length: 10 }, (_, i) => ({ id: `t${i}`, title: `T${i}`, url: 'x.com' }));
+
+    const outcome = createSystemOneClassifier({ label: 'Jev', baseUrl: 'http://k', concurrency: 3 }).classify(many, options);
+
+    await expect(outcome).rejects.toMatchObject({ reason: 'invalid-key' });
+    await new Promise((r) => setTimeout(r, 100)); // il tempo per altre richieste, se ne partissero
+    expect(requests).toHaveLength(3);
+    expect(requests.every((r) => r.signal?.aborted)).toBe(true);
   });
 
   it('una scelta sconosciuta o "nessuna" lascia la tab senza categoria', async () => {

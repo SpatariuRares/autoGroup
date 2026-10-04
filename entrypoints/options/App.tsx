@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { t } from '../../src/shared/i18n';
+import { browser } from 'wxt/browser';
 import {
+  ALL_URLS,
   categoryKey,
+  hasDescriptionPermission,
   isValidMinTabs,
   loadSettings,
   MAX_DESCRIPTION_LENGTH,
@@ -93,6 +96,8 @@ export function App() {
       />
       <BehaviorSection minTabs={settings.minTabs} onChange={(minTabs) => update({ minTabs })} />
       <PrivacySection
+        readDescriptions={settings.readDescriptions}
+        onReadDescriptions={(readDescriptions) => update({ readDescriptions })}
         excludedDomains={settings.excludedDomains}
         onChange={(excludedDomains) => update({ excludedDomains })}
       />
@@ -280,9 +285,48 @@ function BehaviorSection({ minTabs, onChange }: { minTabs: number; onChange: (va
   );
 }
 
-function PrivacySection({ excludedDomains, onChange }: { excludedDomains: string[]; onChange: (value: string[]) => unknown }) {
+interface PrivacySectionProps {
+  readDescriptions: boolean;
+  onReadDescriptions: (value: boolean) => unknown;
+  excludedDomains: string[];
+  onChange: (value: string[]) => unknown;
+}
+
+function PrivacySection({ readDescriptions, onReadDescriptions, excludedDomains, onChange }: PrivacySectionProps) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [permitted, setPermitted] = useState<boolean | null>(null);
+  const [denied, setDenied] = useState(false);
+
+  useEffect(() => {
+    hasDescriptionPermission().then(setPermitted);
+  }, []);
+
+  /** L'interruttore è acceso solo se l'opzione è salvata e il permesso c'è davvero. */
+  const on = readDescriptions && permitted === true;
+
+  function toggle(next: boolean) {
+    setDenied(false);
+    if (next) {
+      // permissions.request va chiamato subito, dentro il gesto dell'utente, prima di ogni await.
+      browser.permissions
+        .request({ origins: [ALL_URLS] })
+        .then(async (granted) => {
+          setPermitted(granted);
+          setDenied(!granted);
+          await onReadDescriptions(granted);
+        })
+        .catch((err) => console.error('autoGroup:', err));
+    } else {
+      browser.permissions
+        .remove({ origins: [ALL_URLS] })
+        .catch((err) => console.error('autoGroup:', err))
+        .then(async () => {
+          setPermitted(await hasDescriptionPermission());
+          await onReadDescriptions(false);
+        });
+    }
+  }
 
   function add() {
     const domain = normalizeDomain(draft);
@@ -296,6 +340,12 @@ function PrivacySection({ excludedDomains, onChange }: { excludedDomains: string
   return (
     <section id="privacy">
       <h2>{t('optionsPrivacy')}</h2>
+      <label className="toggle">
+        <input type="checkbox" checked={on} disabled={permitted === null} onChange={(e) => toggle(e.target.checked)} />
+        <span>{t('optionsReadDescriptions')}</span>
+      </label>
+      <p className="hint">{t('optionsReadDescriptionsHint')}</p>
+      {denied && <p className="hint error">{t('optionsReadDescriptionsDenied')}</p>}
       <h3>{t('optionsExcludedDomains')}</h3>
       <p className="hint">{t('optionsExcludedDomainsHint')}</p>
       <form

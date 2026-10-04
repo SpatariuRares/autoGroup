@@ -13,7 +13,7 @@ export interface ProviderPreset {
  * Preset per ruolo. Aggiungere un provider compatibile con uno dei due protocolli significa
  * aggiungere una voce qui: pipeline e adattatori non cambiano.
  */
-export const PROVIDER_PRESETS = {
+const PROVIDER_PRESETS = {
   classifier: {
     jev: { label: 'Jev', baseUrl: 'https://api.typesafe.ai', model: 'jev-latest' },
     kev: { label: 'Kev', baseUrl: 'http://127.0.0.1:8009', model: '' },
@@ -28,7 +28,7 @@ export const PROVIDER_PRESETS = {
 } satisfies Record<ProviderRole, Record<string, ProviderPreset>>;
 
 /** "none" = nessun provider; "custom" = URL e modello scelti dall'utente. */
-export type ProviderPresetId = string;
+type ProviderPresetId = string;
 
 /** Configurazione di un provider in storage.sync. La chiave API sta a parte, in storage.local. */
 export interface ProviderSettings {
@@ -64,14 +64,13 @@ export function isProviderConfigured(role: ProviderRole, settings: ProviderSetti
   return role === 'classifier' || settings.model.trim() !== '';
 }
 
-/** Nome del provider per gli avvisi: etichetta del preset e host, es. "Kev (127.0.0.1:8009)". */
+/**
+ * Nome del provider per gli avvisi: etichetta del preset e URL base, es. "Kev (http://127.0.0.1:8009)".
+ * Per un provider personalizzato basta l'URL.
+ */
 export function providerLabel(role: ProviderRole, settings: ProviderSettings): string {
   const preset = presetsOf(role)[settings.preset];
-  let host = settings.baseUrl;
-  try {
-    host = new URL(settings.baseUrl).host;
-  } catch {}
-  return preset ? `${preset.label} (${host})` : host;
+  return preset ? `${preset.label} (${settings.baseUrl})` : settings.baseUrl;
 }
 
 /** Pulisce URL (spazi e "/" finale) e modello prima del salvataggio. */

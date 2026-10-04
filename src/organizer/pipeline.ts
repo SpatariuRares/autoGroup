@@ -7,12 +7,13 @@ import { categoryKey, providerLabel } from '../settings';
 import type { ProposalWarning, ProposedGroup } from '../shared/types';
 import { buildOptions, prepareTabs } from './ai-input';
 import { createColorAssigner } from './colors';
+import { readDescriptions } from './description-reader';
 import { groupByDomain } from './domain-grouping';
 import { applyGroupRules, type RulesContext } from './group-rules';
 import type { ProposalInputs } from './proposal-builder';
 import { validateGroups, type ValidGroup } from './validator';
 
-export interface PipelineResult {
+interface PipelineResult {
   groups: ProposedGroup[];
   warnings: ProposalWarning[];
 }
@@ -31,7 +32,7 @@ function resolveClassifier(inputs: ProposalInputs, warnings: ProposalWarning[]):
  * disponibile, altrimenti nessuno. Un Generatore configurato ma senza permesso host e un Gemini Nano
  * ancora da scaricare o in download producono un avviso.
  */
-function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarning[]): Generator | null {
+export function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarning[] = []): Generator | null {
   const { settings, apiKey, usable, missingPermission } = inputs.generator;
   const label = providerLabel('generator', settings);
   if (usable) return createOpenAiGenerator({ label, baseUrl: settings.baseUrl, model: settings.model, apiKey });
@@ -50,13 +51,13 @@ function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarning[]): 
 }
 
 /** Lingua dei nomi nuovi, presa dalla lingua del browser. */
-function languageName(): string {
+export function languageName(): string {
   return browser.i18n.getMessage('aiLanguageName' as never) || browser.i18n.getUILanguage();
 }
 
-/** Dati comuni ai livelli AI: tab con ID brevi, opzioni, contesto delle regole. */
-function aiContext(inputs: ProposalInputs) {
-  const { tabs, byShortId } = prepareTabs(inputs.candidates);
+/** Dati comuni ai livelli AI: tab con ID brevi (e descrizioni, se lette), opzioni, contesto delle regole. */
+function aiContext(inputs: ProposalInputs, descriptions: Map<number, string>) {
+  const { tabs, byShortId } = prepareTabs(inputs.candidates, descriptions);
   const options = buildOptions(inputs.settings.categories, inputs.openGroups, (name) =>
     browser.i18n.getMessage('userGroupDescription' as never, name),
   );
@@ -75,12 +76,26 @@ function aiContext(inputs: ProposalInputs) {
   };
 }
 
-/** Se l'errore è di un provider aggiunge l'avviso e restituisce true; altrimenti lo rilancia. */
-function recordFailure(err: unknown, level: ProposalWarning['level'], provider: string, warnings: ProposalWarning[]): true {
-  if (!(err instanceof ProviderError)) throw err;
-  console.warn(`autoGroup: ${provider} non disponibile (${err.reason})`, err.message);
-  warnings.push({ level, provider, cause: err.reason });
-  return true;
+/**
+ * Registra il fallimento di un provider come avviso, così la pipeline può scendere di livello e
+ * l'utente riceve comunque una proposta. Solo "Interrompi" (`signal` interrotto) viene rilanciato.
+ * Un errore inatteso (non `ProviderError`) viene registrato come "risposta non valida".
+ */
+function recordFailure(
+  err: unknown,
+  level: ProposalWarning['level'],
+  provider: string,
+  warnings: ProposalWarning[],
+  signal?: AbortSignal,
+): void {
+  if (signal?.aborted) throw err;
+  if (err instanceof ProviderError) {
+    console.warn(`autoGroup: ${provider} non disponibile (${err.reason})`, err.message);
+    warnings.push({ level, provider, cause: err.reason });
+  } else {
+    console.error(`autoGroup: errore inatteso da ${provider}`, err);
+    warnings.push({ level, provider, cause: 'invalid-response' });
+  }
 }
 
 /**
@@ -100,14 +115,17 @@ export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal):
   const classifier = resolveClassifier(inputs, warnings);
   const generator = resolveGenerator(inputs, warnings);
   if (inputs.candidates.length === 0) return { groups: [], warnings };
-  const ctx = aiContext(inputs);
+  // Le descrizioni servono solo all'AI: senza Classificatore né Generatore non si legge nessuna pagina.
+  const descriptions = inputs.readDescriptions && (classifier || generator) ? await readDescriptions(inputs.candidates) : new Map<number, string>();
+  signal?.throwIfAborted();
+  const ctx = aiContext(inputs, descriptions);
 
   // Senza opzioni (nessuna categoria né gruppo aperto) il Classificatore potrebbe solo rispondere "nessuna".
   if (classifier && ctx.options.length > 0) {
     try {
       return { groups: await classifyThenGenerate(classifier, generator, inputs, ctx, warnings, signal), warnings };
     } catch (err) {
-      recordFailure(err, 'classifier', classifier.label, warnings);
+      recordFailure(err, 'classifier', classifier.label, warnings, signal);
     }
   }
   if (generator) {
@@ -116,7 +134,7 @@ export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal):
       const valid = validateGroups(raw, new Set(ctx.rules.byShortId.keys()), ctx.knownNames);
       return { groups: applyGroupRules(valid, ctx.rules).groups, warnings };
     } catch (err) {
-      recordFailure(err, 'generator', generator.label, warnings);
+      recordFailure(err, 'generator', generator.label, warnings, signal);
     }
   }
   return { groups: domainGroups(inputs), warnings };
@@ -163,7 +181,7 @@ async function classifyThenGenerate(
       const raw = await generator.generate({ mode: 'new-only', tabs, options: ctx.aiOptions, language: languageName() }, signal);
       step2 = validateGroups(raw, new Set(leftover), ctx.knownNames);
     } catch (err) {
-      recordFailure(err, 'generator', generator.label, warnings);
+      recordFailure(err, 'generator', generator.label, warnings, signal);
     }
   }
   return applyGroupRules(mergeByName([...kept, ...step2]), ctx.rules).groups;

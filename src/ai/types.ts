@@ -34,6 +34,15 @@ export interface Generator {
   /** Nome del provider per gli avvisi, es. "OpenRouter (openrouter.ai)". */
   readonly label: string;
   generate(request: GenerateRequest, signal?: AbortSignal): Promise<RawGroup[]>;
+  /** Descrizione di una categoria a partire dal nome e da alcune tab di esempio ("Salva nella lista"). */
+  describe(request: DescribeRequest, signal?: AbortSignal): Promise<string>;
+}
+
+export interface DescribeRequest {
+  name: string;
+  examples: AiTab[];
+  /** Lingua della descrizione, es. "italiano". */
+  language: string;
 }
 
 /** Esito del Classificatore per una tab: opzione scelta (null = nessuna) e confidenza calibrata. */
@@ -49,7 +58,7 @@ export interface Classifier {
   classify(tabs: AiTab[], options: AiOption[], signal?: AbortSignal): Promise<Map<string, Classification>>;
 }
 
-export type ProviderErrorCause = ProposalWarning['cause'];
+type ProviderErrorCause = ProposalWarning['cause'];
 
 /** Errore di un provider AI, già classificato per causa. */
 export class ProviderError extends Error {

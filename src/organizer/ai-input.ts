@@ -14,13 +14,20 @@ export function cleanUrl(url: string): string {
   }
 }
 
-/** Dati delle tab per l'AI, con ID brevi (t1, t2, …), e la tabella per tornare alle tab di Chrome. */
-export function prepareTabs(candidates: CandidateTab[]): { tabs: AiTab[]; byShortId: Map<string, CandidateTab> } {
+/**
+ * Dati delle tab per l'AI, con ID brevi (t1, t2, …), e la tabella per tornare alle tab di Chrome.
+ * La descrizione della pagina c'è solo se il Lettore descrizioni l'ha letta.
+ */
+export function prepareTabs(
+  candidates: CandidateTab[],
+  descriptions: Map<number, string> = new Map(),
+): { tabs: AiTab[]; byShortId: Map<string, CandidateTab> } {
   const byShortId = new Map<string, CandidateTab>();
-  const tabs = candidates.map((tab, i) => {
+  const tabs = candidates.map((tab, i): AiTab => {
     const id = `t${i + 1}`;
     byShortId.set(id, tab);
-    return { id, title: tab.title, url: cleanUrl(tab.url) };
+    const description = descriptions.get(tab.tabId);
+    return { id, title: tab.title, url: cleanUrl(tab.url), ...(description ? { description } : {}) };
   });
   return { tabs, byShortId };
 }

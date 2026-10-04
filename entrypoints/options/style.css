@@ -38,3 +38,5 @@ input.wide { width: 60%; }
 .nano progress { width: 100%; }
 .threshold input[type='range'] { flex: 1; max-width: 50%; }
 .threshold output { min-width: 3em; text-align: right; }
+.toggle { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
+#privacy h3 { margin-top: 16px; }

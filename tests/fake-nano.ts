@@ -15,6 +15,10 @@ export interface FakeNanoOptions {
   contextWindow?: number;
   /** Risposta del modello a ogni prompt, oppure un errore da lanciare. */
   respond?: (call: NanoCall) => unknown;
+  /** Attesa prima di ogni risposta, in millisecondi. */
+  delay?: number;
+  /** Errore lanciato da `clone()`, come quando la sessione è stata distrutta. */
+  cloneError?: Error;
 }
 
 /** Stub dell'oggetto globale LanguageModel (Prompt API di Chrome). */
@@ -35,12 +39,23 @@ export function installFakeNano(options: FakeNanoOptions) {
       return tokens(text);
     }
     async clone() {
+      if (options.cloneError) throw options.cloneError;
       return new FakeSession(this.system, this.contextWindow);
     }
-    async prompt(input: string, opts?: { responseConstraint?: unknown }) {
+    async prompt(input: string, opts?: { responseConstraint?: unknown; signal?: AbortSignal }) {
       const parsed = JSON.parse(input);
       const call: NanoCall = { system: this.system, input, options: parsed.options, tabs: parsed.tabs, schema: opts?.responseConstraint };
       calls.push(call);
+      // Come la Prompt API: un segnale interrotto durante l'attesa fa fallire la chiamata.
+      if (options.delay) {
+        await new Promise((resolve, reject) => {
+          const timer = setTimeout(resolve, options.delay);
+          opts?.signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            reject(opts.signal!.reason);
+          }, { once: true });
+        });
+      }
       const reply = (options.respond ?? (() => ({ groups: [] })))(call);
       if (reply instanceof Error) throw reply;
       return typeof reply === 'string' ? reply : JSON.stringify(reply);

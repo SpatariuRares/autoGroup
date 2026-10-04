@@ -23,6 +23,8 @@ src/
     applier.ts           crea i gruppi in Chrome, dopo aver salvato la foto per "Annulla"
     undo.ts              foto dello stato e ripristino
     proposal-edits.ts    modifiche dell'utente alla proposta (funzione pura)
+    save-to-list.ts      "Salva nella lista": categoria nuova da un gruppo inventato dall'AI
+    description-reader.ts  Lettore descrizioni: meta description delle pagine, con permesso opzionale
     session-state.ts     lettura e scrittura dello stato in chrome.storage.session
   settings/              preferenze in chrome.storage.sync
     index.ts             caricamento e salvataggio, validazione, domini esclusi
@@ -31,7 +33,7 @@ src/
   ui/base.css            colori, pulsanti e tavolozza comuni a popup e impostazioni
   ai/                    adattatori dei provider AI, senza dipendenze dall'Organizzatore
     types.ts             contratti di Generatore e Classificatore, AiTab, AiOption, ProviderError
-    http.ts              POST JSON comune: Bearer, timeout, classificazione degli errori
+    http.ts              POST JSON comune: Bearer, timeout, un nuovo tentativo, classificazione degli errori; tempi (TIMINGS)
     systemone-classifier.ts  Classificatore System One (Jev, Kev, Rizzo Flow), due strategie di richiesta
     prompt.ts            istruzioni, schema JSON della risposta, lettura della risposta
     openai-generator.ts  Generatore compatibile OpenAI e "Prova connessione"
@@ -59,8 +61,10 @@ scripts/
 |---|---|
 | `propose(windowId, { force? })` | Calcola una proposta per la finestra e la salva nello stato. Riusa la proposta salvata (con le modifiche dell'utente) se è per la stessa finestra e la sua impronta coincide con quella attuale, salvo `force`; se c'è un calcolo in corso restituisce quello, senza avviarne un secondo. |
 | `edit(edit)` | Applica una modifica dell'utente alla proposta corrente e la salva nello stato. |
+| `saveToList(groupId)` | "Salva nella lista": aggiunge un gruppo "nuovo AI" alla lista delle categorie. |
 | `apply()` | Salva la foto per "Annulla", crea in Chrome i gruppi della proposta corrente, poi azzera la proposta. |
 | `undo()` | Annulla l'ultima organizzazione applicata e azzera la proposta. |
+| `abort()` | "Interrompi": annulla le richieste del calcolo in corso; il calcolo finisce senza proposta. |
 | `state()` | Restituisce lo stato corrente. |
 
 ### Modifiche alla proposta
@@ -77,13 +81,28 @@ Il popup non modifica la proposta da solo: invia una `ProposalEdit` e riceve lo 
 
 Un gruppo rimasto senza tab sparisce dalla proposta. Le modifiche a gruppi o tab inesistenti vengono ignorate. Siccome la proposta modificata è salvata in `storage.session`, le modifiche sopravvivono alla chiusura del popup, e "Applica" usa sempre la versione modificata.
 
+### Salva nella lista (`save-to-list.ts`)
+
+Solo per i gruppi con provenienza `ai`. La categoria nuova prende **nome e colore attuali** del gruppo nella proposta (quindi anche quelli cambiati dall'utente) e una descrizione chiesta al Generatore con `describe` (stesso ordine di scelta della pipeline: configurato, poi Gemini Nano). Al Generatore arrivano il nome e fino a 8 tab di esempio, con titolo e URL ripulito.
+
+- Generatore assente o in errore: la categoria viene salvata con la descrizione vuota e l'avviso invita a completarla nelle impostazioni (con un link alla sezione Categorie).
+- Esiste già una categoria con lo stesso nome (senza distinguere maiuscole e minuscole): niente duplicato, avviso.
+- Dopo il salvataggio il gruppo diventa `list` e l'impronta della proposta viene aggiornata con la nuova lista: la proposta resta attuale (le categorie sono cambiate, ma la proposta le tiene già in conto), quindi riaprendo il popup non si perdono le modifiche. Le tab sono lette una sola volta, prima di chiedere la descrizione: se la proposta era già scaduta resta scaduta, e una tab aperta durante la descrizione (fino a 30 s) la fa scadere.
+- L'esito va nel campo `notice` dello stato (chiave i18n e nome), mostrato nel popup; la modifica successiva lo toglie.
+
 ### Operazioni in coda
 
-Tutte le operazioni (`propose`, `edit`, `apply`, `undo`) passano dalla coda `exclusive` e vengono eseguite una alla volta, nell'ordine di arrivo. Ognuna legge lo stato, eventualmente tocca le tab e riscrive lo stato: senza la coda, una proposta calcolata durante "Applica" potrebbe riscrivere la vecchia foto per "Annulla". `state()` è una sola lettura e non passa dalla coda.
+Tutte le operazioni (`propose`, `edit`, `saveToList`, `apply`, `undo`) passano dalla coda `exclusive` e vengono eseguite una alla volta, nell'ordine di arrivo. Ognuna legge lo stato, eventualmente tocca le tab e riscrive lo stato: senza la coda, una proposta calcolata durante "Applica" potrebbe riscrivere la vecchia foto per "Annulla". `state()` è una sola lettura e non passa dalla coda. Nemmeno `abort()` ci passa, perché deve agire proprio mentre il calcolo la occupa.
+
+Una `propose` arrivata mentre un'altra è in corso o in coda ne condivide il risultato solo se è per la stessa finestra e senza `force`. Per un'altra finestra, o con "Ricalcola", si mette in coda un calcolo nuovo: altrimenti il popup della seconda finestra riceverebbe la proposta della prima.
+
+### Interrompi
+
+Ogni `propose` crea un `AbortController` già al momento della richiesta, prima di entrare in coda, e ne passa il segnale a `buildProposal` → `runPipeline` → adattatori → `fetch` (o Prompt API). `abort()` lo interrompe: le richieste in corso falliscono subito, anche durante l'attesa prima di un nuovo tentativo, e il calcolo finisce in `phase: 'idle'`, senza proposta, con l'avviso `popupAborted`. La foto per "Annulla" resta. Nel popup il pulsante "Interrompi" compare accanto a "Calcolo della proposta…". `abort()` interrompe tutti i calcoli in corso e in coda: un calcolo interrotto mentre era ancora in coda finisce allo stesso modo senza fare nessuna richiesta.
 
 ### Impronta della proposta
 
-Ogni proposta ha una `signature`: ID e URL delle tab candidate, gruppi aperti (ID, nome, colore), impostazioni usate e disponibilità del permesso del Generatore. Quando il popup si riapre, `propose` rilegge gli input e confronta l'impronta: se coincide restituisce la proposta salvata (con le modifiche dell'utente), altrimenti ne calcola una nuova. Il titolo non fa parte dell'impronta, perché cambia spesso da solo (contatori come "(3) Posta").
+Ogni proposta ha una `signature`: ID e URL delle tab candidate, gruppi aperti (ID, nome, colore), impostazioni usate, disponibilità dei provider e di Gemini Nano, e lettura delle descrizioni attiva o no. Quando il popup si riapre, `propose` rilegge gli input e confronta l'impronta: se coincide restituisce la proposta salvata (con le modifiche dell'utente), altrimenti ne calcola una nuova. Il titolo non fa parte dell'impronta, perché cambia spesso da solo (contatori come "(3) Posta").
 
 ### Pipeline AI (`pipeline.ts`)
 
@@ -95,6 +114,8 @@ Realizza tutta la tabella dei fallback del PRD:
 | sì | no | solo passo 1: le tab rimaste restano libere |
 | no | sì | Generatore in modalità "completo" |
 | no | no | raggruppamento per dominio |
+
+**Sempre una proposta**: tranne che con "Interrompi", ogni errore di un provider viene registrato come avviso (`recordFailure`) e la pipeline scende di livello; un errore inatteso, che non è un `ProviderError`, viene registrato come "risposta non valida" invece di interrompere il calcolo. Solo un segnale interrotto viene rilanciato.
 
 Se un provider va in errore si scende di un livello: Classificatore in errore → riga 3 (o 4 senza Generatore); Generatore in errore in modalità completo → riga 4; Generatore in errore al passo 2 → le rimaste restano libere (riga 2). Ogni discesa aggiunge un avviso con livello, provider e causa (`recordFailure`).
 
@@ -114,6 +135,8 @@ Se non ci sono opzioni (nessuna categoria né gruppo aperto) il Classificatore n
 
 La disponibilità di Nano viene letta in `collectInputs` solo se il Generatore configurato non è utilizzabile, e fa parte dell'impronta: quando il download finisce, la proposta successiva viene ricalcolata.
 
+**Descrizione delle pagine** (`description-reader.ts`): se l'opzione è accesa e il permesso `<all_urls>` è concesso (`inputs.readDescriptions`), e solo se c'è almeno un livello AI da interrogare, prima delle chiamate la pipeline legge la meta description (o `og:description`, se la prima manca o è vuota) delle tab candidate con `chrome.scripting.executeScript`, tutte in parallelo e con un tempo massimo di 500 ms per tab. Le tab sospese da Risparmio memoria (`discarded`) non vengono mai lette, perché leggerle le risveglierebbe; sono saltate anche le pagine non `http(s)`, il Web Store e i PDF. Una tab che non risponde in tempo o non è accessibile resta con titolo e URL. Le tab dei domini esclusi non ci arrivano, perché la selezione le ha già scartate. La descrizione (al massimo 300 caratteri, spazi compattati) diventa `AiTab.description`, quindi arriva sia al Generatore sia al Classificatore (nello `state`). Con il raggruppamento per dominio non si legge nulla.
+
 **Modalità completo**, passo per passo:
 
 1. `prepareTabs`: per ogni tab candidata un ID breve (`t1`, `t2`, …), il titolo e l'URL ripulito (`cleanUrl`: host e percorso, senza schema, credenziali, query né frammento). La tabella `byShortId` riporta gli ID brevi alle tab di Chrome, che non escono mai dall'estensione. Le tab dei domini esclusi non ci sono, perché sono state scartate dalla selezione.
@@ -131,11 +154,28 @@ Contratto di TypeSafe (verificato sulla documentazione pubblica di Jev): `POST {
 - `criteria`: nome → descrizione di ogni opzione (categorie e gruppi aperti), al massimo 254, più `none_of_the_above` come consiglia TypeSafe, per un totale di al massimo 255. Una scelta `none_of_the_above`, sconosciuta o illeggibile lascia la tab senza categoria (quindi "rimasta"), senza far fallire le altre.
 - `state`: la tab come oggetto `{ title, url, description? }`, con lo stesso URL ripulito inviato al Generatore.
 - `model` solo se compilato (Jev: `jev-latest`); chiave `Bearer` solo se presente.
-- Timeout di 5 s per richiesta.
-- **Strategia delle richieste**: `per-tab` (default) invia una richiesta per tab con al massimo 4 richieste in parallelo; `batch` invia una sola richiesta con `state` = tutte le tab e una domanda per tab (nome della domanda = ID breve). Vedi "Strategia del Classificatore" più sotto.
+- Timeout di 5 s per richiesta; nuovo tentativo e cause come per il Generatore (vedi "Gestione degli errori").
+- **Strategia delle richieste**: `per-tab` (default) invia una richiesta per tab con al massimo 4 richieste in parallelo; al primo errore non ne parte nessun'altra e quelle in corso vengono interrotte, perché la pipeline scende comunque di livello; `batch` invia una sola richiesta con `state` = tutte le tab e una domanda per tab (nome della domanda = ID breve). Vedi "Strategia del Classificatore" più sotto.
 - `testSystemOneConnection`: una domanda minima.
 
-Il trasporto HTTP è comune ai due adattatori (`src/ai/http.ts`): `postJson` mette la chiave `Bearer`, applica il timeout, unisce il segnale di interruzione e trasforma ogni errore in `ProviderError` (`errorForStatus` per i codici HTTP).
+### Gestione degli errori (`src/ai/http.ts`)
+
+Il trasporto HTTP è comune ai due adattatori, quindi il comportamento è uniforme:
+
+| Situazione | Nuovo tentativo | Causa dell'avviso |
+|---|---|---|
+| 429, 529 | uno, dopo 0,8 s | `rate-limit` ("troppe richieste") |
+| 5xx | uno, dopo 0,8 s | `unreachable` ("non raggiungibile") |
+| 401, 403 | no | `invalid-key` ("chiave API non valida") |
+| 400, 404, 422 | no | `invalid-request` ("ha rifiutato la richiesta") |
+| errore di rete | no | `unreachable` |
+| tempo scaduto (Classificatore 5 s, Generatore 30 s, per richiesta) | no | `timeout` |
+| risposta illeggibile o fuori schema | no | `invalid-response` |
+
+- I tempi sono in `TIMINGS` (`classifier`, `generator`, `retryDelay`), un solo punto da cambiare; i test li accorciano in `tests/setup.ts`.
+- Il timeout usa `deadline()`, un `setTimeout` esplicito unito al segnale di "Interrompi". **Non** si usa `AbortSignal.timeout`: combinato con `AbortSignal.any` è tenuto solo con riferimenti deboli, e una richiesta rimasta appesa senza altri riferimenti può far raccogliere il timer dal garbage collector, così il timeout non scatta mai (è successo nei test: un test bloccato per 1051 s).
+- Gemini Nano non usa HTTP ma applica lo stesso tempo massimo del Generatore con `deadline()`.
+- Gli avvisi indicano provider e URL base, es. "OpenRouter (https://openrouter.ai/api/v1) non raggiungibile.", e compaiono in cima all'anteprima con un link alla sezione giusta delle impostazioni (Classificatore o Generatore).
 
 ### Strategia del Classificatore
 
@@ -150,20 +190,21 @@ L'AC di AG-08 chiede di scegliere misurando. Durante lo sviluppo non era disponi
 - `POST {URL base}/chat/completions` con `model`, `temperature: 0`, due messaggi (istruzioni; JSON con opzioni e tab) e `response_format: { type: 'json_schema', json_schema: { name: 'tab_groups', strict: true, schema } }`. Lo schema chiede `{ "groups": [{ "name": string, "tabs": [string] }] }`.
 - Se il server risponde 400 (tipicamente perché non supporta lo structured output) ritenta una volta senza `response_format`, affidandosi alle istruzioni e alla validazione. La risposta può anche essere in un blocco ```json.
 - Chiave API come `Authorization: Bearer …`, solo se presente (facoltativa per i server locali).
-- Timeout di 30 s (`AbortSignal.timeout`); il segnale esterno servirà a "Interrompi" (AG-10).
-- Classificazione degli errori in `ProviderError.reason`: 401/403 → `invalid-key`; 429/529 → `rate-limit`; 400/404/422 → `invalid-request`; altri codici e rete → `unreachable`; timeout → `timeout`; JSON illeggibile o fuori schema → `invalid-response`. Il nuovo tentativo e i dettagli per causa arriveranno con AG-10.
+- Timeout, nuovo tentativo e classificazione degli errori: vedi "Gestione degli errori".
+- `describe`: una richiesta senza schema (`temperature: 0.2`, `max_tokens: 120`) che chiede una frase nella lingua del browser; la risposta viene ripulita da virgolette e spazi e tagliata a 300 caratteri (`cleanDescription`).
 - `testOpenAiConnection`: una richiesta minima (`max_tokens: 1`) che verifica URL, chiave e modello.
 
 Aggiungere un provider compatibile significa aggiungere una voce a `GENERATOR_PRESETS`: la pipeline non cambia.
 
 ### Adattatore Gemini Nano (`src/ai/nano-generator.ts`)
 
-Stesso contratto (`Generator.generate`) e stesse istruzioni e schema dell'adattatore OpenAI, ma tramite la Prompt API di Chrome (`LanguageModel`): nessuna chiave, nessun dato esce dal computer.
+Stesso contratto (`Generator.generate` e `describe`) e stesse istruzioni e schema dell'adattatore OpenAI, ma tramite la Prompt API di Chrome (`LanguageModel`): nessuna chiave, nessun dato esce dal computer.
 
 - Sessione base con `initialPrompts: [{ role: 'system', … }]`; ogni prompt usa `responseConstraint: GROUPS_SCHEMA` per vincolare la risposta.
 - **Divisione in blocchi**: il budget è il contesto libero della sessione base (`contextWindow − contextUsage`, con ripiego su `inputQuota`/`inputUsage` per le versioni precedenti di Chrome) meno il 25% lasciato alla risposta. Se il prompt con tutte le tab supera il budget, le tab vengono distribuite in blocchi misurati con `measureContextUsage`; ogni blocco ha almeno una tab e un piccolo margine per i nomi che arriveranno.
 - Ogni blocco gira in un clone della sessione base, così il contesto non si accumula. I nomi inventati nei blocchi precedenti si aggiungono alle opzioni dei blocchi successivi (con descrizione vuota); i gruppi con lo stesso nome nei vari blocchi vengono poi uniti dal validatore.
-- Errori: creazione della sessione fallita → `unavailable`; prompt fallito (es. contesto superato) → `invalid-request`; risposta fuori schema → `invalid-response`. La pipeline ripiega sul dominio con l'avviso.
+- Errori: creazione della sessione fallita → `unavailable`; ogni altro errore della Prompt API (clone, misura, prompt, es. contesto superato) → `invalid-request`; risposta fuori schema → `invalid-response`. La pipeline ripiega sul dominio con l'avviso.
+- Tempo massimo: 30 s per ogni chiamata (creazione della sessione, misura, ogni blocco), come per ogni richiesta HTTP del Generatore compatibile OpenAI; con molte tab il calcolo totale può quindi durare di più senza scadere.
 - `nanoAvailability()` e `downloadNano(onProgress)` servono alla pagina opzioni.
 
 ### Flusso di `propose`
@@ -212,6 +253,7 @@ interface OrganizerState {
   windowId?: number;
   proposal?: Proposal;   // gruppi + avvisi
   undo?: UndoSnapshot;   // presente finché "Annulla" è disponibile
+  notice?: { key, arg }; // esito dell'ultima operazione, es. "Salva nella lista"
   error?: string;        // chiave i18n dell'ultimo errore
 }
 ```
@@ -232,6 +274,7 @@ Modulo `src/settings`, usato dall'Organizzatore (lettura) e dalla pagina opzioni
 | `excludedDomains` | `string[]` | `[]` | Domini normalizzati: minuscole, senza schema, percorso, porta né `www.`. |
 | `classifier` | `{ preset, baseUrl, model }` | preset `none` | URL normalizzato senza `/` finale. |
 | `threshold` | numero tra 0 e 1 | 0,7 | Soglia di confidenza del Classificatore. |
+| `readDescriptions` | booleano | `false` | "Leggi la descrizione delle pagine"; vale solo con il permesso `<all_urls>`. |
 | `generator` | `{ preset, baseUrl, model }` | preset `none` | URL normalizzato senza `/` finale. |
 | `categories` | `Category[]` | le 10 predefinite | Assente finché l'utente non modifica la lista: in quel caso `loadSettings` restituisce le predefinite nella lingua del browser. Una lista salvata ma non valida viene ignorata. |
 
@@ -241,7 +284,7 @@ Le chiavi API sono in `storage.local` (`classifierApiKey`, `generatorApiKey`), m
 
 ### Provider (`src/settings/providers.ts`)
 
-Le funzioni sono comuni ai due ruoli (`ProviderRole = 'classifier' | 'generator'`): `presetsOf`, `isProviderSettings`, `isProviderConfigured`, `providerLabel` (es. "Kev (127.0.0.1:8009)"), `normalizeProvider`, `originPattern`, `hasHostPermission`, `loadApiKey`, `saveApiKey`. Aggiungere un provider significa aggiungere una voce a `PROVIDER_PRESETS`.
+Le funzioni sono comuni ai due ruoli (`ProviderRole = 'classifier' | 'generator'`): `presetsOf`, `isProviderSettings`, `isProviderConfigured`, `providerLabel` (es. "Kev (http://127.0.0.1:8009)"), `normalizeProvider`, `originPattern`, `hasHostPermission`, `loadApiKey`, `saveApiKey`. Aggiungere un provider significa aggiungere una voce a `PROVIDER_PRESETS`.
 
 Preset del Classificatore:
 
@@ -285,7 +328,7 @@ Funzioni: `loadSettings`, `saveSettings(patch)`, `isValidMinTabs`, `normalizeDom
 
 - **Categorie**: per ogni categoria nome, descrizione e tavolozza dei 9 colori, pulsanti ↑ ↓ per riordinare e ✕ per eliminare; "Aggiungi categoria" (nome "Nuova categoria", numerato se già presente, e il primo colore non ancora usato) e "Ripristina default". La pagina tiene una bozza locale: una modifica non valida (es. nome duplicato) resta visibile con l'errore e non viene salvata finché non è corretta. Nome e descrizione si salvano all'uscita dal campo, colore e ordine subito.
 - **Comportamento**: numero minimo di tab (campo numerico; un valore non valido viene segnalato e non salvato).
-- **Privacy**: domini esclusi, con aggiunta (Invio o "Aggiungi"), rifiuto dei duplicati e dei valori non validi, rimozione con ✕.
+- **Privacy**: interruttore "Leggi la descrizione delle pagine per una maggiore precisione". Accendendolo si chiede `<all_urls>` nel gesto dell'utente; se il permesso viene rifiutato l'interruttore resta spento con un avviso. Spegnendolo il permesso viene tolto e si torna a titolo e URL. L'interruttore risulta acceso solo se l'opzione è salvata **e** il permesso c'è davvero. Poi i domini esclusi, con aggiunta (Invio o "Aggiungi"), rifiuto dei duplicati e dei valori non validi, rimozione con ✕.
 
 - **Classificatore** e **Generatore**: la stessa sezione generica (`ProviderSection`, parametrizzata per ruolo). Il Classificatore ha in più la soglia di confidenza (cursore da 0 a 100%, salvato al rilascio); il Generatore, con "Gemini Nano" selezionato, mostra lo stato di Nano. Generatore: provider (Gemini Nano, OpenRouter, Ollama, LM Studio, Unsloth Studio, Personalizzato), URL base, modello, chiave API (campo password, salvata in `storage.local`), "Salva" e "Prova connessione". Il preset compila URL e modello. "Salva" chiede il permesso host **nel gesto dell'utente, prima di ogni `await`** (altrimenti Chrome rifiuta la richiesta), toglie il permesso del provider precedente se nessuno dei due ruoli usa più quell'host, e mostra l'esito: salvato con permesso, permesso mancante, configurazione incompleta o Generatore disattivato. La sezione si apre anche da `options.html#generator`. Con "Gemini Nano" selezionato la sezione mostra lo stato del modello (disponibile, da scaricare, in download, non supportato); se è da scaricare, il pulsante "Scarica Gemini Nano" avvia il download con `LanguageModel.create()` (serve il clic dell'utente) e mostra l'avanzamento in percentuale.
 
@@ -304,20 +347,32 @@ Definiti in `src/shared/messages.ts`.
 | `organizer/state` | popup → SW | `{ ok, state }` |
 | `organizer/propose` (`windowId`, `force?`) | popup → SW | `{ ok, state }` a calcolo finito |
 | `organizer/edit` (`edit`) | popup → SW | `{ ok, state }` |
+| `organizer/save-to-list` (`groupId`) | popup → SW | `{ ok, state }` con `state.notice` |
 | `organizer/apply` | popup → SW | `{ ok, state }` |
 | `organizer/undo` | popup → SW | `{ ok, state }` |
+| `organizer/abort` | popup → SW | `{ ok, state }`; non passa dalla coda |
 | `organizer/state-changed` (`state`) | SW → popup | nessuna; il SW ignora l'errore se il popup è chiuso |
 
 Il service worker risponde con `sendResponse` + `return true`, che funziona in tutte le versioni di Chrome MV3, e ignora i messaggi che non superano `isOrganizerRequest`. Se la risposta è un errore, il popup mostra "Si è verificato un errore imprevisto. Riprova.".
 
 ## Popup
 
-All'apertura legge la finestra corrente e chiede `organizer/propose`. Mostra "Calcolo della proposta…", poi i gruppi. Per ogni gruppo: pallino del colore (cliccandolo si apre la tavolozza dei 9 colori), nome modificabile (si conferma con Invio o uscendo dal campo, Esc annulla), etichetta di provenienza, numero di tab, ✕ per scartare il gruppo. Per ogni tab: favicon, titolo (URL nel tooltip), menu "Sposta in…" verso gli altri gruppi e ✕ per toglierla. Sotto ci sono e i pulsanti "Ricalcola" e "Applica". Dopo un'organizzazione mostra anche "Annulla ultima organizzazione" e un avviso di conferma ("Gruppi creati.", "Organizzazione annullata."). Non contiene logica di raggruppamento.
+All'apertura legge la finestra corrente e chiede `organizer/propose`. Mostra "Calcolo della proposta…", poi i gruppi. Per ogni gruppo: pallino del colore (cliccandolo si apre la tavolozza dei 9 colori), nome modificabile (si conferma con Invio o uscendo dal campo, Esc annulla), etichetta di provenienza, numero di tab, ✕ per scartare il gruppo. Per ogni tab: favicon, titolo (URL nel tooltip), menu "Sposta in…" verso gli altri gruppi e ✕ per toglierla. I gruppi "nuovo AI" hanno il pulsante "Salva nella lista". Sotto ci sono e i pulsanti "Ricalcola" e "Applica". Dopo un'organizzazione mostra anche "Annulla ultima organizzazione" e un avviso di conferma ("Gruppi creati.", "Organizzazione annullata."). Non contiene logica di raggruppamento.
 
 ## Testi e lingue
 
-Tutti i testi passano da `t(key)` (`src/shared/i18n.ts`), che usa `chrome.i18n.getMessage`. Anche nome, descrizione e titolo dell'azione nel manifest sono `__MSG_…__`. Lingua di default: italiano; inglese già presente.
+Tutti i testi passano da `t(key)` (`src/shared/i18n.ts`), che usa `chrome.i18n.getMessage`. Anche nome, descrizione e titolo dell'azione nel manifest sono `__MSG_…__`. Lingua di default: italiano; inglese completo, con le stesse chiavi. Fuori da `chrome.i18n` restano solo testi che l'utente non vede: i prompt per l'AI (in inglese, con la lingua dei nomi passata a parte), le istruzioni al Classificatore e i messaggi degli errori interni scritti in console.
+
+Alcune chiavi sono composte a runtime: `warning_<causa>` (via `warningKey`, che sostituisce `-` con `_`), `color_<colore>`, `provenance_<provenienza>`, `nanoStatus_<stato>`, `category_<chiave>_name|description`. `tests/locales.test.ts` controlla sia queste sia ogni chiave scritta nel codice.
+
+## Scorciatoia da tastiera
+
+`manifest.commands._execute_action` con `suggested_key` `Alt+Shift+G` apre il popup come un clic sull'icona, quindi parte subito il calcolo della proposta. Non richiede permessi e non serve codice: Chrome gestisce il comando da solo. Senza `description`, che Chrome ignora per `_execute_action` (in `chrome://extensions/shortcuts` mostra il titolo dell'azione). La scorciatoia è solo suggerita: si cambia da `chrome://extensions/shortcuts` e Chrome non la assegna se un'altra estensione la usa già.
 
 ## Permessi
 
-Obbligatori: `tabs`, `tabGroups`, `storage`, `scripting`. Opzionali: `optional_host_permissions: ["http://*/*", "https://*/*"]`, da cui si chiede solo l'host del provider configurato. Solo la build dello smoke test (`AUTOGROUP_SMOKE=1`) concede in anticipo `http://127.0.0.1/*`.
+Obbligatori: `tabs`, `tabGroups`, `storage`, `scripting`. Opzionali: `optional_host_permissions: ["http://*/*", "https://*/*", "<all_urls>"]`, da cui si chiedono solo l'host del provider configurato (al salvataggio) e `<all_urls>` (all'accensione delle descrizioni). Solo la build dello smoke test (`AUTOGROUP_SMOKE=1`) concede in anticipo `<all_urls>`, perché in headless le richieste di permesso non si possono accettare.
+
+Verifica nella build normale (`scripts/permissions-check.mjs`): senza permessi host all'avvio, il clic su "Salva" del Generatore e quello sull'interruttore delle descrizioni aprono la finestra di Chrome; una richiesta fatta fuori da un gesto viene rifiutata ("This function must be called during a user gesture").
+
+**Da provare a mano:** se l'host di un provider viene concesso mentre `<all_urls>` è già attivo, spegnere le descrizioni potrebbe togliere anche l'accesso a quell'host. In quel caso compare l'avviso `no-permission`, che invita a salvare di nuovo il provider.
