@@ -55,7 +55,7 @@ const NANO_STATUSES: NanoAvailability[] = ['available', 'downloadable', 'downloa
 describe('chiavi usate nel codice', () => {
   const messages = load('it');
   // Le chiavi scritte nel codice hanno tutte uno di questi prefissi (vedi i file in public/_locales).
-  const KEY_LITERAL = /['"`]((?:ext|action|popup|panel|options|error|saveToList|userGroup)[A-Z][A-Za-z0-9_]*)['"`]|__MSG_(\w+)__/g;
+  const KEY_LITERAL = /['"`]((?:ext|action|popup|panel|options|onboarding|error|saveToList|userGroup)[A-Z][A-Za-z0-9_]*)['"`]|__MSG_(\w+)__/g;
 
   it('ogni chiave scritta nel codice esiste nelle traduzioni', () => {
     const used = new Set<string>();

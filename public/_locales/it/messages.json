@@ -599,9 +599,6 @@
   "panelNewTab": {
     "message": "nuova"
   },
-  "panelAddTo": {
-    "message": "Aggiungi a…"
-  },
   "panelAddedCount": {
     "message": "+ $COUNT$ nuove",
     "placeholders": {
@@ -618,5 +615,117 @@
   },
   "panelCloseTab": {
     "message": "Chiudi la tab"
+  },
+  "onboardingTitle": {
+    "message": "Benvenuto in autoGroup"
+  },
+  "onboardingStepCount": {
+    "message": "Passo $CURRENT$ di $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "onboardingWelcomeTitle": {
+    "message": "Le tab in ordine, senza sorprese"
+  },
+  "onboardingWelcomeText": {
+    "message": "autoGroup propone dei gruppi per le tab libere della finestra. Prima vedi l'anteprima e puoi cambiarla: nessuna tab si sposta finché non premi «Applica», e «Annulla» rimette tutto com'era."
+  },
+  "onboardingWelcomeShortcut": {
+    "message": "Per aprirlo, clicca l'icona dell'estensione o premi $SHORTCUT$.",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "onboardingWelcomeNoShortcut": {
+    "message": "Per aprirlo, clicca l'icona dell'estensione. Puoi assegnargli una scorciatoia da chrome://extensions/shortcuts."
+  },
+  "onboardingWelcomeSetup": {
+    "message": "In un paio di minuti scegli come raggruppare. Potrai cambiare tutto nelle impostazioni."
+  },
+  "onboardingStart": {
+    "message": "Inizia"
+  },
+  "onboardingNext": {
+    "message": "Avanti"
+  },
+  "onboardingBack": {
+    "message": "Indietro"
+  },
+  "onboardingSkip": {
+    "message": "Salta la guida"
+  },
+  "onboardingModeTitle": {
+    "message": "Come vuoi raggruppare?"
+  },
+  "onboardingModeText": {
+    "message": "«Per sito» funziona subito. «Con l'AI» divide le tab per argomento: nei prossimi passi scegli chi fa il lavoro. Puoi cambiare modalità quando vuoi, anche dal pannello."
+  },
+  "onboardingGeneratorTitle": {
+    "message": "Scegli il Generatore"
+  },
+  "onboardingGeneratorText": {
+    "message": "Il Generatore legge titolo e indirizzo delle tab, le assegna alle tue categorie e inventa gruppi nuovi quando servono. Hai tre possibilità:"
+  },
+  "onboardingGeneratorNanoText": {
+    "message": "Integrato in Chrome: gratis, senza chiavi, nessun dato esce dal computer. Si scarica una volta, se il computer lo supporta."
+  },
+  "onboardingGeneratorLocal": {
+    "message": "Server locale"
+  },
+  "onboardingGeneratorLocalText": {
+    "message": "Ollama, LM Studio o Unsloth Studio sul tuo computer: privato, ma serve un modello installato."
+  },
+  "onboardingGeneratorCloud": {
+    "message": "Servizio online"
+  },
+  "onboardingGeneratorCloudText": {
+    "message": "OpenRouter o un altro servizio compatibile OpenAI: il più capace, ma serve una chiave API e titoli e indirizzi vengono inviati al servizio."
+  },
+  "onboardingGeneratorDefault": {
+    "message": "Gemini Nano è già scelto: se ti va bene, premi «Avanti». Altrimenti scegli qui sotto e premi «Salva»."
+  },
+  "onboardingClassifierTitle": {
+    "message": "Classificatore (facoltativo)"
+  },
+  "onboardingClassifierText": {
+    "message": "Un classificatore System One (Jev, Kev, Rizzo Flow) assegna in pochi decimi di secondo ogni tab a una delle tue categorie; le tab incerte passano al Generatore. Se non ne hai uno, premi «Avanti»: potrai aggiungerlo nelle impostazioni."
+  },
+  "onboardingDoneTitle": {
+    "message": "Tutto pronto"
+  },
+  "onboardingDoneDomain": {
+    "message": "Le tab dello stesso sito finiranno nello stesso gruppo. Nessun dato esce dal computer."
+  },
+  "onboardingDonePlan": {
+    "message": "Ecco come verrà fatta la proposta:"
+  },
+  "onboardingDoneDomainLevel": {
+    "message": "sempre disponibile"
+  },
+  "onboardingDoneFallback": {
+    "message": "Se un livello è spento o non risponde si passa al successivo, con un avviso nel pannello: una proposta arriva sempre."
+  },
+  "onboardingDonePrivacy": {
+    "message": "All'AI arrivano solo titolo e indirizzo delle tab (senza parametri), mai le tab dei domini esclusi. Categorie, domini esclusi e lettura delle descrizioni si cambiano nelle impostazioni."
+  },
+  "onboardingOpenPanel": {
+    "message": "Apri il pannello"
+  },
+  "onboardingOpenSettings": {
+    "message": "Apri le impostazioni"
+  },
+  "optionsOnboarding": {
+    "message": "Rivedi la guida"
+  },
+  "optionsCoffee": {
+    "message": "Offrimi un caffè"
   }
 }

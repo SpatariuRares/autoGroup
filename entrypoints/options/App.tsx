@@ -15,14 +15,18 @@ import {
   saveSettings,
   SettingsError,
   validateCategories,
-  type GroupingMode,
   type Settings,
 } from '../../src/settings';
 import { GROUP_COLORS, type Category, type GroupColor } from '../../src/shared/types';
-import { Icon, type IconName } from '../../src/ui/Icon';
+import { Icon } from '../../src/ui/Icon';
 import { Card } from './Card';
+import { ModeSection } from './ModeSection';
 import { NanoStatus } from './NanoStatus';
 import { ProviderSection } from './ProviderSection';
+import { ThresholdField } from './ThresholdField';
+
+/** Pagina Buy Me a Coffee dell'autore. */
+const COFFEE_URL = 'https://www.buymeacoffee.com/SpatariuRares';
 
 /** Sezioni nell'ordine della pagina; quelle `ai` si vedono solo in modalità AI. */
 const SECTIONS: { id: string; title: string; ai?: boolean }[] = [
@@ -86,6 +90,14 @@ export function App() {
             </li>
           ))}
         </ul>
+        <a className="guide-link" href="/onboarding.html" target="_blank">
+          {t('optionsOnboarding')}
+        </a>
+        {/* Pulsante locale nello stile di Buy Me a Coffee: l'immagine ufficiale verrebbe scaricata dal loro sito a ogni apertura. */}
+        <a className="coffee" href={COFFEE_URL} target="_blank" rel="noopener noreferrer">
+          <span aria-hidden="true">✈️</span>
+          {t('optionsCoffee')}
+        </a>
       </nav>
       <main>
         <header className="page-header">
@@ -151,32 +163,6 @@ export function App() {
         />
       </main>
     </div>
-  );
-}
-
-const MODES: { id: GroupingMode; icon: IconName; title: string; hint: string }[] = [
-  { id: 'domain', icon: 'language', title: 'optionsModeDomain', hint: 'optionsModeDomainHint' },
-  { id: 'ai', icon: 'category', title: 'optionsModeAi', hint: 'optionsModeAiHint' },
-];
-
-function ModeSection({ mode, onChange }: { mode: GroupingMode; onChange: (mode: GroupingMode) => unknown }) {
-  return (
-    <Card id="mode" title={t('optionsMode')}>
-      <div className="modes" role="radiogroup" aria-label={t('optionsMode')}>
-        {MODES.map((m) => (
-          <label key={m.id} className={`mode${mode === m.id ? ' selected' : ''}`}>
-            <input type="radio" name="mode" value={m.id} checked={mode === m.id} onChange={() => onChange(m.id)} />
-            <span className="mode-icon">
-              <Icon name={m.icon} />
-            </span>
-            <span className="mode-text">
-              <strong>{t(m.title)}</strong>
-              <span>{t(m.hint)}</span>
-            </span>
-          </label>
-        ))}
-      </div>
-    </Card>
   );
 }
 
@@ -339,33 +325,6 @@ function ColorPicker({ color, onChange }: { color: GroupColor; onChange: (color:
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/** Soglia di confidenza del Classificatore, da 0 a 1, mostrata in percentuale. */
-function ThresholdField({ threshold, onChange }: { threshold: number; onChange: (value: number) => unknown }) {
-  const [value, setValue] = useState(threshold);
-  return (
-    <div className="form-row">
-      <span className="form-label">{t('optionsThreshold')}</span>
-      <div className="form-control">
-        <div className="threshold">
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={value}
-            aria-label={t('optionsThreshold')}
-            onChange={(e) => setValue(Number(e.target.value))}
-            onPointerUp={() => value !== threshold && onChange(value)}
-            onKeyUp={() => value !== threshold && onChange(value)}
-          />
-          <output>{Math.round(value * 100)}%</output>
-        </div>
-        <p className="hint">{t('optionsThresholdHint')}</p>
-      </div>
     </div>
   );
 }

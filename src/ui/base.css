@@ -6,6 +6,7 @@
   color-scheme: light dark;
 
   --md-ref-typeface-plain: 'Roboto Flex', Roboto, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --md-sys-typescale-headline-medium: 400 28px/36px var(--md-ref-typeface-plain);
   --md-sys-typescale-headline-small: 400 24px/32px var(--md-ref-typeface-plain);
   --md-sys-typescale-title-large: 400 22px/28px var(--md-ref-typeface-plain);
   --md-sys-typescale-title-medium: 500 16px/24px var(--md-ref-typeface-plain);

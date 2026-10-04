@@ -10,7 +10,8 @@ export type OrganizerRequest =
   | { type: 'organizer/abort' }
   | { type: 'organizer/accept-preview' }
   | { type: 'organizer/undo' }
-  | { type: 'organizer/close-tab'; tabId: number };
+  | { type: 'organizer/close-tab'; tabId: number }
+  | { type: 'organizer/group-tab'; tabId: number; groupId: number };
 
 /** Notifica dal service worker al pannello quando lo stato cambia. */
 export interface StateChangedMessage {
@@ -30,6 +31,7 @@ const REQUEST_TYPES = new Set<string>([
   'organizer/accept-preview',
   'organizer/undo',
   'organizer/close-tab',
+  'organizer/group-tab',
 ] satisfies OrganizerRequest['type'][]);
 
 export function isOrganizerRequest(message: unknown): message is OrganizerRequest {

@@ -187,6 +187,13 @@ Ogni test nuovo è stato provato con una mutazione: rimettendo il comportamento 
 - Il test di privacy del Generatore cercava "token" in tutta la richiesta e ora lo trovava in `max_tokens`: cerca `token=abc` e `abc`.
 - Prove di mutazione su 16 punti del codice nuovo: ognuna fa fallire almeno un test.
 
+## Scenari coperti (guida al primo avvio), in `tests/onboarding.test.ts`
+
+- Passi della guida con l'AI (benvenuto, modalità, Generatore, Classificatore, riepilogo) e per sito (senza i provider).
+- Alla prima installazione si apre una scheda con `onboarding.html`; dopo un aggiornamento dell'estensione, di Chrome o di un modulo condiviso no.
+- Il test delle traduzioni controlla anche le chiavi con prefisso `onboarding`.
+- Smoke test: la guida aperta all'installazione si percorre fino in fondo (5 passi con l'AI, con le sezioni Generatore e Classificatore), il riepilogo mostra i tre livelli e l'avviso "Gemini Nano non supportato"; passando a "Per sito" i passi diventano 3. Screenshot del passo del Generatore e del riepilogo.
+
 ## Prova in Chrome
 
 `npm run smoke` compila e lancia `scripts/smoke.mjs`: apre Chrome for Testing con l'estensione caricata, apre pagine servite da un server locale su `localhost` e `127.0.0.1` (due domini diversi), apre il pannello laterale come pagina (`sidepanel.html`), ricarica il pannello per verificare che la proposta resti, rinomina un gruppo, ne cambia il colore e sposta una tab (salvando uno screenshot in `scripts/smoke-popup.png`), ricarica di nuovo per verificare che le modifiche restino, preme "Applica", poi "Annulla ultima organizzazione" e controlla che ordine delle tab e gruppi tornino come prima; infine apre la pagina opzioni, prova la sezione Categorie (nome duplicato rifiutato, rinomina, aggiunta, riordino, ripristino, controllando `storage.sync`), imposta il minimo a 3 ed esclude `127.0.0.1` (screenshot in `scripts/smoke-options.png`), controlla `storage.sync` e ricalcola la proposta. Stampa i gruppi creati e gli eventuali errori in console del service worker e del pannello.

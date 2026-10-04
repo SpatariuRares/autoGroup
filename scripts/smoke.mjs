@@ -65,6 +65,37 @@ try {
   sw.on('console', (m) => m.type() === 'error' && errors.push(`[sw] ${m.text()}`));
   const extId = new URL(swTarget.url()).host;
 
+  // Guida al primo avvio: si apre da sola all'installazione. Si percorre e si chiude prima del resto.
+  const guideTarget = await browser.waitForTarget((t) => t.url().endsWith('/onboarding.html'), { timeout: 10000 });
+  const guide = await guideTarget.page();
+  guide.on('console', (m) => m.type() === 'error' && errors.push(`[guida] ${m.text()}`));
+  guide.on('pageerror', (e) => errors.push(`[guida] ${e.message}`));
+  await guide.waitForSelector('.onboarding-nav button.next');
+  const guideStep = () => guide.$eval('main.step', (el) => `${el.className.replace('step step-', '')} (${document.querySelector('.step-count').textContent})`);
+  const guideSteps = [await guideStep()];
+  const providerSections = [];
+  while (await guide.$('.onboarding-nav button.next')) {
+    await guide.click('.onboarding-nav button.next');
+    guideSteps.push(await guideStep());
+    if (guideSteps.at(-1).startsWith('generator')) await guide.screenshot({ path: 'scripts/smoke-onboarding-generator.png', fullPage: true });
+    providerSections.push(...(await guide.$$eval('#generator, #classifier', (els) => els.map((el) => el.id))));
+  }
+  console.log('Guida, passi con l\'AI:', guideSteps.join(' → '), '| sezioni provider:', providerSections.join(', '));
+  await guide.waitForSelector('.levels em', { timeout: 5000 });
+  console.log('Guida, riepilogo:', await guide.$$eval('.levels li', (els) => els.map((el) => el.innerText.replace(/\s+/g, ' ').trim()).join(' | ')));
+  await guide.screenshot({ path: 'scripts/smoke-onboarding.png', fullPage: true });
+  // "Per sito" accorcia la guida: niente passi dei provider.
+  await guide.click('.onboarding-nav button.text');
+  await guide.click('.onboarding-nav button.text');
+  await guide.click('.onboarding-nav button.text');
+  await guide.click('.mode:first-child');
+  await guide.waitForFunction(() => /2\D+3/.test(document.querySelector('.step-count').textContent), { timeout: 5000 });
+  console.log('Guida per sito:', await guideStep());
+  await guide.click('.onboarding-nav button.next');
+  console.log('Guida per sito, fine:', await guideStep(), '|', await guide.$eval('.lead', (el) => el.textContent));
+  await sw.evaluate(() => chrome.storage.sync.remove('mode'));
+  await guide.close();
+
   // Scorciatoia per aprire il popup: registrata da Chrome (su macOS appare come ⌥⇧G).
   const commands = await sw.evaluate(() => chrome.commands.getAll());
   const openPopup = commands.find((c) => c.name === '_execute_action');
@@ -143,6 +174,7 @@ try {
   options.on('pageerror', (e) => errors.push(`[options] ${e.message}`));
   await options.goto(`chrome-extension://${extId}/options.html`);
   await options.waitForSelector('#behavior input');
+  console.log('Pulsante caffè:', await options.$eval('.sidebar a.coffee', (el) => `${el.textContent} → ${el.href} (${el.target})`));
   await options.$eval('#behavior input', (el) => el.select());
   await options.type('#behavior input', '3');
   await options.type('#privacy input[type=text]', 'https://127.0.0.1/qualcosa');

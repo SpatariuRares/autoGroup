@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { browser, type Browser } from 'wxt/browser';
-import { NANO_LABEL } from '../../src/ai/nano-generator';
 import { buildWindowView, type ExistingGroupView, type HeldReason } from '../../src/organizer/window-view';
-import { loadSettings, NANO_PRESET, presetsOf, saveSettings, type GroupingMode, type ProviderRole, type Settings } from '../../src/settings';
+import { loadSettings, saveSettings, type GroupingMode, type Settings } from '../../src/settings';
 import { t, warningKey } from '../../src/shared/i18n';
 import { callOrganizer, onOrganizerState } from '../../src/shared/organizer-client';
 import { GROUP_COLORS, type OrganizerState, type ProposalEdit, type ProposedGroup, type ProposedTab } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
+import { providerName } from '../../src/ui/provider-name';
 
 /** "1 tab" / "3 tab": chrome.i18n non ha i plurali, quindi il singolare ha una chiave sua. */
 const tabCount = (n: number) => (n === 1 ? t('popupTabCountOne') : t('popupTabCount', String(n)));
@@ -15,14 +15,6 @@ const addedCount = (n: number) => (n === 1 ? t('panelAddedCountOne') : t('panelA
 /** Apre le impostazioni sulla sezione indicata. */
 function openSettings(section: 'generator' | 'classifier' | 'categories' | 'mode') {
   browser.tabs.create({ url: browser.runtime.getURL(`/options.html#${section}`) });
-}
-
-/** Nome breve di un provider per il riepilogo sotto il selettore, o null se è spento. */
-function providerName(role: ProviderRole, settings: Settings): string | null {
-  const p = settings[role];
-  if (p.preset === 'none') return null;
-  if (p.preset === NANO_PRESET) return NANO_LABEL;
-  return presetsOf(role)[p.preset]?.label ?? t('optionsPresetCustom');
 }
 
 /**
@@ -195,7 +187,7 @@ export function App() {
     recompute();
   }
 
-  // Destinazioni per "Sposta in…" e "Aggiungi a…": gruppi della proposta e gruppi aperti non ancora toccati.
+  // Destinazioni per "Sposta in…": gruppi della proposta e gruppi aperti non ancora toccati.
   const targets: Target[] = proposal
     ? [
         ...proposal.groups.map((g) => ({ value: `p:${g.id}`, label: g.name || t('popupUnnamed'), to: { groupId: g.id } })),
@@ -219,6 +211,22 @@ export function App() {
   const moveTab = (tab: ProposedTab, value: string) => {
     const target = targets.find((x) => x.value === value);
     if (target) edit({ kind: 'add-tab', tab, to: target.to });
+  };
+
+  // Senza proposta (es. dopo "Applica") le tab libere vanno subito in un gruppo aperto. Non durante il calcolo.
+  const directTargets: Target[] =
+    !proposal && !computing ? view.existing.map((e) => ({ value: `c:${e.group.id}`, label: e.group.name || t('popupUnnamed'), to: { existingGroup: e.group } })) : [];
+  const freeTargets = proposal ? targets : directTargets;
+  const groupTab = (tab: ProposedTab, value: string) => {
+    const target = directTargets.find((x) => x.value === value);
+    if (!target || !('existingGroup' in target.to)) return;
+    setFailure(null);
+    callOrganizer({ type: 'organizer/group-tab', tabId: tab.tabId, groupId: target.to.existingGroup.id })
+      .then(setState)
+      .catch((err) => {
+        console.error('autoGroup:', err);
+        setFailure('errorUnexpected');
+      });
   };
 
   const message = failure ?? state?.error;
@@ -365,10 +373,16 @@ export function App() {
         )}
 
         {view.free.length > 0 && (
-          <Section title={t('panelSectionFree')} count={view.free.length} hint={proposal ? t('panelFreeHint') : undefined}>
+          <Section title={t('panelSectionFree')} count={view.free.length} hint={freeTargets.length > 0 ? t('panelFreeHint') : undefined}>
             <ul className="tabs card-list">
               {view.free.map((tab) => (
-                <TabRow key={tab.tabId} tab={tab} targets={targets} moveLabel={t('panelAddTo')} onMove={moveTab} onClose={() => closeTab(tab.tabId)} />
+                <TabRow
+                  key={tab.tabId}
+                  tab={tab}
+                  targets={freeTargets}
+                  onMove={proposal ? moveTab : groupTab}
+                  onClose={() => closeTab(tab.tabId)}
+                />
               ))}
             </ul>
           </Section>
@@ -437,7 +451,7 @@ export function App() {
 /** Riepilogo dei provider sotto il selettore: cosa verrà usato con la modalità scelta. */
 function ProviderSummary({ settings }: { settings: Settings }) {
   if (settings.mode === 'domain') return <p className="mode-summary">{t('panelModeSiteSummary')}</p>;
-  const names = [providerName('classifier', settings), providerName('generator', settings)].filter((n): n is string => n !== null);
+  const names = [providerName('classifier', settings.classifier), providerName('generator', settings.generator)].filter((n): n is string => n !== null);
   return (
     <p className="mode-summary">
       {names.length > 0 ? names.join(' → ') : t('panelNoProvider')}{' '}
@@ -472,7 +486,6 @@ const REASON_KEY: Record<HeldReason, string> = {
 function TabRow({
   tab,
   targets = [],
-  moveLabel = t('popupMoveTab'),
   onMove,
   onRemove,
   onClose,
@@ -481,7 +494,6 @@ function TabRow({
 }: {
   tab: ProposedTab;
   targets?: Target[];
-  moveLabel?: string;
   onMove?: (tab: ProposedTab, value: string) => void;
   onRemove?: () => void;
   onClose?: () => void;
@@ -495,10 +507,10 @@ function TabRow({
       {added && <span className="tab-chip">{t('panelNewTab')}</span>}
       {reason && <span className="tab-chip muted">{t(REASON_KEY[reason])}</span>}
       {onMove && targets.length > 0 && (
-        <label className="move" title={moveLabel}>
+        <label className="move" title={t('popupMoveTab')}>
           <Icon name="driveFileMove" size={18} />
-          <select value="" aria-label={moveLabel} onChange={(e) => e.target.value && onMove(tab, e.target.value)}>
-            <option value="">{moveLabel}</option>
+          <select value="" aria-label={t('popupMoveTab')} onChange={(e) => e.target.value && onMove(tab, e.target.value)}>
+            <option value="">{t('popupMoveTo')}</option>
             {targets.map((x) => (
               <option key={x.value} value={x.value}>
                 {x.label}

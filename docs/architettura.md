@@ -6,9 +6,10 @@ Estensione Manifest V3 costruita con WXT, TypeScript e React. Tutta la logica st
 
 ```
 entrypoints/
-  background.ts          service worker: crea l'Organizzatore, risponde ai messaggi del pannello, apre il pannello al clic sull'icona
+  background.ts          service worker: crea l'Organizzatore, risponde ai messaggi del pannello, apre il pannello al clic sull'icona e la guida all'installazione
   sidepanel/             pannello laterale React (index.html, main.tsx, App.tsx, style.css)
-  options/               pagina impostazioni React, aperta in una tab intera
+  options/               pagina impostazioni React, aperta in una tab intera; ModeSection, ProviderSection, NanoStatus e ThresholdField servono anche alla guida
+  onboarding/            guida al primo avvio (onboarding.html), a passi
 src/
   organizer/             l'Organizzatore e i suoi moduli interni
     index.ts             interfaccia pubblica: createOrganizer() → propose / edit / apply / undo / state
@@ -26,6 +27,9 @@ src/
     save-to-list.ts      "Salva nella lista": categoria nuova da un gruppo inventato dall'AI
     description-reader.ts  Lettore descrizioni: meta description delle pagine, con permesso opzionale
     session-state.ts     lettura e scrittura dello stato in chrome.storage.session
+    stopwatch.ts         cronometro delle fasi di un calcolo (proposal.timings)
+    session-cache.ts     cache chiave → valore in chrome.storage.session, con un massimo di voci
+    classification-cache.ts  cache per tab dei risultati del Classificatore
   settings/              preferenze in chrome.storage.sync
     index.ts             caricamento e salvataggio, validazione, domini esclusi
     categories.ts        categorie predefinite (da chrome.i18n), validazione della lista
@@ -33,6 +37,7 @@ src/
   ui/md3-tokens.css      colori Material 3 (--md-sys-color-*) chiari e scuri, generati da scripts/generate-theme.mjs
   ui/base.css            basi Material 3: tipografia, forme, pulsanti, campi, interruttore, chip, avanzamento
   ui/Icon.tsx            icone Material Symbols incluse come SVG
+  ui/provider-name.ts    nome breve del provider scelto, per pannello, impostazioni e guida
   ai/                    adattatori dei provider AI, senza dipendenze dall'Organizzatore
     types.ts             contratti di Generatore e Classificatore, AiTab, AiOption, ProviderError
     http.ts              POST JSON comune: Bearer, timeout, un nuovo tentativo, classificazione degli errori; tempi (TIMINGS)
@@ -45,6 +50,7 @@ src/
     messages.ts          contratto dei messaggi pannello ↔ service worker
     organizer-client.ts  Lato pannello: invio delle richieste e ascolto dei cambi di stato
     i18n.ts              t(): testi tramite chrome.i18n
+    onboarding.ts        passi della guida e apertura alla prima installazione
 public/
   _locales/{it,en}/      testi dell'interfaccia
   icon/                  icone 16/32/48/128
@@ -379,6 +385,20 @@ Funzioni: `loadSettings`, `saveSettings(patch)`, `isValidMinTabs`, `normalizeDom
 - **Privacy**: interruttore (stile *switch*) "Leggi la descrizione delle pagine", solo in modalità AI. Accendendolo si chiede `<all_urls>` nel gesto dell'utente; se il permesso viene rifiutato l'interruttore resta spento con un avviso; spegnendolo il permesso viene tolto. L'interruttore risulta acceso solo se l'opzione è salvata **e** il permesso c'è davvero. Poi i domini esclusi, mostrati come etichette con ✕, con aggiunta (Invio o "Aggiungi") e rifiuto dei duplicati e dei valori non validi.
 
 Stili: token Material 3 (`src/ui/md3-tokens.css`, `src/ui/base.css`) e `entrypoints/options/style.css`. La navigazione a sinistra ha voci a forma piena come un *navigation drawer*, le sezioni sono schede piene (`surface-container-low`) e la modalità selezionata usa `secondary-container`. Le icone sono Material Symbols.
+
+### Guida al primo avvio (`entrypoints/onboarding`)
+
+Pagina `onboarding.html` (pagina dell'estensione non elencata nel manifest), aperta in una scheda dal service worker con `runtime.onInstalled` solo quando `reason` è `install` (`openOnboardingOnInstall`): aggiornamenti e ricaricamenti non la riaprono. Le impostazioni hanno il link "Rivedi la guida" sotto il menu laterale.
+
+I passi dipendono dalla modalità (`onboardingSteps`): con l'AI *Benvenuto → Modalità → Generatore → Classificatore → Pronto*, per sito *Benvenuto → Modalità → Pronto*. In alto "Passo N di M" e una barra di avanzamento; in basso "Indietro", "Salta la guida" (va al riepilogo) e "Avanti". Ogni scelta si salva subito, come nelle impostazioni.
+
+- **Benvenuto**: cosa fa autoGroup, che niente cambia senza "Applica" e che "Annulla" rimette tutto com'era, e come si apre, con la scorciatoia assegnata davvero da Chrome (`commands.getAll`) o, se non c'è, dove assegnarla.
+- **Modalità**: la stessa `ModeSection` delle impostazioni.
+- **Generatore**: le tre strade (Gemini Nano, server locale, servizio online) con pregi e costi, poi la stessa `ProviderSection` delle impostazioni con lo stato di Gemini Nano. Il permesso host viene chiesto dentro il clic su "Salva", come lì. Gemini Nano è già scelto: basta "Avanti".
+- **Classificatore**: facoltativo, con `ProviderSection` e la soglia; "Avanti" lo salta.
+- **Pronto**: per sito, una frase; con l'AI i tre livelli nell'ordine in cui vengono provati (Classificatore, Generatore, per sito "sempre disponibile"), con il provider scelto o "Disattivato" e, se Gemini Nano è scelto ma non disponibile, il motivo. Poi come funziona il ripiego, cosa arriva all'AI e dove cambiare categorie, domini esclusi e descrizioni. "Apri il pannello" chiama `sidePanel.open({ windowId })` dentro il clic (Chrome lo chiede); "Apri le impostazioni" apre la pagina opzioni.
+
+Il Generatore viene prima del Classificatore, al contrario della pipeline: basta da solo (Gemini Nano è il default), mentre il Classificatore serve solo a chi ha già un server System One.
 
 ### Avvisi nel pannello
 

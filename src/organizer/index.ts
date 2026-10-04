@@ -63,6 +63,11 @@ export interface Organizer {
    * attuale (nuova impronta), così chiudere una tab non costa un nuovo calcolo.
    */
   closeTab(tabId: number): Promise<OrganizerState>;
+  /**
+   * "Sposta in…" senza proposta: mette subito una tab libera in un gruppo aperto della sua finestra.
+   * Si accetta solo una tab che la selezione prenderebbe (non fissata, non interna, non esclusa).
+   */
+  groupTab(tabId: number, groupId: number): Promise<OrganizerState>;
   /** "Interrompi": annulla le richieste in corso e i calcoli in coda; nessuno produce una proposta. */
   abort(): Promise<OrganizerState>;
   /**
@@ -216,6 +221,19 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         let next = editProposal(proposal, { kind: 'remove-tab', tabId });
         if (refresh) next = { ...next, signature: signatureOf(await collectInputs(proposal.windowId)) };
         return setState({ ...current, proposal: next });
+      });
+    },
+
+    groupTab(tabId, groupId) {
+      return exclusive(async () => {
+        const current = await loadState();
+        const [tab, group] = await Promise.all([browser.tabs.get(tabId).catch(() => null), browser.tabGroups.get(groupId).catch(() => null)]);
+        if (!tab || !group || group.windowId !== tab.windowId) return current;
+        const { excludedDomains } = await loadSettings();
+        const tabs = await browser.tabs.query({ windowId: tab.windowId });
+        if (!selectCandidateTabs(tabs, excludedDomains).some((t) => t.tabId === tabId)) return current;
+        await browser.tabs.group({ tabIds: [tabId], groupId });
+        return current;
       });
     },
 

@@ -3,7 +3,6 @@ import { browser } from 'wxt/browser';
 import { testOpenAiConnection } from '../../src/ai/openai-generator';
 import { testSystemOneConnection } from '../../src/ai/systemone-classifier';
 import { ProviderError } from '../../src/ai/types';
-import { NANO_LABEL } from '../../src/ai/nano-generator';
 import {
   hasHostPermission,
   isLocalOnly,
@@ -20,6 +19,7 @@ import {
   type ProviderSettings,
 } from '../../src/settings';
 import { t, warningKey } from '../../src/shared/i18n';
+import { providerName } from '../../src/ui/provider-name';
 import { Card } from './Card';
 
 type Status = { kind: 'ok' | 'error' | 'info'; key: string; sub?: string } | null;
@@ -59,13 +59,6 @@ async function releaseUnusedPermission(previousBaseUrl: string) {
 }
 
 /** Sezione impostazioni di un provider: preset, URL base, modello, chiave API, Salva e Prova connessione. */
-/** Nome del provider salvato, per l'etichetta in alto a destra della sezione. */
-function savedLabel(role: ProviderRole, saved: ProviderSettings): string | null {
-  if (saved.preset === 'none') return null;
-  if (saved.preset === NANO_PRESET) return NANO_LABEL;
-  return presetsOf(role)[saved.preset]?.label ?? t('optionsPresetCustom');
-}
-
 export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderSectionProps) {
   const text = TEXT[role];
   const presets = presetsOf(role);
@@ -128,7 +121,8 @@ export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderS
 
   const local = isLocalOnly(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
-  const active = savedLabel(role, saved);
+  // Nome del provider salvato, per l'etichetta in alto a destra della sezione.
+  const active = providerName(role, saved);
 
   return (
     <Card

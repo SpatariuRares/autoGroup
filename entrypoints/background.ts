@@ -2,12 +2,16 @@ import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { createOrganizer } from '../src/organizer';
 import { isOrganizerRequest, type OrganizerRequest, type OrganizerResponse, type StateChangedMessage } from '../src/shared/messages';
+import { openOnboardingOnInstall } from '../src/shared/onboarding';
 import type { OrganizerState } from '../src/shared/types';
 
 export default defineBackground(() => {
   // Il clic sull'icona (e la scorciatoia) apre il pannello laterale: a differenza di un popup resta
   // aperto mentre l'utente cambia tab e mentre l'AI calcola la proposta.
   browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err) => console.error('autoGroup:', err));
+  browser.runtime.onInstalled.addListener((details) => {
+    openOnboardingOnInstall(details).catch((err) => console.error('autoGroup:', err));
+  });
 
   const organizer = createOrganizer({
     onStateChange(state) {
@@ -37,6 +41,8 @@ export default defineBackground(() => {
         return organizer.undo();
       case 'organizer/close-tab':
         return organizer.closeTab(request.tabId);
+      case 'organizer/group-tab':
+        return organizer.groupTab(request.tabId, request.groupId);
     }
   }
 

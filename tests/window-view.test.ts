@@ -185,3 +185,32 @@ describe('"Chiudi tab" dal pannello', () => {
     expect(await organizer.closeTab(gone)).toEqual(proposed);
   });
 });
+
+describe('"Sposta in…" senza proposta', () => {
+  it('mette subito una tab libera in un gruppo aperto, senza toccare lo stato', async () => {
+    const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
+    const lavoro = await strip.addGroup('Lavoro', 'blue', [d1]);
+    const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
+    const before = await organizer.state();
+
+    const state = await organizer.groupTab(solo, lavoro);
+
+    expect(strip.layout()).toEqual(['Doc 1 [Lavoro]', 'Solo [Lavoro]']);
+    expect(state).toEqual(before);
+  });
+
+  it('non tocca tab fissate, già in un gruppo o gruppi di altre finestre', async () => {
+    const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
+    const lavoro = await strip.addGroup('Lavoro', 'blue', [d1]);
+    const pinned = strip.addTab({ url: 'https://p.com/', title: 'Fissata', pinned: true });
+    const elsewhere = strip.addTab({ url: 'https://x.com/', title: 'Altrove', windowId: W + 1 });
+    const other = await strip.addGroup('Altro', 'red', [elsewhere]);
+    const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
+
+    await organizer.groupTab(pinned, lavoro);
+    await organizer.groupTab(solo, other);
+    await organizer.groupTab(d1, lavoro);
+
+    expect(strip.layout()).toEqual(['Doc 1 [Lavoro]', 'Fissata', 'Solo']);
+  });
+});

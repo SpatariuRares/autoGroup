@@ -599,9 +599,6 @@
   "panelNewTab": {
     "message": "new"
   },
-  "panelAddTo": {
-    "message": "Add to…"
-  },
   "panelAddedCount": {
     "message": "+ $COUNT$ new",
     "placeholders": {
@@ -618,5 +615,117 @@
   },
   "panelCloseTab": {
     "message": "Close tab"
+  },
+  "onboardingTitle": {
+    "message": "Welcome to autoGroup"
+  },
+  "onboardingStepCount": {
+    "message": "Step $CURRENT$ of $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "onboardingWelcomeTitle": {
+    "message": "Tidy tabs, no surprises"
+  },
+  "onboardingWelcomeText": {
+    "message": "autoGroup suggests groups for the ungrouped tabs in your window. You see a preview first and can change it: no tab moves until you press “Apply”, and “Undo” puts everything back."
+  },
+  "onboardingWelcomeShortcut": {
+    "message": "To open it, click the extension icon or press $SHORTCUT$.",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "onboardingWelcomeNoShortcut": {
+    "message": "To open it, click the extension icon. You can assign it a shortcut at chrome://extensions/shortcuts."
+  },
+  "onboardingWelcomeSetup": {
+    "message": "In a couple of minutes you'll choose how to group. You can change everything later in the settings."
+  },
+  "onboardingStart": {
+    "message": "Get started"
+  },
+  "onboardingNext": {
+    "message": "Next"
+  },
+  "onboardingBack": {
+    "message": "Back"
+  },
+  "onboardingSkip": {
+    "message": "Skip the guide"
+  },
+  "onboardingModeTitle": {
+    "message": "How do you want to group?"
+  },
+  "onboardingModeText": {
+    "message": "“By site” works right away. “With AI” splits tabs by topic: in the next steps you choose who does the work. You can switch at any time, from the panel too."
+  },
+  "onboardingGeneratorTitle": {
+    "message": "Choose the Generator"
+  },
+  "onboardingGeneratorText": {
+    "message": "The Generator reads the title and address of your tabs, puts them in your categories and makes up new groups when needed. You have three options:"
+  },
+  "onboardingGeneratorNanoText": {
+    "message": "Built into Chrome: free, no keys, no data leaves your computer. It is downloaded once, if your computer supports it."
+  },
+  "onboardingGeneratorLocal": {
+    "message": "Local server"
+  },
+  "onboardingGeneratorLocalText": {
+    "message": "Ollama, LM Studio or Unsloth Studio on your computer: private, but you need an installed model."
+  },
+  "onboardingGeneratorCloud": {
+    "message": "Online service"
+  },
+  "onboardingGeneratorCloudText": {
+    "message": "OpenRouter or another OpenAI-compatible service: the most capable, but it needs an API key and titles and addresses are sent to the service."
+  },
+  "onboardingGeneratorDefault": {
+    "message": "Gemini Nano is already selected: if that suits you, press “Next”. Otherwise choose below and press “Save”."
+  },
+  "onboardingClassifierTitle": {
+    "message": "Classifier (optional)"
+  },
+  "onboardingClassifierText": {
+    "message": "A System One classifier (Jev, Kev, Rizzo Flow) puts each tab in one of your categories in a few tenths of a second; uncertain tabs go to the Generator. If you don't have one, press “Next”: you can add it later in the settings."
+  },
+  "onboardingDoneTitle": {
+    "message": "All set"
+  },
+  "onboardingDoneDomain": {
+    "message": "Tabs from the same site will go into the same group. No data leaves your computer."
+  },
+  "onboardingDonePlan": {
+    "message": "This is how the proposal will be made:"
+  },
+  "onboardingDoneDomainLevel": {
+    "message": "always available"
+  },
+  "onboardingDoneFallback": {
+    "message": "If a level is off or doesn't answer, the next one takes over, with a notice in the panel: you always get a proposal."
+  },
+  "onboardingDonePrivacy": {
+    "message": "The AI only receives the title and address of your tabs (without parameters), never tabs from excluded domains. Categories, excluded domains and page descriptions can be changed in the settings."
+  },
+  "onboardingOpenPanel": {
+    "message": "Open the panel"
+  },
+  "onboardingOpenSettings": {
+    "message": "Open settings"
+  },
+  "optionsOnboarding": {
+    "message": "Show the guide again"
+  },
+  "optionsCoffee": {
+    "message": "Buy me a coffee"
   }
 }

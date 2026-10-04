@@ -4,6 +4,8 @@ Estensione Chrome (Manifest V3) che raggruppa le tab come "Organizza schede" di 
 
 Interfaccia in italiano e in inglese (segue la lingua di Chrome). La documentazione tecnica è in [`docs/`](docs/README.md).
 
+<a href="https://www.buymeacoffee.com/SpatariuRares"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=✈️&slug=SpatariuRares&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
+
 ## Installazione
 
 Serve Node.js 20 o superiore.
@@ -16,6 +18,8 @@ npm run build        # crea .output/chrome-mv3
 1. Apri `chrome://extensions` e attiva **Modalità sviluppatore**.
 2. **Carica estensione non pacchettizzata** e scegli la cartella `.output/chrome-mv3`.
 3. (Facoltativo) Fissa l'icona di autoGroup nella barra degli strumenti.
+
+Alla prima installazione si apre una **guida** a passi: modalità, Generatore, Classificatore facoltativo e un riepilogo dei livelli di ripiego. Si può rivedere dalle impostazioni ("Rivedi la guida").
 
 Il clic sull'icona apre il **pannello laterale** di autoGroup. La scorciatoia suggerita è `Alt+Shift+G`. Si cambia da `chrome://extensions/shortcuts`; se un'altra estensione la usa già, Chrome non la assegna e va scelta lì.
 
@@ -185,7 +189,7 @@ Con i provider locali (Kev, Rizzo, Ollama, LM Studio, Gemini Nano) nessun dato e
 
 ## Impostazioni
 
-Pagina opzioni in una tab intera (`options_ui.open_in_tab`), con un menu laterale per le sezioni:
+Pagina opzioni in una tab intera (`options_ui.open_in_tab`), con un menu laterale per le sezioni e, sotto, il link "Rivedi la guida":
 
 1. **Come raggruppare**: *Per sito* oppure *Per argomento, con l'AI*. In modalità per sito le sezioni AI (Categorie, Classificatore, Generatore, descrizione delle pagine) sono nascoste.
 2. **Categorie**: una riga per categoria con colore (tavolozza a comparsa), nome e descrizione; si possono aggiungere, modificare, eliminare e riordinare; c'è un pulsante "Ripristina default".
@@ -226,7 +230,8 @@ Per ora l'estensione è per uso personale (caricata come estensione non pacchett
 
 - [ ] **Informativa privacy** pubblica: inviamo titoli, URL e, se attivata, la descrizione delle pagine a servizi esterni (TypeSafe, OpenRouter). Il Web Store la richiede.
 - [ ] Compilare la sezione **Privacy practices** della dashboard sviluppatore (dati raccolti, finalità, nessuna vendita a terzi).
-- [ ] **Onboarding** al primo avvio: spiegare i livelli di fallback e guidare la configurazione di un provider.
+- [x] **Onboarding** al primo avvio: spiegare i livelli di fallback e guidare la configurazione di un provider.
+- [ ] Provare a mano in un Chrome normale "Apri il pannello" dalla guida (`sidePanel.open`): in headless non si può verificare.
 - [ ] Pagina dello store: descrizione, screenshot, icone in tutte le dimensioni richieste.
 - [x] Traduzioni complete in italiano e inglese per l'interfaccia (controllate dai test).
 - [ ] Traduzioni della scheda dello store.
@@ -234,7 +239,7 @@ Per ora l'estensione è per uso personale (caricata come estensione non pacchett
 - [ ] Motivare ogni permesso nella richiesta di revisione.
 - [ ] Provare a mano la rimozione di `<all_urls>` quando un provider usa un host già coperto (vedi [review AG-R3](docs/review/AG-R3.md)).
 - [ ] Generare lo zip con `wxt zip` e caricarlo.
-- [ ]  pulsante **"Offrimi un caffè"** per le donazioni. Servizio, link e posizione (pannello o impostazioni) ancora da decidere.
+- [x] Pulsante **"Offrimi un caffè"** (Buy Me a Coffee): nel README e nelle impostazioni, sotto il menu laterale.
 
 ## Fuori scope (per ora)
 
