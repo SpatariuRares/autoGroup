@@ -12,7 +12,8 @@ import {
   type Settings,
 } from '../settings';
 import type { Proposal } from '../shared/types';
-import { runPipeline } from './pipeline';
+import { domainGroups, runPipeline } from './pipeline';
+import type { Stopwatch } from './stopwatch';
 import { selectCandidateTabs, type CandidateTab } from './tab-selection';
 
 /** Un provider configurato dall'utente, con quello che serve per usarlo. */
@@ -90,8 +91,20 @@ export function signatureOf(inputs: ProposalInputs): string {
   ]);
 }
 
-/** Calcola la proposta passando dalla pipeline (livelli AI e raggruppamento per dominio). */
-export async function buildProposal(inputs: ProposalInputs, signal?: AbortSignal): Promise<Proposal> {
-  const { groups, warnings } = await runPipeline(inputs, signal);
-  return { windowId: inputs.windowId, createdAt: Date.now(), signature: signatureOf(inputs), groups, warnings };
+/**
+ * Calcola la proposta passando dalla pipeline (livelli AI e raggruppamento per dominio).
+ * Con `clock` la proposta riporta anche la durata di ogni fase.
+ */
+export async function buildProposal(inputs: ProposalInputs, signal?: AbortSignal, clock?: Stopwatch): Promise<Proposal> {
+  const { groups, warnings } = await runPipeline(inputs, signal, clock);
+  const proposal: Proposal = { windowId: inputs.windowId, createdAt: Date.now(), signature: signatureOf(inputs), groups, warnings };
+  return clock ? { ...proposal, timings: clock.timings() } : proposal;
+}
+
+/**
+ * Anteprima per sito: il raggruppamento per dominio delle stesse tab, senza AI né pagine lette.
+ * Ha la stessa impronta della proposta AI che sta per arrivare, quindi se l'utente la sceglie resta attuale.
+ */
+export function buildPreview(inputs: ProposalInputs): Proposal {
+  return { windowId: inputs.windowId, createdAt: Date.now(), signature: signatureOf(inputs), groups: domainGroups(inputs), warnings: [] };
 }

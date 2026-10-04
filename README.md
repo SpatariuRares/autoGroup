@@ -151,7 +151,7 @@ Default, nella lingua del browser: Lavoro, Sviluppo, AI, Social, Notizie, Video,
 - Se le tab della finestra cambiano dopo la proposta (tab aperte, chiuse, spostate, raggruppate a mano), il pannello lo segnala e offre **Ricalcola**. Non ricalcola da solo, per non rifare chiamate AI a ogni tab aperta.
 - Si può: rinominare un gruppo e cambiarne il colore, togliere una tab (✕, la tab resta libera), spostare una tab in un altro gruppo (menu a tendina), scartare un gruppo intero.
 - Ogni gruppo ha un'etichetta con la provenienza: *lista*, *esistente*, *nuovo (AI)*, *sito*.
-- Pulsante **Interrompi** durante il calcolo.
+- Pulsante **Interrompi** durante il calcolo; con l'AI, intanto, la proposta per sito in sola lettura e **Usa questa** per tenerla senza aspettare.
 - Il drag & drop è rimandato a dopo.
 
 ## Annulla
@@ -234,6 +234,7 @@ Per ora l'estensione è per uso personale (caricata come estensione non pacchett
 - [ ] Motivare ogni permesso nella richiesta di revisione.
 - [ ] Provare a mano la rimozione di `<all_urls>` quando un provider usa un host già coperto (vedi [review AG-R3](docs/review/AG-R3.md)).
 - [ ] Generare lo zip con `wxt zip` e caricarlo.
+- [ ]  pulsante **"Offrimi un caffè"** per le donazioni. Servizio, link e posizione (pannello o impostazioni) ancora da decidere.
 
 ## Fuori scope (per ora)
 

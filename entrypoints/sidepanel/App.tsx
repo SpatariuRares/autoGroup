@@ -117,18 +117,20 @@ export function App() {
   const [failure, setFailure] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
   const settings = useSettings();
+  // Letta dall'ascoltatore: l'annuncio dell'anteprima può arrivare prima che React aggiorni `windowId`.
+  const currentWindow = useRef<number | null>(null);
 
   useEffect(() => {
     // Lo stato è unico per tutte le finestre: si mostrano solo gli aggiornamenti di questa.
-    const unsubscribe = onOrganizerState((next) => {
-      if (windowId !== null && next.windowId === windowId) setState(next);
+    return onOrganizerState((next) => {
+      if (currentWindow.current !== null && next.windowId === currentWindow.current) setState(next);
     });
-    return unsubscribe;
-  }, [windowId]);
+  }, []);
 
   useEffect(() => {
     (async () => {
       const win = await browser.windows.getCurrent();
+      currentWindow.current = win.id!;
       setWindowId(win.id!);
       setState(await callOrganizer({ type: 'organizer/propose', windowId: win.id! }));
     })().catch((err) => {
@@ -140,6 +142,9 @@ export function App() {
   const proposal = state?.phase === 'ready' && state.windowId === windowId ? state.proposal : undefined;
   const canUndo = state?.undo !== undefined && state.undo.windowId === windowId;
   const computing = !state || state.phase === 'computing';
+  // Proposta per sito mostrata in sola lettura mentre l'AI calcola.
+  const preview = state?.phase === 'computing' && state.windowId === windowId ? state.preview : undefined;
+  const readOnly = !proposal && preview !== undefined;
 
   // "Applica" e "Annulla" cambiano le tab: in quel momento la proposta non c'è più, quindi nessun avviso.
   // Le tab chiuse dal pannello sono già tolte dalla proposta dall'Organizzatore: non la rendono vecchia.
@@ -149,8 +154,8 @@ export function App() {
     if (!busy) setStale(true);
   });
   const view = useMemo(
-    () => buildWindowView(snapshot.tabs, snapshot.groups, proposal, settings?.excludedDomains ?? []),
-    [snapshot, proposal, settings?.excludedDomains],
+    () => buildWindowView(snapshot.tabs, snapshot.groups, proposal ?? preview, settings?.excludedDomains ?? []),
+    [snapshot, proposal, preview, settings?.excludedDomains],
   );
 
   async function run(request: Parameters<typeof callOrganizer>[0], after?: () => void) {
@@ -254,12 +259,20 @@ export function App() {
         <div className="status computing" role="status">
           <div className="md-linear-progress" />
           <div className="status-row">
-            <span>{t('popupComputing')}</span>
+            <span>{t(preview ? 'panelPreviewComputing' : 'popupComputing')}</span>
             {state?.phase === 'computing' && (
-              <button className="text small" onClick={() => callOrganizer({ type: 'organizer/abort' }).then(setState).catch(console.error)}>
-                <Icon name="stop" size={18} />
-                {t('popupAbort')}
-              </button>
+              <span className="status-actions">
+                {preview && preview.groups.length > 0 && (
+                  <button className="text small accept-preview" onClick={() => callOrganizer({ type: 'organizer/accept-preview' }).then(setState).catch(console.error)}>
+                    <Icon name="check" size={18} />
+                    {t('panelUsePreview')}
+                  </button>
+                )}
+                <button className="text small abort" onClick={() => callOrganizer({ type: 'organizer/abort' }).then(setState).catch(console.error)}>
+                  <Icon name="stop" size={18} />
+                  {t('popupAbort')}
+                </button>
+              </span>
             )}
           </div>
         </div>
@@ -320,6 +333,7 @@ export function App() {
                 <GroupCard
                   key={group.id}
                   group={group}
+                  readOnly={readOnly}
                   targets={targets.filter((x) => x.value !== `p:${group.id}`)}
                   onMove={moveTab}
                   onEdit={edit}
@@ -339,6 +353,7 @@ export function App() {
                 <ExistingCard
                   key={existing.group.id}
                   existing={existing}
+                  readOnly={readOnly}
                   targets={targets.filter((x) => x.value !== `p:${existing.proposedGroupId}` && x.value !== `c:${existing.group.id}`)}
                   onMove={moveTab}
                   onEdit={edit}
@@ -514,10 +529,12 @@ interface GroupCardProps {
   onClose: (tabId: number) => void;
   onSave: () => void;
   saving: boolean;
+  /** Anteprima per sito durante il calcolo: si guarda soltanto. */
+  readOnly?: boolean;
 }
 
 /** Un gruppo nuovo della proposta: nome e colore modificabili, tab spostabili. */
-function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, saving }: GroupCardProps) {
+function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, saving, readOnly = false }: GroupCardProps) {
   const [name, setName] = useState(group.name);
   const [paletteOpen, setPaletteOpen] = useState(false);
   useEffect(() => setName(group.name), [group.name]);
@@ -525,6 +542,26 @@ function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, saving }: 
   const commitName = () => {
     if (name.trim() !== group.name) onEdit({ kind: 'rename', groupId: group.id, name });
   };
+
+  if (readOnly) {
+    return (
+      <li className="group preview">
+        <div className="group-header">
+          <span className={`swatch static color-${group.color}`} aria-label={t(`color_${group.color}`)} />
+          <span className="group-name static">{group.name}</span>
+        </div>
+        <div className="group-meta">
+          <span className={`badge provenance-${group.provenance}`}>{t(`provenance_${group.provenance}`)}</span>
+          <span className="count">{tabCount(group.tabs.length)}</span>
+        </div>
+        <ul className="tabs">
+          {group.tabs.map((tab) => (
+            <TabRow key={tab.tabId} tab={tab} />
+          ))}
+        </ul>
+      </li>
+    );
+  }
 
   return (
     <li className="group">
@@ -611,12 +648,14 @@ function ExistingCard({
   onMove,
   onEdit,
   onClose,
+  readOnly = false,
 }: {
   existing: ExistingGroupView;
   targets: Target[];
   onMove: GroupCardProps['onMove'];
   onEdit: GroupCardProps['onEdit'];
   onClose: GroupCardProps['onClose'];
+  readOnly?: boolean;
 }) {
   const { group, current, added } = existing;
   return (
@@ -633,15 +672,19 @@ function ExistingCard({
         </summary>
         <ul className="tabs">
           {added.map((tab) => (
-            <TabRow
-              key={tab.tabId}
-              tab={tab}
-              added
-              targets={targets}
-              onMove={onMove}
-              onRemove={() => onEdit({ kind: 'remove-tab', tabId: tab.tabId })}
-              onClose={() => onClose(tab.tabId)}
-            />
+            readOnly ? (
+              <TabRow key={tab.tabId} tab={tab} added />
+            ) : (
+              <TabRow
+                key={tab.tabId}
+                tab={tab}
+                added
+                targets={targets}
+                onMove={onMove}
+                onRemove={() => onEdit({ kind: 'remove-tab', tabId: tab.tabId })}
+                onClose={() => onClose(tab.tabId)}
+              />
+            )
           ))}
           {current.map((tab) => (
             <TabRow key={tab.tabId} tab={tab} onClose={() => onClose(tab.tabId)} />

@@ -202,7 +202,8 @@ try {
   console.log('Chiave in local:', JSON.stringify(await sw.evaluate(() => chrome.storage.local.get(null))), '| in sync:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('generator'))));
   await options.screenshot({ path: 'scripts/smoke-options.png', fullPage: true });
 
-  const repropose = async () => {
+  // Ogni "Ricalcola" parte con le cache vuote, così si vedono le richieste vere; `keepCache` prova la cache.
+  const repropose = async ({ keepCache = false } = {}) => {
     await popup.bringToFront();
     await popup.reload();
     await popup.waitForSelector('footer button');
@@ -210,6 +211,7 @@ try {
     // solo le richieste del calcolo forzato da "Ricalcola".
     await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 15000 });
     ai.requests.length = 0;
+    if (!keepCache) await sw.evaluate(() => chrome.storage.session.remove(['classifierCache', 'descriptionCache']));
     await (await popup.$$('footer button.secondary:not(.undo)'))[0].click();
     // Aspetta la fine del calcolo (con l'eventuale nuovo tentativo dopo un errore temporaneo).
     await new Promise((r) => setTimeout(r, 200));
@@ -218,6 +220,7 @@ try {
   };
   ai.requests.length = 0;
   console.log('Proposta dal Generatore:', await repropose());
+  console.log('Tempi del calcolo (ms):', JSON.stringify((await sw.evaluate(() => chrome.storage.session.get('organizer'))).organizer.proposal.timings));
   const sent = JSON.parse(ai.requests.at(-1).messages[1].content);
   await popup.click('.group .save');
   await popup.waitForFunction(() => /categor/i.test(document.querySelector('.snackbar')?.textContent ?? ''), { timeout: 10000 });
@@ -238,10 +241,20 @@ try {
   await popup.reload();
   await popup.waitForSelector('footer button');
   await (await popup.$$('footer button.secondary:not(.undo)'))[0].click();
-  await popup.waitForSelector('.status.computing button', { timeout: 10000 });
-  await popup.click('.status.computing button');
+  await popup.waitForSelector('.status.computing button.abort', { timeout: 10000 });
+  await popup.click('.status.computing button.abort');
   await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 10000 });
   console.log('Dopo Interrompi:', await popup.$eval('.content .banner', (el) => el.textContent).catch(() => 'nessun avviso'), '| gruppi:', (await popup.$$('.group:not(.existing)')).length);
+
+  // Anteprima per sito: mentre il finto Generatore non risponde il pannello mostra già i gruppi per sito;
+  // "Usa questa" ferma l'AI e li rende la proposta corrente.
+  await (await popup.$$('footer button.secondary:not(.undo)'))[0].click();
+  await popup.waitForSelector('.group.preview', { timeout: 10000 });
+  console.log('Anteprima durante il calcolo:', await popup.$eval('.status.computing span', (el) => el.textContent), '|', await popup.$$eval('.group.preview', (els) => els.map((el) => `${el.querySelector('.group-name').textContent} (${el.querySelector('.badge').textContent}): ${el.querySelectorAll('.tab').length} tab`)), '| modificabile:', (await popup.$$('.group.preview input, .group.preview select')).length > 0);
+  await popup.screenshot({ path: 'scripts/smoke-popup-preview.png' });
+  await popup.click('.status.computing button.accept-preview');
+  await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 10000 });
+  console.log('Dopo "Usa questa":', await popup.$$eval('.group:not(.existing)', (els) => els.map((el) => `${el.querySelector('.group-name').value} (${el.querySelector('.badge').textContent})`)), '| Applica visibile:', (await popup.$('footer button.apply')) !== null);
   ai.hang = false;
 
   // Descrizione delle pagine: interruttore nella sezione Privacy, poi una nuova proposta.
@@ -280,6 +293,10 @@ try {
   const ids = await sw.evaluate(async () => (await chrome.tabs.query({})).map((t) => t.id));
   console.log('Nessun ID di Chrome nelle richieste:', !ids.some((id) => JSON.stringify(ai.requests).includes(`:${id},`) || JSON.stringify(ai.requests).includes(`"${id}"`)));
   console.log('Avvisi:', await popup.$eval('.warnings', (el) => el.textContent).catch(() => 'nessuno'));
+  const cachedGroups = await repropose({ keepCache: true });
+  const cachedRequests = ai.requests.filter((r) => r.systemone).length;
+  console.log('Ricalcola con la cache:', cachedGroups, '| richieste System One', cachedRequests);
+  if (cachedRequests > 0) throw new Error('La cache del Classificatore non è stata usata');
 
   // Le quattro righe della tabella dei fallback, con tutte le tab (minimo 2, nessun dominio escluso).
   // I provider si accendono e spengono direttamente in storage.sync: il salvataggio dall'interfaccia è già provato sopra.

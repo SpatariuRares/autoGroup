@@ -41,10 +41,14 @@ export function systemPrompt(request: GenerateRequest): string {
   return rules.join('\n');
 }
 
-/** Messaggio utente: opzioni note e tab, in JSON compatto. */
+/**
+ * Messaggio utente: opzioni note e tab, in JSON compatto. In "solo nuovi" le opzioni servono solo a
+ * non ripeterne i nomi, quindi vanno senza descrizione: meno token da elaborare (e, con Gemini Nano,
+ * più tab per blocco).
+ */
 export function userPrompt(request: GenerateRequest): string {
   return JSON.stringify({
-    options: request.options,
+    options: request.mode === 'new-only' ? request.options.map((o) => o.name) : request.options,
     tabs: request.tabs,
   });
 }

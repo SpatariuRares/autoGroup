@@ -34,6 +34,11 @@ export interface Generator {
   /** Nome del provider per gli avvisi, es. "OpenRouter (openrouter.ai)". */
   readonly label: string;
   generate(request: GenerateRequest, signal?: AbortSignal): Promise<RawGroup[]>;
+  /**
+   * Facoltativo: prepara in anticipo quello che serve a `generate` con questa modalità e lingua
+   * (Gemini Nano crea la sessione), mentre la pipeline fa altro. Non fallisce mai.
+   */
+  prepare?(mode: GenerateRequest['mode'], language: string): void;
   /** Descrizione di una categoria a partire dal nome e da alcune tab di esempio ("Salva nella lista"). */
   describe(request: DescribeRequest, signal?: AbortSignal): Promise<string>;
 }

@@ -2,6 +2,14 @@ import { postJson, TIMINGS } from './http';
 import { cleanDescription, describePrompt, GROUPS_SCHEMA, parseGroups, systemPrompt, userPrompt } from './prompt';
 import { ProviderError, type DescribeRequest, type GenerateRequest, type Generator, type RawGroup } from './types';
 
+/**
+ * Tetto ai token della risposta di `generate`, ragionamento compreso. La risposta utile è piccola
+ * (nomi e ID brevi); il tetto serve con i modelli che ragionano: dopo un timeout un server locale
+ * può continuare a generare per minuti (misurato: oltre 13 con 30 tab) e tenere occupata la GPU
+ * per il calcolo successivo. Con il tetto si ferma da solo.
+ */
+export const GENERATE_MAX_TOKENS = 4096;
+
 export interface OpenAiGeneratorConfig {
   label: string;
   baseUrl: string;
@@ -43,12 +51,14 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
       };
       let content: string;
       try {
-        ({ content } = await chat({ messages, temperature: 0, response_format: structured }, signal));
+        ({ content } = await chat({ messages, temperature: 0, max_tokens: GENERATE_MAX_TOKENS, response_format: structured }, signal));
       } catch (err) {
-        // Alcuni server non supportano lo structured output: si ritenta una volta senza.
+        // Alcuni server non supportano lo structured output, e alcuni modelli (es. i modelli di
+        // ragionamento di OpenAI) rifiutano `max_tokens`: si ritenta una volta con la richiesta minima.
         if (!(err instanceof ProviderError) || err.status !== 400) throw err;
         ({ content } = await chat({ messages, temperature: 0 }, signal));
       }
+      // Una risposta tagliata dal tetto non è JSON completo: la lettura la scarta come non valida.
       const groups = parseGroups(content);
       if (!groups) throw new ProviderError('invalid-response', 'JSON fuori schema');
       return groups as RawGroup[];

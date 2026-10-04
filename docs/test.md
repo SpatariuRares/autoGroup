@@ -168,6 +168,25 @@ Prova di mutazione fatta a mano: togliendo lo scarto delle tab duplicate o il co
 
 Ogni test nuovo è stato provato con una mutazione: rimettendo il comportamento vecchio, fallisce.
 
+## Scenari coperti (anteprima per sito e tempi), in `tests/preview.test.ts`
+
+- Mentre l'AI calcola, lo stato annunciato è `computing` con la proposta per sito in `preview`; la proposta AI la sostituisce e `preview` sparisce.
+- "Usa questa": richiesta interrotta, proposta per sito in `ready`, senza avviso, modificabile e applicabile; riaprendo il pannello viene riusata senza nuove richieste; senza calcolo in corso non cambia nulla; un calcolo in coda senza anteprima finisce come con "Interrompi".
+- "Interrompi" resta com'era: nessuna proposta, nemmeno l'anteprima.
+- Nessuna anteprima in modalità per sito e senza livelli AI utilizzabili.
+- Tempi: fasi misurate con il Generatore, con il Generatore in errore (anche `domain`) e in modalità per sito; il cronometro con un orologio finto.
+- Prova di mutazione: senza l'anteprima falliscono 4 test.
+
+## Scenari coperti (cache, Generatore e Gemini Nano più veloci), in `tests/speed.test.ts`
+
+- Cache del Classificatore: aprendo una tab si classifica solo quella, con lo stesso risultato; "Ricalcola" e il cambio di soglia non fanno richieste; cambiare la descrizione di una categoria o il modello riclassifica tutto; una risposta illeggibile non viene ricordata; dopo un errore non resta nulla in cache.
+- Cache delle descrizioni: un nuovo calcolo legge solo le pagine nuove; una pagina lenta o non accessibile si riprova; una tab sospesa ritrova la descrizione dello stesso URL senza essere letta.
+- `createSessionCache`: oltre il limite escono le voci più vecchie, una voce riscritta torna la più recente.
+- Generatore: `max_tokens` inviato; risposta tagliata → "risposta non valida" e dominio; dopo un 400 il nuovo tentativo è senza schema né tetto; in "solo nuovi" le opzioni vanno solo per nome.
+- Gemini Nano: sessione base creata una volta e riusata; con il Classificatore la sessione esiste già mentre il Classificatore lavora; una creazione fallita (anche quella anticipata) e una sessione rotta non vengono riusate.
+- Il test di privacy del Generatore cercava "token" in tutta la richiesta e ora lo trovava in `max_tokens`: cerca `token=abc` e `abc`.
+- Prove di mutazione su 16 punti del codice nuovo: ognuna fa fallire almeno un test.
+
 ## Prova in Chrome
 
 `npm run smoke` compila e lancia `scripts/smoke.mjs`: apre Chrome for Testing con l'estensione caricata, apre pagine servite da un server locale su `localhost` e `127.0.0.1` (due domini diversi), apre il pannello laterale come pagina (`sidepanel.html`), ricarica il pannello per verificare che la proposta resti, rinomina un gruppo, ne cambia il colore e sposta una tab (salvando uno screenshot in `scripts/smoke-popup.png`), ricarica di nuovo per verificare che le modifiche restino, preme "Applica", poi "Annulla ultima organizzazione" e controlla che ordine delle tab e gruppi tornino come prima; infine apre la pagina opzioni, prova la sezione Categorie (nome duplicato rifiutato, rinomina, aggiunta, riordino, ripristino, controllando `storage.sync`), imposta il minimo a 3 ed esclude `127.0.0.1` (screenshot in `scripts/smoke-options.png`), controlla `storage.sync` e ricalcola la proposta. Stampa i gruppi creati e gli eventuali errori in console del service worker e del pannello.

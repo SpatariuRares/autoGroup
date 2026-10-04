@@ -6,11 +6,13 @@ import { ProviderError, type AiOption, type AiTab, type Classifier, type Generat
 import { categoryKey, providerLabel } from '../settings';
 import type { GroupColor, ProposalWarning, ProposedGroup } from '../shared/types';
 import { buildOptions, prepareTabs } from './ai-input';
+import { withClassificationCache } from './classification-cache';
 import { createColorAssigner } from './colors';
 import { readDescriptions } from './description-reader';
 import { groupByDomain } from './domain-grouping';
 import { applyGroupRules, type RulesContext } from './group-rules';
 import type { ProposalInputs } from './proposal-builder';
+import type { Stopwatch } from './stopwatch';
 import { validateGroups, type ValidGroup } from './validator';
 
 interface PipelineResult {
@@ -24,7 +26,7 @@ function resolveClassifier(inputs: ProposalInputs, warnings: ProposalWarning[]):
   const label = providerLabel('classifier', settings);
   if (missingPermission) warnings.push({ level: 'classifier', provider: label, cause: 'no-permission' });
   if (!usable) return null;
-  return createSystemOneClassifier({ label, baseUrl: settings.baseUrl, model: settings.model, apiKey });
+  return withClassificationCache(createSystemOneClassifier({ label, baseUrl: settings.baseUrl, model: settings.model, apiKey }), settings);
 }
 
 /**
@@ -48,6 +50,15 @@ export function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarni
       break;
   }
   return null;
+}
+
+/**
+ * Vero se il calcolo interrogherà almeno un livello AI: modalità AI, qualche tab candidata e un
+ * Classificatore o un Generatore utilizzabile. Solo allora vale la pena mostrare l'anteprima per sito.
+ */
+export function willAskAi(inputs: ProposalInputs): boolean {
+  if (inputs.settings.mode !== 'ai' || inputs.candidates.length === 0) return false;
+  return inputs.classifier.usable || inputs.generator.usable || inputs.nano === 'available';
 }
 
 /** Lingua dei nomi nuovi, presa dalla lingua del browser. */
@@ -110,23 +121,32 @@ function recordFailure(
  *
  * Se un provider va in errore si scende di un livello e si aggiunge un avviso.
  */
-export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal): Promise<PipelineResult> {
+export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal, clock?: Stopwatch): Promise<PipelineResult> {
+  const byDomain = (warnings: ProposalWarning[]): PipelineResult => {
+    const groups = domainGroups(inputs);
+    clock?.lap('domain');
+    return { groups, warnings };
+  };
   // Modalità "solo dominio": nessuna AI, nessuna pagina letta, nessun avviso sui provider.
-  if (inputs.settings.mode === 'domain') return { groups: domainGroups(inputs), warnings: [] };
+  if (inputs.settings.mode === 'domain') return byDomain([]);
   const warnings: ProposalWarning[] = [];
   const classifier = resolveClassifier(inputs, warnings);
   const generator = resolveGenerator(inputs, warnings);
   if (inputs.candidates.length === 0) return { groups: [], warnings };
+  // Gemini Nano prepara la sessione mentre si leggono le pagine e lavora il Classificatore.
+  generator?.prepare?.(classifier ? 'new-only' : 'full', languageName());
   // Le descrizioni servono solo all'AI: senza Classificatore né Generatore non si legge nessuna pagina.
   const descriptions = inputs.readDescriptions && (classifier || generator) ? await readDescriptions(inputs.candidates) : new Map<number, string>();
   signal?.throwIfAborted();
+  clock?.lap('descriptions');
   const ctx = aiContext(inputs, descriptions);
 
   // Senza opzioni (nessuna categoria né gruppo aperto) il Classificatore potrebbe solo rispondere "nessuna".
   if (classifier && ctx.options.length > 0) {
     try {
-      return { groups: await classifyThenGenerate(classifier, generator, inputs, ctx, warnings, signal), warnings };
+      return { groups: await classifyThenGenerate(classifier, generator, inputs, ctx, warnings, signal, clock), warnings };
     } catch (err) {
+      clock?.lap('classifier');
       recordFailure(err, 'classifier', classifier.label, warnings, signal);
     }
   }
@@ -134,12 +154,15 @@ export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal):
     try {
       const raw = await generator.generate({ mode: 'full', tabs: ctx.tabs, options: ctx.aiOptions, language: languageName() }, signal);
       const valid = validateGroups(raw, new Set(ctx.rules.byShortId.keys()), ctx.knownNames);
-      return { groups: applyGroupRules(valid, ctx.rules).groups, warnings };
+      const groups = applyGroupRules(valid, ctx.rules).groups;
+      clock?.lap('generator');
+      return { groups, warnings };
     } catch (err) {
+      clock?.lap('generator');
       recordFailure(err, 'generator', generator.label, warnings, signal);
     }
   }
-  return { groups: domainGroups(inputs), warnings };
+  return byDomain(warnings);
 }
 
 /**
@@ -155,8 +178,10 @@ async function classifyThenGenerate(
   ctx: ReturnType<typeof aiContext>,
   warnings: ProposalWarning[],
   signal?: AbortSignal,
+  clock?: Stopwatch,
 ): Promise<ProposedGroup[]> {
   const classified = await classifier.classify(ctx.tabs, ctx.aiOptions, signal);
+  clock?.lap('classifier');
   const byOption = new Map<string, ValidGroup>();
   const uncertain: string[] = [];
   for (const tab of ctx.tabs) {
@@ -184,6 +209,8 @@ async function classifyThenGenerate(
       step2 = validateGroups(raw, new Set(leftover), ctx.knownNames);
     } catch (err) {
       recordFailure(err, 'generator', generator.label, warnings, signal);
+    } finally {
+      clock?.lap('generator');
     }
   }
   return applyGroupRules(mergeByName([...kept, ...step2]), ctx.rules).groups;
@@ -201,8 +228,8 @@ function mergeByName(groups: ValidGroup[]): ValidGroup[] {
   return [...merged.values()];
 }
 
-/** Ultimo livello: raggruppamento per dominio. */
-function domainGroups(inputs: ProposalInputs): ProposedGroup[] {
+/** Ultimo livello: raggruppamento per dominio. È anche l'anteprima mostrata mentre l'AI calcola. */
+export function domainGroups(inputs: ProposalInputs): ProposedGroup[] {
   const colors = createColorAssigner(inputs.openGroups.map((g) => g.color));
   // Un gruppo aperto che si chiama come il dominio (es. "github.com") riceve le tab di quel sito.
   const open = new Map(inputs.openGroups.filter((g) => g.title?.trim()).map((g) => [categoryKey(g.title!), g]));

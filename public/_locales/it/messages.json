@@ -506,6 +506,12 @@
   "popupAbort": {
     "message": "Interrompi"
   },
+  "panelPreviewComputing": {
+    "message": "Intanto, la proposta per sito: l'AI sta calcolando…"
+  },
+  "panelUsePreview": {
+    "message": "Usa questa"
+  },
   "popupAborted": {
     "message": "Calcolo interrotto: nessuna proposta. Premi «Ricalcola» per riprovare."
   },

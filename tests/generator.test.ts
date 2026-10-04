@@ -82,7 +82,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
       { id: 't2', title: 'Pagina', url: 'example.com' },
     ]);
     const raw = JSON.stringify(requests[0]!.body);
-    for (const leak of ['segreto', 'risultati', 'bank', 'Conto', 'token', 'pass', ...Object.values(ids).map(String)]) {
+    for (const leak of ['segreto', 'risultati', 'bank', 'Conto', 'token=abc', 'abc', 'pass', ...Object.values(ids).map(String)]) {
       expect(raw).not.toContain(leak);
     }
   });

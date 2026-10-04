@@ -81,6 +81,9 @@ export function createNanoGenerator(): Generator {
   return {
     label: NANO_LABEL,
     generate: (request, signal) => generate(withNanoLanguage(request), signal),
+    prepare(mode, language) {
+      baseSession(systemPrompt(withNanoLanguage({ mode, language, tabs: [], options: [] }))).catch(() => {});
+    },
     describe: (request, signal) => withTimeout(signal, (s) => describe(withNanoLanguage(request), s)),
   };
 }
@@ -108,11 +111,58 @@ function asProviderError(err: unknown, signal: AbortSignal, reason: 'unavailable
   return new ProviderError(reason, String(err));
 }
 
+/** Sessioni base già create, per prompt di sistema. Legate all'oggetto `LanguageModel`, che i test sostituiscono. */
+const baseSessions = new WeakMap<object, Map<string, Promise<Session>>>();
+/** Una per modalità e lingua bastano; oltre, la più vecchia viene distrutta. */
+const MAX_BASE_SESSIONS = 4;
+
+/**
+ * La sessione con il prompt di sistema, creata una volta e poi riusata: non riceve mai un prompt,
+ * viene solo misurata e clonata per ogni blocco, quindi resta pulita. Crearla carica il modello e
+ * legge il prompt di sistema; `prepare` la avvia mentre la pipeline legge le pagine o interroga il
+ * Classificatore, e i calcoli successivi la ritrovano pronta finché il service worker resta vivo.
+ */
+function baseSession(system: string): Promise<Session> {
+  let sessions = baseSessions.get(LanguageModel);
+  if (!sessions) baseSessions.set(LanguageModel, (sessions = new Map()));
+  const existing = sessions.get(system);
+  if (existing) return existing;
+  const created = LanguageModel.create({ ...languageOptions(), initialPrompts: [{ role: 'system', content: system }] });
+  sessions.set(system, created);
+  created.catch(() => forgetBase(system, created));
+  if (sessions.size > MAX_BASE_SESSIONS) {
+    const [oldest] = sessions.keys();
+    forgetBase(oldest!, sessions.get(oldest!)!);
+  }
+  return created;
+}
+
+/** Toglie una sessione base dalla cache (se è ancora quella) e la distrugge quando è pronta. */
+function forgetBase(system: string, session: Promise<Session>): void {
+  const sessions = baseSessions.get(LanguageModel);
+  if (sessions?.get(system) === session) sessions.delete(system);
+  session.then((s) => s.destroy(), () => {});
+}
+
+/** Attende `promise`, ma si ferma subito se il segnale viene interrotto (la promessa resta valida per gli altri). */
+function untilAborted<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(signal.reason);
+    const onAbort = () => reject(signal.reason);
+    signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort));
+  });
+}
+
 async function generate(request: GenerateRequest, signal?: AbortSignal): Promise<RawGroup[]> {
+  const system = systemPrompt(request);
+  const pending = baseSession(system);
   const base = await withTimeout(signal, async (s) => {
     try {
-      return await LanguageModel.create({ ...languageOptions(), initialPrompts: [{ role: 'system', content: systemPrompt(request) }], signal: s });
+      return await untilAborted(pending, s);
     } catch (err) {
+      // Una creazione scaduta o fallita non va riusata: il prossimo calcolo ne crea una nuova.
+      if (!signal?.aborted) forgetBase(system, pending);
       throw asProviderError(err, s, 'unavailable');
     }
   });
@@ -138,8 +188,10 @@ async function generate(request: GenerateRequest, signal?: AbortSignal): Promise
       }
     }
     return results;
-  } finally {
-    base.destroy();
+  } catch (err) {
+    // La sessione base potrebbe non essere più valida (es. distrutta da Chrome): non la si riusa.
+    if (!signal?.aborted) forgetBase(system, pending);
+    throw err;
   }
 }
 
@@ -185,12 +237,16 @@ async function splitIntoBlocks(session: Session, request: GenerateRequest, budge
   const whole = await measure(session, userPrompt(request));
   if (whole <= budget) return [request.tabs];
 
-  const fixed = await measure(session, userPrompt({ ...request, tabs: [] }));
+  // Tutte le misure insieme: ognuna è una chiamata al modello, in fila costerebbero N giri.
+  const [fixed, costs] = await Promise.all([
+    measure(session, userPrompt({ ...request, tabs: [] })),
+    Promise.all(request.tabs.map((tab) => measure(session, JSON.stringify(tab)))),
+  ]);
   const blocks: AiTab[][] = [];
   let current: AiTab[] = [];
   let used = fixed;
-  for (const tab of request.tabs) {
-    const cost = await measure(session, JSON.stringify(tab));
+  for (const [i, tab] of request.tabs.entries()) {
+    const cost = costs[i]!;
     // Margine per i nomi inventati nei blocchi precedenti, aggiunti alle opzioni.
     const reserve = blocks.length * 16;
     if (current.length > 0 && used + cost + reserve > budget) {

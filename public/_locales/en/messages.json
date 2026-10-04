@@ -506,6 +506,12 @@
   "popupAbort": {
     "message": "Stop"
   },
+  "panelPreviewComputing": {
+    "message": "Meanwhile, the by-site proposal: AI is computing…"
+  },
+  "panelUsePreview": {
+    "message": "Use this"
+  },
   "popupAborted": {
     "message": "Computation stopped: no proposal. Press “Recompute” to try again."
   },

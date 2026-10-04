@@ -2,13 +2,18 @@ import { browser } from 'wxt/browser';
 import { loadSettings } from '../settings';
 import type { OrganizerState, Proposal, ProposalEdit } from '../shared/types';
 import { applyProposal } from './applier';
-import { buildProposal, collectInputs, signatureOf } from './proposal-builder';
+import { willAskAi } from './pipeline';
+import { buildPreview, buildProposal, collectInputs, signatureOf } from './proposal-builder';
 import { TAB_GROUP_ID_NONE } from './tab-selection';
 import { editProposal } from './proposal-edits';
 import { saveGroupToList } from './save-to-list';
 import { loadState, saveState } from './session-state';
+import { createStopwatch } from './stopwatch';
 import { selectCandidateTabs } from './tab-selection';
 import { restoreSnapshot } from './undo';
+
+/** Motivo dell'interruzione chiesta da "Usa questa": il calcolo finisce con l'anteprima per sito. */
+const ACCEPT_PREVIEW = 'accept-preview';
 
 /**
  * "add-tab" arriva dal pannello con i dati della tab: si accetta solo una tab già nella proposta o
@@ -60,6 +65,11 @@ export interface Organizer {
   closeTab(tabId: number): Promise<OrganizerState>;
   /** "Interrompi": annulla le richieste in corso e i calcoli in coda; nessuno produce una proposta. */
   abort(): Promise<OrganizerState>;
+  /**
+   * "Usa questa": come "Interrompi", ma il calcolo che sta mostrando l'anteprima per sito finisce con
+   * quella come proposta corrente, modificabile e applicabile. Senza anteprima equivale a "Interrompi".
+   */
+  acceptPreview(): Promise<OrganizerState>;
   /** Stato corrente: fase, proposta, annulla disponibile. */
   state(): Promise<OrganizerState>;
 }
@@ -92,10 +102,13 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     const current = await loadState();
     // La foto per "Annulla" resta valida fino alla prossima organizzazione applicata.
     const { undo } = current;
+    let preview: Proposal | undefined;
     try {
       // "Interrompi" premuto mentre il calcolo era ancora in coda.
       signal.throwIfAborted();
+      const clock = createStopwatch();
       const inputs = await collectInputs(windowId);
+      clock.lap('inputs');
       const reusable =
         !force &&
         current.phase === 'ready' &&
@@ -103,11 +116,18 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         current.proposal?.signature === signatureOf(inputs);
       if (reusable) return current;
 
-      await setState({ phase: 'computing', windowId, undo });
-      const proposal = await buildProposal(inputs, signal);
+      // Mentre l'AI lavora il pannello mostra subito la proposta per sito, che costa pochi millisecondi.
+      preview = willAskAi(inputs) ? buildPreview(inputs) : undefined;
+      await setState({ phase: 'computing', windowId, undo, ...(preview ? { preview } : {}) });
+      clock.lap('preview');
+      const proposal = await buildProposal(inputs, signal, clock);
       signal.throwIfAborted();
+      console.info('autoGroup: tempi del calcolo (ms)', proposal.timings);
       return await setState({ phase: 'ready', windowId, proposal, undo });
     } catch (err) {
+      if (signal.aborted && signal.reason === ACCEPT_PREVIEW && preview) {
+        return await setState({ phase: 'ready', windowId, proposal: preview, undo });
+      }
       if (signal.aborted) return await setState({ phase: 'idle', windowId, undo, notice: { key: 'popupAborted' } });
       console.error('autoGroup: calcolo della proposta fallito', err);
       return await setState({ phase: 'idle', windowId, error: 'errorPropose', undo });
@@ -202,6 +222,11 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     async abort() {
       // Non passa dalla coda: deve agire proprio mentre il calcolo la occupa.
       for (const controller of controllers) controller.abort();
+      return computing?.result ?? loadState();
+    },
+
+    async acceptPreview() {
+      for (const controller of controllers) controller.abort(ACCEPT_PREVIEW);
       return computing?.result ?? loadState();
     },
 

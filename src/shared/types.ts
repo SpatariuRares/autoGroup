@@ -62,6 +62,12 @@ export interface ProposalWarning {
     | 'downloading';
 }
 
+/** Fasi misurate di un calcolo della proposta. */
+export type Phase = 'inputs' | 'preview' | 'descriptions' | 'classifier' | 'generator' | 'domain';
+
+/** Durata in ms di ogni fase eseguita e del calcolo intero (`total`). Solo diagnostica. */
+export type Timings = Partial<Record<Phase | 'total', number>>;
+
 export interface Proposal {
   windowId: number;
   createdAt: number;
@@ -69,6 +75,8 @@ export interface Proposal {
   signature: string;
   groups: ProposedGroup[];
   warnings: ProposalWarning[];
+  /** Dove è andato il tempo del calcolo; assente nell'anteprima per sito. */
+  timings?: Timings;
 }
 
 /** Una modifica fatta dall'utente nell'anteprima. */
@@ -105,6 +113,11 @@ export interface OrganizerState {
   phase: 'idle' | 'computing' | 'ready';
   windowId?: number;
   proposal?: Proposal;
+  /**
+   * Solo durante `computing` in modalità AI: la proposta per sito, pronta subito. Il pannello la mostra
+   * in sola lettura mentre l'AI lavora; "Usa questa" ferma l'AI e la rende la proposta corrente.
+   */
+  preview?: Proposal;
   /** Presente finché "Annulla ultima organizzazione" è disponibile. */
   undo?: UndoSnapshot;
   /** Chiave i18n dell'ultimo errore, se il calcolo o l'applicazione sono falliti. */

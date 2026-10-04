@@ -31,6 +31,8 @@ export default defineBackground(() => {
         return organizer.apply();
       case 'organizer/abort':
         return organizer.abort();
+      case 'organizer/accept-preview':
+        return organizer.acceptPreview();
       case 'organizer/undo':
         return organizer.undo();
       case 'organizer/close-tab':

@@ -8,6 +8,7 @@ export type OrganizerRequest =
   | { type: 'organizer/save-to-list'; groupId: string }
   | { type: 'organizer/apply' }
   | { type: 'organizer/abort' }
+  | { type: 'organizer/accept-preview' }
   | { type: 'organizer/undo' }
   | { type: 'organizer/close-tab'; tabId: number };
 
@@ -26,6 +27,7 @@ const REQUEST_TYPES = new Set<string>([
   'organizer/save-to-list',
   'organizer/apply',
   'organizer/abort',
+  'organizer/accept-preview',
   'organizer/undo',
   'organizer/close-tab',
 ] satisfies OrganizerRequest['type'][]);

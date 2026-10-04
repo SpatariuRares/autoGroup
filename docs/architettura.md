@@ -67,6 +67,7 @@ scripts/
 | `apply()` | Salva la foto per "Annulla", crea in Chrome i gruppi della proposta corrente, poi azzera la proposta. |
 | `undo()` | Annulla l'ultima organizzazione applicata e azzera la proposta. |
 | `abort()` | "Interrompi": annulla le richieste del calcolo in corso; il calcolo finisce senza proposta. |
+| `acceptPreview()` | "Usa questa": come `abort()`, ma il calcolo che mostra l'anteprima per sito finisce con quella come proposta corrente. |
 | `state()` | Restituisce lo stato corrente. |
 
 ### Modifiche alla proposta
@@ -101,6 +102,19 @@ Una `propose` arrivata mentre un'altra è in corso o in coda ne condivide il ris
 ### Interrompi
 
 Ogni `propose` crea un `AbortController` già al momento della richiesta, prima di entrare in coda, e ne passa il segnale a `buildProposal` → `runPipeline` → adattatori → `fetch` (o Prompt API). `abort()` lo interrompe: le richieste in corso falliscono subito, anche durante l'attesa prima di un nuovo tentativo, e il calcolo finisce in `phase: 'idle'`, senza proposta, con l'avviso `popupAborted`. La foto per "Annulla" resta. Nel popup il pulsante "Interrompi" compare accanto a "Calcolo della proposta…". `abort()` interrompe tutti i calcoli in corso e in coda: un calcolo interrotto mentre era ancora in coda finisce allo stesso modo senza fare nessuna richiesta.
+
+### Anteprima per sito e "Usa questa"
+
+Con i provider locali la proposta AI arriva in 10–30 s, e dopo un timeout l'utente riceveva comunque il raggruppamento per dominio, che costa pochi millisecondi. Per questo, in modalità AI, `propose` calcola subito la proposta per sito (`buildPreview`, cioè `domainGroups` sulle stesse tab) e la mette nello stato `computing` come `preview`. Il pannello la mostra in sola lettura mentre l'AI lavora: niente rinomina, colori, spostamenti né "Applica".
+
+- L'anteprima c'è solo se l'AI verrà davvero interrogata (`willAskAi`): modalità AI, almeno una tab candidata e un Classificatore o un Generatore utilizzabile (o Gemini Nano disponibile). In modalità per sito, o senza provider, la proposta è già immediata.
+- Quando arriva la proposta AI, lo stato `ready` la sostituisce e `preview` sparisce.
+- **"Usa questa"** (`acceptPreview()`): interrompe i calcoli come "Interrompi", ma con il motivo `accept-preview`. Il calcolo che aveva un'anteprima finisce in `ready` con quella come proposta: modificabile, applicabile, senza avvisi. Ha la stessa impronta della proposta AI che stava per arrivare, quindi riaprendo il pannello viene riusata senza nuove chiamate; "Ricalcola" chiede di nuovo l'AI. Un calcolo ancora in coda, senza anteprima, finisce come con "Interrompi".
+- **"Interrompi" non cambia**: come chiede il PRD, non produce nessuna proposta, nemmeno quella per sito.
+
+### Tempi del calcolo (`stopwatch.ts`)
+
+Ogni `propose` che calcola davvero misura le sue fasi con un cronometro: `inputs` (`collectInputs`), `preview` (anteprima e primo salvataggio dello stato), `descriptions`, `classifier`, `generator`, `domain` (ripiego o modalità per sito) e `total`. Una fase che non parte non compare. I tempi, in millisecondi interi, vanno nel log del service worker (`autoGroup: tempi del calcolo (ms)`) e in `proposal.timings`, così lo smoke test e gli script di misura li leggono da `storage.session`. Sono solo diagnostica: non entrano nell'impronta e il pannello non li mostra.
 
 ### Impronta della proposta
 
@@ -140,6 +154,12 @@ Se non ci sono opzioni (nessuna categoria né gruppo aperto) il Classificatore n
 La disponibilità di Nano viene letta in `collectInputs` solo in modalità AI con Nano scelto, e fa parte dell'impronta: quando il download finisce, la proposta successiva viene ricalcolata.
 
 **Descrizione delle pagine** (`description-reader.ts`): se l'opzione è accesa e il permesso `<all_urls>` è concesso (`inputs.readDescriptions`), e solo se c'è almeno un livello AI da interrogare, prima delle chiamate la pipeline legge la meta description (o `og:description`, se la prima manca o è vuota) delle tab candidate con `chrome.scripting.executeScript`, tutte in parallelo e con un tempo massimo di 500 ms per tab. Le tab sospese da Risparmio memoria (`discarded`) non vengono mai lette, perché leggerle le risveglierebbe; sono saltate anche le pagine non `http(s)`, il Web Store e i PDF. Una tab che non risponde in tempo o non è accessibile resta con titolo e URL. Le tab dei domini esclusi non ci arrivano, perché la selezione le ha già scartate. La descrizione (al massimo 300 caratteri, spazi compattati) diventa `AiTab.description`, quindi arriva sia al Generatore sia al Classificatore (nello `state`). Con il raggruppamento per dominio non si legge nulla.
+
+**Cache delle descrizioni**: le descrizioni lette restano in `storage.session` (`descriptionCache`, per URL, al massimo 1000 voci), compreso "pagina senza descrizione". Un nuovo calcolo legge solo le pagine nuove. Una pagina che non ha risposto in tempo o non era accessibile non viene ricordata, quindi si riprova la volta dopo. Una tab sospesa con un URL già letto ritrova la descrizione senza essere risvegliata.
+
+**Cache del Classificatore** (`classification-cache.ts`, `withClassificationCache`): il Classificatore della pipeline è avvolto da una cache per tab in `storage.session` (`classifierCache`, al massimo 1000 voci). Al server vanno solo le tab mai viste con le stesse opzioni. La chiave è l'impronta SHA-256 di URL base, modello, opzioni (nomi e descrizioni), titolo, URL ripulito e descrizione della tab: cambiare una categoria, il modello o la pagina riclassifica. La soglia resta fuori, quindi cambiarla non costa richieste. Le risposte illeggibili (confidenza 0) non vengono ricordate. Il Classificatore è deterministico, quindi la cache vale anche con "Ricalcola". Se una richiesta fallisce non si ricorda nulla di quel calcolo. Misura con Rizzo Flow locale e 30 tab: 14,3 s a cache vuota, 0,48 s dopo l'apertura di una tab, 3 ms per "Ricalcola" o per un cambio di soglia.
+
+**Sessione di Gemini Nano in anticipo**: prima di leggere le pagine la pipeline chiama `generator.prepare?.(modalità, lingua)` (modalità "solo nuovi" se c'è un Classificatore, altrimenti "completo"). Gemini Nano crea così la sessione mentre si leggono le pagine e lavora il Classificatore. Il Generatore compatibile OpenAI non ha `prepare`.
 
 **Modalità completo**, passo per passo:
 
@@ -208,10 +228,13 @@ Le due strategie danno la stessa scelta per 29 tab su 30.
 ### Adattatore compatibile OpenAI (`src/ai/openai-generator.ts`)
 
 - `POST {URL base}/chat/completions` con `model`, `temperature: 0`, due messaggi (istruzioni; JSON con opzioni e tab) e `response_format: { type: 'json_schema', json_schema: { name: 'tab_groups', strict: true, schema } }`. Lo schema chiede `{ "groups": [{ "name": string, "tabs": [string] }] }`.
-- Se il server risponde 400 (tipicamente perché non supporta lo structured output) ritenta una volta senza `response_format`, affidandosi alle istruzioni e alla validazione. La risposta può anche essere in un blocco ```json.
+- `max_tokens: 4096` (`GENERATE_MAX_TOKENS`), ragionamento compreso. La risposta utile è piccola; il tetto serve con i modelli che ragionano, perché dopo un timeout un server locale può continuare a generare per minuti (misurato: oltre 13 con 30 tab) e tenere occupata la GPU per il calcolo successivo. Una risposta tagliata dal tetto non è JSON completo e diventa "risposta non valida".
+- Se il server risponde 400 (tipicamente perché non supporta lo structured output, o perché il modello rifiuta `max_tokens`, come i modelli di ragionamento di OpenAI) ritenta una volta con la richiesta minima, senza `response_format` né `max_tokens`, affidandosi alle istruzioni e alla validazione. La risposta può anche essere in un blocco ```json.
+- In modalità "solo nuovi" le opzioni arrivano solo per nome (`["Lavoro", "Notizie"]`): servono solo a non ripeterne i nomi, e le descrizioni sarebbero token in più da elaborare. In "completo" arrivano con la descrizione.
+- Il ragionamento non è configurabile: senza ragionamento, nella prova con Unsloth Studio, il modello ha risposto con un gruppo per tab, che il validatore scarterebbe, e i parametri per spegnerlo cambiano da server a server (`chat_template_kwargs`, `reasoning`, `think`).
 - Chiave API come `Authorization: Bearer …`, solo se presente (facoltativa per i server locali).
 - Timeout, nuovo tentativo e classificazione degli errori: vedi "Gestione degli errori".
-- `describe`: una richiesta senza schema (`temperature: 0.2`, `max_tokens: 120`) che chiede una frase nella lingua del browser; la risposta viene ripulita da virgolette e spazi e tagliata a 300 caratteri (`cleanDescription`).
+- `describe`: una richiesta senza schema (`temperature: 0.2`, `max_tokens: 1000`, che comprende l'eventuale ragionamento) che chiede una frase nella lingua del browser; una risposta tagliata (`finish_reason: "length"`) non viene salvata; altrimenti viene ripulita da virgolette e spazi e tagliata a 300 caratteri (`cleanDescription`).
 - `testOpenAiConnection`: una richiesta minima (`max_tokens: 1`) che verifica URL, chiave e modello.
 
 Aggiungere un provider compatibile significa aggiungere una voce a `GENERATOR_PRESETS`: la pipeline non cambia.
@@ -221,7 +244,8 @@ Aggiungere un provider compatibile significa aggiungere una voce a `GENERATOR_PR
 Stesso contratto (`Generator.generate` e `describe`) e stesse istruzioni e schema dell'adattatore OpenAI, ma tramite la Prompt API di Chrome (`LanguageModel`): nessuna chiave, nessun dato esce dal computer.
 
 - Sessione base con `initialPrompts: [{ role: 'system', … }]`; ogni prompt usa `responseConstraint: GROUPS_SCHEMA` per vincolare la risposta.
-- **Divisione in blocchi**: il budget è il contesto libero della sessione base (`contextWindow − contextUsage`, con ripiego su `inputQuota`/`inputUsage` per le versioni precedenti di Chrome) meno il 25% lasciato alla risposta. Se il prompt con tutte le tab supera il budget, le tab vengono distribuite in blocchi misurati con `measureContextUsage`; ogni blocco ha almeno una tab e un piccolo margine per i nomi che arriveranno.
+- **Sessione base riusata**: viene creata una volta per prompt di sistema (cioè per modalità e lingua) e tenuta in memoria finché il service worker resta vivo, al massimo 4. Non riceve mai un prompt: viene solo misurata e clonata, quindi resta pulita. `prepare` la avvia in anticipo; i calcoli successivi la ritrovano pronta. Una creazione fallita o scaduta, o una sessione che smette di funzionare (es. distrutta da Chrome), esce dalla cache e il calcolo dopo ne crea una nuova. La cache è legata all'oggetto `LanguageModel`, che i test sostituiscono.
+- **Divisione in blocchi**: il budget è il contesto libero della sessione base (`contextWindow − contextUsage`, con ripiego su `inputQuota`/`inputUsage` per le versioni precedenti di Chrome) meno il 25% lasciato alla risposta. Se il prompt con tutte le tab supera il budget, le tab vengono distribuite in blocchi misurati con `measureContextUsage`, con tutte le misure in parallelo; ogni blocco ha almeno una tab e un piccolo margine per i nomi che arriveranno.
 - Ogni blocco gira in un clone della sessione base, così il contesto non si accumula. I nomi inventati nei blocchi precedenti si aggiungono alle opzioni dei blocchi successivi (con descrizione vuota); i gruppi con lo stesso nome nei vari blocchi vengono poi uniti dal validatore.
 - Errori: creazione della sessione fallita → `unavailable`; ogni altro errore della Prompt API (clone, misura, prompt, es. contesto superato) → `invalid-request`; risposta fuori schema → `invalid-response`. La pipeline ripiega sul dominio con l'avviso.
 - Tempo massimo: 30 s per ogni chiamata (creazione della sessione, misura, ogni blocco), come per ogni richiesta HTTP del Generatore compatibile OpenAI; con molte tab il calcolo totale può quindi durare di più senza scadere.
@@ -272,7 +296,8 @@ Lo stato vive in `chrome.storage.session` sotto la chiave `organizer`:
 interface OrganizerState {
   phase: 'idle' | 'computing' | 'ready';
   windowId?: number;
-  proposal?: Proposal;   // gruppi + avvisi
+  proposal?: Proposal;   // gruppi + avvisi (+ timings, solo diagnostica)
+  preview?: Proposal;    // solo in "computing" con l'AI: proposta per sito in sola lettura
   undo?: UndoSnapshot;   // presente finché "Annulla" è disponibile
   notice?: { key, arg }; // esito dell'ultima operazione, es. "Salva nella lista"
   error?: string;        // chiave i18n dell'ultimo errore
@@ -283,7 +308,7 @@ Lo stato ha sempre il `windowId` a cui si riferisce: è unico per tutte le fines
 
 Sopravvive alla chiusura del pannello e al riavvio del service worker, ma non alla chiusura di Chrome. Se il pannello si chiude durante il calcolo, il service worker finisce comunque e salva la proposta; riaprendo il pannello, `propose` trova la proposta pronta e la restituisce.
 
-Divisione degli storage prevista dal PRD: `sync` per categorie e preferenze, `local` per le chiavi API, `session` per lo stato dell'Organizzatore. Oggi: `session` per lo stato, `sync` per le impostazioni.
+Divisione degli storage prevista dal PRD: `sync` per categorie e preferenze, `local` per le chiavi API, `session` per lo stato dell'Organizzatore. In `session` ci sono anche le due cache della pipeline, `classifierCache` e `descriptionCache` (`session-cache.ts`, al massimo 1000 voci ciascuna, escono le più vecchie): come lo stato, spariscono alla chiusura di Chrome, quindi titoli e URL non restano sul disco.
 
 ## Impostazioni
 
@@ -372,6 +397,7 @@ Definiti in `src/shared/messages.ts`.
 | `organizer/apply` | pannello → SW | `{ ok, state }` |
 | `organizer/undo` | pannello → SW | `{ ok, state }` |
 | `organizer/abort` | pannello → SW | `{ ok, state }`; non passa dalla coda |
+| `organizer/accept-preview` | pannello → SW | `{ ok, state }` con l'anteprima come proposta; non passa dalla coda |
 | `organizer/state-changed` (`state`) | SW → pannello | nessuna; il SW ignora l'errore se il pannello è chiuso |
 
 Il service worker risponde con `sendResponse` + `return true`, che funziona in tutte le versioni di Chrome MV3, e ignora i messaggi che non superano `isOrganizerRequest`. Se la risposta è un errore, il pannello mostra "Si è verificato un errore imprevisto. Riprova.".
@@ -396,7 +422,7 @@ All'apertura legge la finestra corrente e chiede `organizer/propose` con la moda
 
 Struttura Material 3:
 - barra in alto con il titolo e ⚙ per le impostazioni;
-- durante il calcolo, barra di avanzamento lineare indeterminata e "Interrompi";
+- durante il calcolo, barra di avanzamento lineare indeterminata e "Interrompi"; con l'AI, sotto, l'anteprima per sito in sola lettura (schede attenuate) e "Usa questa";
 - contenuto che scorre;
 - barra delle azioni fissa in basso: "Annulla ultima organizzazione", "Ricalcola" (pulsante con contorno), "Applica" (pulsante pieno).
 
