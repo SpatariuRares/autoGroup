@@ -104,7 +104,7 @@
     "message": "Sposta in…"
   },
   "popupRemoveTab": {
-    "message": "Togli dal gruppo (la tab resta libera)"
+    "message": "Togli dal gruppo (la tab resta aperta e libera)"
   },
   "popupUnnamed": {
     "message": "(senza nome)"
@@ -548,7 +548,69 @@
   "panelStale": {
     "message": "Le tab sono cambiate dopo questa proposta."
   },
-  "panelIdle": {
-    "message": "Premi «Ricalcola» per proporre i gruppi delle tab libere di questa finestra."
+  "panelModeSite": {
+    "message": "Per sito"
+  },
+  "panelModeAi": {
+    "message": "Con l'AI"
+  },
+  "panelModeSiteSummary": {
+    "message": "Le tab dello stesso sito finiscono insieme. Nessun dato inviato."
+  },
+  "panelNoProvider": {
+    "message": "Nessun provider AI configurato: si raggruppa per sito."
+  },
+  "panelChangeProviders": {
+    "message": "Cambia"
+  },
+  "panelSectionNew": {
+    "message": "Nuovi gruppi"
+  },
+  "panelSectionExisting": {
+    "message": "Gruppi già aperti"
+  },
+  "panelSectionFree": {
+    "message": "Senza gruppo"
+  },
+  "panelFreeHint": {
+    "message": "Restano fuori dai gruppi. Puoi aggiungerle a un gruppo."
+  },
+  "panelSectionHeld": {
+    "message": "Non organizzabili"
+  },
+  "panelHeldPinned": {
+    "message": "fissata"
+  },
+  "panelHeldInternal": {
+    "message": "pagina del browser"
+  },
+  "panelHeldExcluded": {
+    "message": "dominio escluso"
+  },
+  "panelHeldLoading": {
+    "message": "in caricamento"
+  },
+  "panelNewTab": {
+    "message": "nuova"
+  },
+  "panelAddTo": {
+    "message": "Aggiungi a…"
+  },
+  "panelAddedCount": {
+    "message": "+ $COUNT$ nuove",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupTabCountOne": {
+    "message": "1 tab"
+  },
+  "panelAddedCountOne": {
+    "message": "+ 1 nuova"
+  },
+  "panelCloseTab": {
+    "message": "Chiudi la tab"
   }
 }

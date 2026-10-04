@@ -88,8 +88,8 @@ try {
   popup.on('console', (m) => m.type() === 'error' && errors.push(`[popup] ${m.text()}`));
   popup.on('pageerror', (e) => errors.push(`[popup] ${e.message}`));
   await popup.goto(`chrome-extension://${extId}/sidepanel.html`);
-  await popup.waitForSelector('.group', { timeout: 10000 });
-  const preview = await popup.$$eval('.group', (els) =>
+  await popup.waitForSelector('.group:not(.existing)', { timeout: 10000 });
+  const preview = await popup.$$eval('.group:not(.existing)', (els) =>
     els.map((el) => `${el.querySelector('.group-name').value} (${el.querySelector('.badge').textContent}): ${el.querySelectorAll('.tab').length} tab`),
   );
   console.log('Anteprima:', preview);
@@ -98,8 +98,8 @@ try {
 
   // Chiudere e riaprire il popup: la proposta deve essere ancora lì.
   await popup.reload();
-  await popup.waitForSelector('.group', { timeout: 10000 });
-  console.log('Proposta dopo la riapertura:', (await popup.$$('.group')).length, 'gruppi');
+  await popup.waitForSelector('.group:not(.existing)', { timeout: 10000 });
+  console.log('Proposta dopo la riapertura:', (await popup.$$('.group:not(.existing)')).length, 'gruppi');
 
   // Anteprima modificabile: rinomina e colore del primo gruppo, una tab spostata nel secondo.
   const nameInput = await popup.$('.group .group-name');
@@ -108,23 +108,26 @@ try {
   await popup.keyboard.press('Enter');
   await popup.click('.group .swatch');
   await popup.click('.palette .color-purple');
-  await popup.select('.group:nth-child(1) .tab:nth-child(1) .move select', 'g2');
-  await popup.waitForFunction(() => document.querySelectorAll('.group:nth-child(2) .tab').length === 3, { timeout: 5000 });
+  await popup.select('.group:nth-child(1) .tab:nth-child(1) .move select', 'p:g2');
+  await popup.waitForFunction(() => document.querySelectorAll('.group:not(.existing):nth-child(2) .tab').length === 3, { timeout: 5000 });
   await popup.screenshot({ path: 'scripts/smoke-popup.png' });
   await popup.reload();
-  await popup.waitForSelector('.group');
-  console.log('Anteprima modificata dopo la riapertura:', await popup.$$eval('.group', (els) => els.map((el) => `${el.querySelector('.group-name').value}: ${el.querySelectorAll('.tab').length} tab`)));
+  await popup.waitForSelector('.group:not(.existing)');
+  console.log('Anteprima modificata dopo la riapertura:', await popup.$$eval('.group:not(.existing)', (els) => els.map((el) => `${el.querySelector('.group-name').value}: ${el.querySelectorAll('.tab').length} tab`)));
 
   const order = () => sw.evaluate(async () => (await chrome.tabs.query({ currentWindow: true })).map((t) => `${t.title}${t.groupId > -1 ? '*' : ''}`));
   const orderBefore = await order();
   const buttons = await popup.$$('footer button');
   await buttons[buttons.length - 1].click();
-  await popup.waitForFunction(() => !document.querySelector('.group'), { timeout: 10000 });
+  await popup.waitForFunction(() => !document.querySelector('.group:not(.existing)'), { timeout: 10000 });
   const groups = await sw.evaluate(async () => {
     const gs = await chrome.tabGroups.query({});
     return Promise.all(gs.map(async (g) => ({ title: g.title, color: g.color, tabs: (await chrome.tabs.query({ groupId: g.id })).map((t) => t.title) })));
   });
   console.log('Gruppi dopo Applica:', JSON.stringify(groups));
+  // Dopo "Applica" il pannello mostra comunque tutta la finestra: i gruppi appena creati come gruppi aperti.
+  await popup.waitForFunction(() => document.querySelectorAll('.group.existing').length === 2, { timeout: 5000 });
+  console.log('Sezioni del pannello dopo Applica:', await popup.$$eval('.section > h2, .section > summary', (els) => els.map((el) => el.textContent)));
   console.log('Ordine dopo Applica:', (await order()).join(' | '));
 
   await popup.waitForSelector('footer .undo', { timeout: 10000 });
@@ -176,9 +179,9 @@ try {
   await popup.waitForSelector('footer button');
   const recompute = await popup.$$('footer button.secondary:not(.undo)');
   await recompute[0].click();
-  await popup.waitForFunction(() => document.querySelectorAll('.group').length > 0 || document.querySelector('.status'), { timeout: 10000 });
+  await popup.waitForFunction(() => document.querySelectorAll('.group:not(.existing)').length > 0 || document.querySelector('.status'), { timeout: 10000 });
   await new Promise((r) => setTimeout(r, 300));
-  console.log('Proposta con le impostazioni:', await popup.$$eval('.group', (els) => els.map((el) => `${el.querySelector('.group-name').value}: ${el.querySelectorAll('.tab').length} tab`)));
+  console.log('Proposta con le impostazioni:', await popup.$$eval('.group:not(.existing)', (els) => els.map((el) => `${el.querySelector('.group-name').value}: ${el.querySelectorAll('.tab').length} tab`)));
 
   console.log('Gemini Nano:', await options.$eval('#generator .nano', (el) => el.textContent).catch(() => 'stato non mostrato'),
     '| Prompt API nel service worker:', await sw.evaluate(() => typeof LanguageModel !== 'undefined'));
@@ -211,7 +214,7 @@ try {
     // Aspetta la fine del calcolo (con l'eventuale nuovo tentativo dopo un errore temporaneo).
     await new Promise((r) => setTimeout(r, 200));
     await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 15000 });
-    return popup.$$eval('.group', (els) => els.map((el) => `${el.querySelector('.group-name').value} (${el.querySelector('.badge').textContent}): ${el.querySelectorAll('.tab').length} tab`));
+    return popup.$$eval('.group:not(.existing)', (els) => els.map((el) => `${el.querySelector('.group-name').value} (${el.querySelector('.badge').textContent}): ${el.querySelectorAll('.tab').length} tab`));
   };
   ai.requests.length = 0;
   console.log('Proposta dal Generatore:', await repropose());
@@ -238,7 +241,7 @@ try {
   await popup.waitForSelector('.status.computing button', { timeout: 10000 });
   await popup.click('.status.computing button');
   await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 10000 });
-  console.log('Dopo Interrompi:', await popup.$eval('.empty-state', (el) => el.textContent).catch(() => 'nessun avviso'), '| gruppi:', (await popup.$$('.group')).length);
+  console.log('Dopo Interrompi:', await popup.$eval('.content .banner', (el) => el.textContent).catch(() => 'nessun avviso'), '| gruppi:', (await popup.$$('.group:not(.existing)')).length);
   ai.hang = false;
 
   // Descrizione delle pagine: interruttore nella sezione Privacy, poi una nuova proposta.
@@ -312,6 +315,26 @@ try {
   const domainOnly = await repropose();
   console.log('Modalità per sito:', JSON.stringify(domainOnly), '| richieste AI', ai.requests.length);
   if (ai.requests.length > 0 || domainOnly.some((g) => !g.includes('(site)'))) throw new Error('La modalità per sito ha usato l\'AI');
+
+  // Il selettore del pannello: "Con l'AI" salva la modalità e ricalcola con i provider.
+  await popup.bringToFront();
+  await popup.click('.segmented button[aria-checked="false"]');
+  await popup.waitForFunction(() => document.querySelector('.segmented button[aria-checked="true"]')?.textContent?.includes('AI'), { timeout: 5000 });
+  await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 15000 });
+  console.log('Selettore del pannello:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('mode'))), '| richieste AI', ai.requests.length,
+    '| riepilogo:', await popup.$eval('.mode-summary', (el) => el.textContent));
+
+  // "Chiudi la tab" dal pannello: la tab sparisce dalla finestra e dalla proposta, senza avviso di proposta superata.
+  const tabsBefore = await sw.evaluate(async () => (await chrome.tabs.query({})).length);
+  const proposedBefore = await popup.$$eval('.group:not(.existing) .tab', (els) => els.length);
+  await popup.hover('.group:not(.existing) .tab');
+  await popup.click('.group:not(.existing) .tab .close-tab');
+  await popup.waitForFunction((n) => document.querySelectorAll('.group:not(.existing) .tab').length === n - 1, { timeout: 5000 }, proposedBefore);
+  await new Promise((r) => setTimeout(r, 300));
+  const tabsAfter = await sw.evaluate(async () => (await chrome.tabs.query({})).length);
+  const staleShown = (await popup.$('.banner.stale')) !== null;
+  console.log('Chiudi tab: tab nel browser', tabsBefore, '→', tabsAfter, '| tab nella proposta', proposedBefore, '→', proposedBefore - 1, '| avviso di proposta superata:', staleShown);
+  if (tabsAfter !== tabsBefore - 1 || staleShown) throw new Error('"Chiudi la tab" non ha funzionato come previsto');
 } finally {
   await browser.close();
   // Chiude anche le connessioni lasciate appese apposta (prova di "Interrompi").

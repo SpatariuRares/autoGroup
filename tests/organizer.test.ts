@@ -58,6 +58,21 @@ describe('proposta per dominio', () => {
     expect(await proposedGroups()).toEqual([{ name: 'site.com', tabs: ['Uno', 'Due'] }]);
   });
 
+  it('aggiunge le tab di un sito al gruppo aperto con lo stesso nome, anche una sola', async () => {
+    const mine = strip.addTab({ url: 'https://github.com/old', title: 'Vecchia' });
+    const chromeGroup = await strip.addGroup('GitHub.com', 'green', [mine]);
+    strip.addTab({ url: 'https://github.com/new', title: 'Nuova' });
+    strip.addTab({ url: 'https://solo.com/', title: 'Sola' });
+
+    const { proposal } = await organizer.propose(W);
+
+    expect(proposal!.groups).toMatchObject([
+      { name: 'GitHub.com', color: 'green', provenance: 'existing', existingGroupId: chromeGroup, tabs: [{ title: 'Nuova' }] },
+    ]);
+    await organizer.apply();
+    expect(strip.groupsIn().map((g) => [g.title, g.tabs])).toEqual([['GitHub.com', ['Vecchia', 'Nuova']]]);
+  });
+
   it('assegna ai gruppi nuovi i colori non ancora usati nella finestra, a rotazione', async () => {
     const mine = strip.addTab({ url: 'https://mine.com/', title: 'Mia' });
     await strip.addGroup('Mio', 'grey', [mine]);

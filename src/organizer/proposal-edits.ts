@@ -20,6 +20,21 @@ export function editProposal(proposal: Proposal, edit: ProposalEdit): Proposal {
     case 'remove-tab':
       groups = groups.map((g) => ({ ...g, tabs: g.tabs.filter((t) => t.tabId !== edit.tabId) }));
       break;
+    case 'add-tab': {
+      const without = groups.map((g) => ({ ...g, tabs: g.tabs.filter((t) => t.tabId !== edit.tab.tabId) }));
+      if ('groupId' in edit.to) {
+        const { groupId } = edit.to;
+        if (!groups.some((g) => g.id === groupId)) return proposal;
+        groups = without.map((g) => (g.id === groupId ? { ...g, tabs: [...g.tabs, edit.tab] } : g));
+      } else {
+        const ref = edit.to.existingGroup;
+        const target = without.find((g) => g.existingGroupId === ref.id);
+        groups = target
+          ? without.map((g) => (g === target ? { ...g, tabs: [...g.tabs, edit.tab] } : g))
+          : [...without, { id: `e${ref.id}`, name: ref.name, color: ref.color, provenance: 'existing', existingGroupId: ref.id, tabs: [edit.tab] }];
+      }
+      break;
+    }
     case 'move-tab': {
       const tab = groups.flatMap((g) => g.tabs).find((t) => t.tabId === edit.tabId);
       const target = groups.find((g) => g.id === edit.toGroupId);

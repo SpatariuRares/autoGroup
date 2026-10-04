@@ -4,7 +4,7 @@ import { createOpenAiGenerator } from '../ai/openai-generator';
 import { createSystemOneClassifier } from '../ai/systemone-classifier';
 import { ProviderError, type AiOption, type AiTab, type Classifier, type Generator } from '../ai/types';
 import { categoryKey, providerLabel } from '../settings';
-import type { ProposalWarning, ProposedGroup } from '../shared/types';
+import type { GroupColor, ProposalWarning, ProposedGroup } from '../shared/types';
 import { buildOptions, prepareTabs } from './ai-input';
 import { createColorAssigner } from './colors';
 import { readDescriptions } from './description-reader';
@@ -204,12 +204,15 @@ function mergeByName(groups: ValidGroup[]): ValidGroup[] {
 /** Ultimo livello: raggruppamento per dominio. */
 function domainGroups(inputs: ProposalInputs): ProposedGroup[] {
   const colors = createColorAssigner(inputs.openGroups.map((g) => g.color));
-  return groupByDomain(inputs.candidates, inputs.settings.minTabs).map((group, i) => ({
-    id: `g${i + 1}`,
-    name: group.name,
-    color: colors.next(),
-    provenance: 'domain',
-    tabs: group.tabs.map(({ tabId, title, url, favIconUrl }) => ({ tabId, title, url, favIconUrl })),
-  }));
+  // Un gruppo aperto che si chiama come il dominio (es. "github.com") riceve le tab di quel sito.
+  const open = new Map(inputs.openGroups.filter((g) => g.title?.trim()).map((g) => [categoryKey(g.title!), g]));
+  return groupByDomain(inputs.candidates, inputs.settings.minTabs, new Set(open.keys())).map((group, i): ProposedGroup => {
+    const tabs = group.tabs.map(({ tabId, title, url, favIconUrl }) => ({ tabId, title, url, favIconUrl }));
+    const existing = open.get(categoryKey(group.name));
+    if (existing) {
+      return { id: `g${i + 1}`, name: existing.title!, color: existing.color as GroupColor, provenance: 'existing', existingGroupId: existing.id, tabs };
+    }
+    return { id: `g${i + 1}`, name: group.name, color: colors.next(), provenance: 'domain', tabs };
+  });
 }
 

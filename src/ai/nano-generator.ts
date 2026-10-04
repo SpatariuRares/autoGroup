@@ -1,4 +1,5 @@
 /// <reference types="dom-chromium-ai" />
+import { browser } from 'wxt/browser';
 import { deadline, TIMINGS } from './http';
 import { cleanDescription, describePrompt, GROUPS_SCHEMA, parseGroups, systemPrompt, userPrompt } from './prompt';
 import { ProviderError, type AiOption, type AiTab, type DescribeRequest, type GenerateRequest, type Generator, type RawGroup } from './types';
@@ -8,11 +9,41 @@ export const NANO_LABEL = 'Gemini Nano';
 /** Stato di Gemini Nano: disponibile, da scaricare, in download o non supportato. */
 export type NanoAvailability = 'available' | 'downloadable' | 'downloading' | 'unavailable';
 
+/** Lingue in cui Gemini Nano può rispondere (Prompt API di Chrome). */
+const NANO_LANGUAGES: Record<string, string> = { de: 'German', en: 'English', es: 'Spanish', fr: 'French', ja: 'Japanese' };
+
+/**
+ * Lingua delle risposte di Nano: quella del browser se Nano la supporta, altrimenti l'inglese.
+ * Chrome chiede di dichiararla a ogni `availability()` e `create()`, altrimenti avvisa in console.
+ */
+export function nanoLanguage(): string {
+  const ui = browser.i18n.getUILanguage().toLowerCase().split('-')[0]!;
+  return ui in NANO_LANGUAGES ? ui : 'en';
+}
+
+/** Lingue dichiarate alla Prompt API: le tab possono essere nella lingua di Nano o in inglese. */
+function languageOptions() {
+  const language = nanoLanguage();
+  return {
+    expectedInputs: [{ type: 'text' as const, languages: [...new Set([language, 'en'])] }],
+    expectedOutputs: [{ type: 'text' as const, languages: [language] }],
+  };
+}
+
+/**
+ * La lingua dei nomi chiesta nel prompt: se il browser è in una lingua che Nano non supporta
+ * (es. italiano), i nomi dei gruppi arrivano in inglese, coerenti con la lingua dichiarata.
+ */
+function withNanoLanguage<T extends { language: string }>(request: T): T {
+  const ui = browser.i18n.getUILanguage().toLowerCase().split('-')[0]!;
+  return ui in NANO_LANGUAGES ? request : { ...request, language: NANO_LANGUAGES.en! };
+}
+
 /** Disponibilità di Gemini Nano tramite la Prompt API; "unavailable" se l'API non esiste. */
 export async function nanoAvailability(): Promise<NanoAvailability> {
   if (typeof LanguageModel === 'undefined') return 'unavailable';
   try {
-    return await LanguageModel.availability();
+    return await LanguageModel.availability(languageOptions());
   } catch {
     return 'unavailable';
   }
@@ -21,6 +52,7 @@ export async function nanoAvailability(): Promise<NanoAvailability> {
 /** Avvia il download del modello (richiede un gesto dell'utente) e ne riporta l'avanzamento, da 0 a 1. */
 export async function downloadNano(onProgress: (fraction: number) => void): Promise<void> {
   const session = await LanguageModel.create({
+    ...languageOptions(),
     monitor(m) {
       m.addEventListener('downloadprogress', (e) => onProgress(e.loaded));
     },
@@ -48,8 +80,8 @@ const measure = (s: Session, text: string) =>
 export function createNanoGenerator(): Generator {
   return {
     label: NANO_LABEL,
-    generate: (request, signal) => generate(request, signal),
-    describe: (request, signal) => withTimeout(signal, (s) => describe(request, s)),
+    generate: (request, signal) => generate(withNanoLanguage(request), signal),
+    describe: (request, signal) => withTimeout(signal, (s) => describe(withNanoLanguage(request), s)),
   };
 }
 
@@ -79,7 +111,7 @@ function asProviderError(err: unknown, signal: AbortSignal, reason: 'unavailable
 async function generate(request: GenerateRequest, signal?: AbortSignal): Promise<RawGroup[]> {
   const base = await withTimeout(signal, async (s) => {
     try {
-      return await LanguageModel.create({ initialPrompts: [{ role: 'system', content: systemPrompt(request) }], signal: s });
+      return await LanguageModel.create({ ...languageOptions(), initialPrompts: [{ role: 'system', content: systemPrompt(request) }], signal: s });
     } catch (err) {
       throw asProviderError(err, s, 'unavailable');
     }
@@ -132,7 +164,7 @@ async function describe(request: DescribeRequest, signal: AbortSignal): Promise<
   const { system, user } = describePrompt(request);
   let session: Session;
   try {
-    session = await LanguageModel.create({ initialPrompts: [{ role: 'system', content: system }], signal });
+    session = await LanguageModel.create({ ...languageOptions(), initialPrompts: [{ role: 'system', content: system }], signal });
   } catch (err) {
     throw asProviderError(err, signal, 'unavailable');
   }

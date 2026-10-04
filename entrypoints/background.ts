@@ -33,6 +33,8 @@ export default defineBackground(() => {
         return organizer.abort();
       case 'organizer/undo':
         return organizer.undo();
+      case 'organizer/close-tab':
+        return organizer.closeTab(request.tabId);
     }
   }
 

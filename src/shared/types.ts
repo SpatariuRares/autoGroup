@@ -77,7 +77,20 @@ export type ProposalEdit =
   | { kind: 'recolor'; groupId: string; color: GroupColor }
   | { kind: 'discard-group'; groupId: string }
   | { kind: 'remove-tab'; tabId: number }
-  | { kind: 'move-tab'; tabId: number; toGroupId: string };
+  | { kind: 'move-tab'; tabId: number; toGroupId: string }
+  /**
+   * Mette una tab (libera o già in un gruppo proposto) in un gruppo della proposta oppure in un gruppo
+   * già aperto in Chrome che la proposta non tocca ancora. Il pannello manda i dati della tab perché
+   * una tab libera non è nella proposta; l'Organizzatore controlla che sia davvero libera.
+   */
+  | { kind: 'add-tab'; tab: ProposedTab; to: { groupId: string } | { existingGroup: ExistingGroupRef } };
+
+/** Un gruppo già aperto in Chrome, come lo vede il pannello. */
+export interface ExistingGroupRef {
+  id: number;
+  name: string;
+  color: GroupColor;
+}
 
 /** Foto delle tab coinvolte in un'organizzazione, scattata prima di applicarla. */
 export interface UndoSnapshot {

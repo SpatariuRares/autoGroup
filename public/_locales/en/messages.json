@@ -104,7 +104,7 @@
     "message": "Move to…"
   },
   "popupRemoveTab": {
-    "message": "Remove from group (the tab stays free)"
+    "message": "Remove from group (the tab stays open and ungrouped)"
   },
   "popupUnnamed": {
     "message": "(unnamed)"
@@ -548,7 +548,69 @@
   "panelStale": {
     "message": "Your tabs changed after this proposal."
   },
-  "panelIdle": {
-    "message": "Press “Recompute” to suggest groups for the free tabs in this window."
+  "panelModeSite": {
+    "message": "By site"
+  },
+  "panelModeAi": {
+    "message": "With AI"
+  },
+  "panelModeSiteSummary": {
+    "message": "Tabs from the same site go together. No data is sent."
+  },
+  "panelNoProvider": {
+    "message": "No AI provider set up: tabs are grouped by site."
+  },
+  "panelChangeProviders": {
+    "message": "Change"
+  },
+  "panelSectionNew": {
+    "message": "New groups"
+  },
+  "panelSectionExisting": {
+    "message": "Open groups"
+  },
+  "panelSectionFree": {
+    "message": "Ungrouped"
+  },
+  "panelFreeHint": {
+    "message": "These stay out of groups. You can add them to a group."
+  },
+  "panelSectionHeld": {
+    "message": "Not organized"
+  },
+  "panelHeldPinned": {
+    "message": "pinned"
+  },
+  "panelHeldInternal": {
+    "message": "browser page"
+  },
+  "panelHeldExcluded": {
+    "message": "excluded domain"
+  },
+  "panelHeldLoading": {
+    "message": "loading"
+  },
+  "panelNewTab": {
+    "message": "new"
+  },
+  "panelAddTo": {
+    "message": "Add to…"
+  },
+  "panelAddedCount": {
+    "message": "+ $COUNT$ new",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupTabCountOne": {
+    "message": "1 tab"
+  },
+  "panelAddedCountOne": {
+    "message": "+ 1 new"
+  },
+  "panelCloseTab": {
+    "message": "Close tab"
   }
 }

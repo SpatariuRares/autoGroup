@@ -17,10 +17,11 @@ export interface DomainGroup {
 }
 
 /**
- * Raggruppa le tab per dominio. Un dominio diventa un gruppo solo se ha almeno `minTabs` tab.
- * I gruppi seguono l'ordine della prima tab di ciascun dominio nella barra.
+ * Raggruppa le tab per dominio. Un dominio diventa un gruppo solo se ha almeno `minTabs` tab, salvo
+ * i domini in `openDomains` (c'è già un gruppo aperto con quel nome): lì basta una tab, come per
+ * l'AI una tab può entrare da sola in un gruppo esistente. I gruppi seguono l'ordine della prima tab.
  */
-export function groupByDomain(tabs: CandidateTab[], minTabs: number): DomainGroup[] {
+export function groupByDomain(tabs: CandidateTab[], minTabs: number, openDomains: Set<string> = new Set()): DomainGroup[] {
   const byDomain = new Map<string, CandidateTab[]>();
   for (const tab of tabs) {
     const domain = domainOf(tab.url);
@@ -30,6 +31,6 @@ export function groupByDomain(tabs: CandidateTab[], minTabs: number): DomainGrou
     byDomain.set(domain, list);
   }
   return [...byDomain.entries()]
-    .filter(([, list]) => list.length >= minTabs)
+    .filter(([name, list]) => list.length >= minTabs || openDomains.has(name))
     .map(([name, list]) => ({ name, tabs: list }));
 }

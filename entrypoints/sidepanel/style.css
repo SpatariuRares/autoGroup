@@ -65,3 +65,41 @@ body { background: var(--md-sys-color-surface-container-low); }
 
 .bottom-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--md-sys-color-surface-container); }
 .bottom-bar .spacer { flex: 1; }
+
+/* Selettore della modalità: pulsante segmentato Material 3. */
+.mode-picker { padding: 0 16px 12px; }
+.segmented { display: flex; border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-full); overflow: hidden; }
+.segmented button { --btn-bg: transparent; --btn-fg: var(--md-sys-color-on-surface); flex: 1; border-radius: 0; padding: 0 12px; }
+.segmented button + button { border-left: 1px solid var(--md-sys-color-outline); }
+.segmented button.selected { --btn-bg: var(--md-sys-color-secondary-container); --btn-fg: var(--md-sys-color-on-secondary-container); }
+.segmented button:disabled { --btn-bg: transparent; }
+.segmented button.selected:disabled { --btn-bg: var(--md-sys-color-secondary-container); --btn-fg: var(--md-sys-color-on-secondary-container); opacity: 0.7; }
+.mode-summary { margin: 8px 8px 0; font: var(--md-sys-typescale-body-small); color: var(--md-sys-color-on-surface-variant); }
+
+/* Sezioni dell'elenco: titolo con il conteggio. */
+.section { margin: 0 0 16px; }
+.section h2, .section summary { display: flex; align-items: center; gap: 8px; margin: 0 4px 8px; font: var(--md-sys-typescale-title-small); color: var(--md-sys-color-on-surface-variant); }
+.section summary { cursor: pointer; list-style: none; }
+.section summary::-webkit-details-marker { display: none; }
+.section > summary::before { content: '▸'; transition: transform var(--md-sys-motion-duration-short); }
+.section[open] > summary::before { transform: rotate(90deg); }
+.section-count { font: var(--md-sys-typescale-label-small); padding: 0 6px; border-radius: var(--md-sys-shape-corner-full); background: var(--md-sys-color-surface-container-highest); }
+.section-hint { margin: -4px 4px 8px; font: var(--md-sys-typescale-body-small); color: var(--md-sys-color-on-surface-variant); }
+.card-list { background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-medium); padding: 4px 4px 4px 0; margin: 0; }
+.card-list .tab { padding-left: 12px; }
+
+/* Gruppi già aperti: intestazione cliccabile, nome e colore di Chrome non modificabili. */
+.group.existing { padding: 4px 4px 4px 12px; }
+.group.existing.extended { border-color: var(--md-sys-color-primary); }
+.group.existing summary { cursor: pointer; list-style: none; min-height: 40px; color: var(--md-sys-color-on-surface-variant); border-radius: var(--md-sys-shape-corner-small); }
+.group.existing summary:hover .group-name.static { text-decoration: underline; text-underline-offset: 3px; }
+.group.existing summary::-webkit-details-marker { display: none; }
+.swatch.static { cursor: default; }
+.group-name.static { flex: 1; min-width: 0; padding: 0 8px; font: var(--md-sys-typescale-title-medium); color: var(--md-sys-color-on-surface); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group.existing .count strong { color: var(--md-sys-color-primary); font-weight: 600; }
+
+/* Tab aggiunte dalla proposta ed etichette delle tab. */
+.tab.added { background: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent); }
+.tab.held { color: var(--md-sys-color-on-surface-variant); }
+.tab-chip { flex: none; font: var(--md-sys-typescale-label-small); padding: 0 6px; border-radius: var(--md-sys-shape-corner-extra-small); background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.tab-chip.muted { background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }

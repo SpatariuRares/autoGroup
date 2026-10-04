@@ -77,7 +77,7 @@ Il Classificatore viene saltato se non ci sono opzioni (lista vuota e nessun gru
 - Un **gruppo nuovo** richiede almeno **2 tab** (configurabile).
 - Una tab può entrare **da sola** in un gruppo già esistente.
 - Le tab rimaste sole dopo il passo 1 passano al Generatore; i gruppi nuovi che dopo il passo 2 hanno ancora meno di 2 tab vengono sciolti.
-- Le stesse regole valgono per il raggruppamento per dominio.
+- Le stesse regole valgono per il raggruppamento per dominio: le tab di un sito entrano anche da sole in un gruppo aperto che si chiama come il dominio.
 
 ### Note su `jev-router`
 
@@ -121,7 +121,7 @@ OLLAMA_ORIGINS="chrome-extension://*" ollama serve
 # app per macOS: launchctl setenv OLLAMA_ORIGINS "chrome-extension://*" e riavviare Ollama
 ```
 
-**Gemini Nano.** Non richiede configurazione ed è il Generatore predefinito: con **Gemini Nano** selezionato, la sezione mostra lo stato del modello integrato in Chrome (disponibile, da scaricare, in download, non disponibile) e un pulsante per avviare il download. Serve un Chrome recente con la Prompt API e hardware supportato (spazio su disco e GPU o RAM sufficienti, secondo i requisiti di Google). Se il modello non è ancora scaricato, il popup lo segnala con un avviso e usa il livello successivo.
+**Gemini Nano.** Non richiede configurazione ed è il Generatore predefinito: con **Gemini Nano** selezionato, la sezione mostra lo stato del modello integrato in Chrome (disponibile, da scaricare, in download, non disponibile) e un pulsante per avviare il download. Serve un Chrome recente con la Prompt API e hardware supportato (spazio su disco e GPU o RAM sufficienti, secondo i requisiti di Google). Gemini Nano risponde solo in tedesco, inglese, spagnolo, francese e giapponese: con Chrome in un'altra lingua (es. italiano) i nomi dei gruppi inventati da Nano sono in inglese. Se il modello non è ancora scaricato, il pannello lo segnala con un avviso e usa il livello successivo.
 
 ## Categorie
 
@@ -139,6 +139,13 @@ Default, nella lingua del browser: Lavoro, Sviluppo, AI, Social, Notizie, Video,
 
 ## Anteprima (pannello laterale)
 
+- In cima al pannello si sceglie la modalità, **Per sito** o **Con l'AI**, con il riepilogo dei provider che verranno usati: la proposta si ricalcola subito.
+- Da ogni riga si può **chiudere la tab** (✕) oppure toglierla dal gruppo proposto (−). Chiudere una tab non obbliga a ricalcolare: la proposta resta valida.
+- Il pannello mostra **tutta la finestra**:
+  - i gruppi nuovi;
+  - i gruppi già aperti, con le loro tab e quelle che verranno aggiunte, segnate "nuova";
+  - le tab che restano senza gruppo, da aggiungere a mano;
+  - quelle che l'estensione non tocca (fissate, pagine del browser, domini esclusi), con il motivo.
 - Il pannello laterale di Chrome resta aperto mentre si naviga: con i provider locali il calcolo può durare decine di secondi, e un popup si chiuderebbe al primo clic fuori.
 - Il calcolo gira nel **service worker** e la proposta è salvata in `chrome.storage.session`: chiudendo e riaprendo il pannello la si ritrova.
 - Se le tab della finestra cambiano dopo la proposta (tab aperte, chiuse, spostate, raggruppate a mano), il pannello lo segnala e offre **Ricalcola**. Non ricalcola da solo, per non rifare chiamate AI a ogni tab aperta.

@@ -10,6 +10,7 @@ import info from '@material-symbols/svg-400/rounded/info.svg?raw';
 import language from '@material-symbols/svg-400/rounded/language.svg?raw';
 import lock from '@material-symbols/svg-400/rounded/lock.svg?raw';
 import refresh from '@material-symbols/svg-400/rounded/refresh.svg?raw';
+import remove from '@material-symbols/svg-400/rounded/remove.svg?raw';
 import settings from '@material-symbols/svg-400/rounded/settings.svg?raw';
 import stop from '@material-symbols/svg-400/rounded/stop.svg?raw';
 import tab from '@material-symbols/svg-400/rounded/tab.svg?raw';
@@ -33,6 +34,7 @@ const ICONS = {
   language,
   lock,
   refresh,
+  remove,
   settings,
   stop,
   tab,

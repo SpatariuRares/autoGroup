@@ -225,6 +225,7 @@ Stesso contratto (`Generator.generate` e `describe`) e stesse istruzioni e schem
 - Ogni blocco gira in un clone della sessione base, così il contesto non si accumula. I nomi inventati nei blocchi precedenti si aggiungono alle opzioni dei blocchi successivi (con descrizione vuota); i gruppi con lo stesso nome nei vari blocchi vengono poi uniti dal validatore.
 - Errori: creazione della sessione fallita → `unavailable`; ogni altro errore della Prompt API (clone, misura, prompt, es. contesto superato) → `invalid-request`; risposta fuori schema → `invalid-response`. La pipeline ripiega sul dominio con l'avviso.
 - Tempo massimo: 30 s per ogni chiamata (creazione della sessione, misura, ogni blocco), come per ogni richiesta HTTP del Generatore compatibile OpenAI; con molte tab il calcolo totale può quindi durare di più senza scadere.
+- **Lingua**: Chrome chiede di dichiarare la lingua di ingresso e di uscita a ogni `availability()` e `create()` (`expectedInputs`, `expectedOutputs`), altrimenti avvisa in console. Nano risponde solo in de, en, es, fr e ja: `nanoLanguage()` usa la lingua del browser se è tra queste, altrimenti l'inglese, e in quel caso il prompt chiede i nomi in inglese (`withNanoLanguage`), coerenti con la lingua dichiarata.
 - `nanoAvailability()` e `downloadNano(onProgress)` servono alla pagina opzioni.
 
 ### Flusso di `propose`
@@ -240,7 +241,7 @@ collectInputs(windowId)                          buildProposal(inputs)
 
 0. **Impostazioni**: `loadSettings()` legge da `storage.sync` il numero minimo di tab e i domini esclusi, a ogni proposta (quindi una modifica vale dalla proposta successiva).
 1. **Selezione tab**: tiene solo le tab della finestra non fissate, non già in un gruppo, con URL `http`, `https` o `file` (quindi niente `chrome://`, nuova scheda, pagine di estensioni), con un titolo vero (non vuoto e diverso dall'URL, come accade durante il caricamento) e non appartenenti a un dominio escluso o a un suo sottodominio. L'esclusione avviene qui, al primo passo, così le tab escluse non arrivano mai ai passi successivi (e in futuro all'AI).
-2. **Raggruppamento per dominio**: hostname senza `www.`; un dominio diventa gruppo solo con almeno `minTabs` tab (default 2). I gruppi seguono l'ordine della prima tab di ciascun dominio. Provenienza `domain`.
+2. **Raggruppamento per dominio**: hostname senza `www.`; un dominio diventa gruppo solo con almeno `minTabs` tab (default 2). Se c'è già un gruppo aperto che si chiama come il dominio (maiuscole e minuscole non contano), le tab di quel sito vanno lì, anche una sola, con provenienza `existing`: come per l'AI, una tab può entrare da sola in un gruppo esistente. I gruppi seguono l'ordine della prima tab di ciascun dominio. Provenienza `domain`.
 3. **Colori**: l'assegnatore conta i colori dei gruppi già aperti nella finestra e dà a ogni gruppo nuovo il primo colore meno usato, nell'ordine di Chrome (grey, blue, red, yellow, green, pink, purple, cyan, orange). Così prima si esauriscono i colori liberi, poi si ricomincia la rotazione. Il metodo `reserve()` servirà per i colori fissi delle categorie (AG-05/AG-06).
 
 `buildProposal` delega a `runPipeline`. La chiave API viene letta in `collectInputs` ma non entra mai nell'impronta né nello stato.
@@ -379,7 +380,21 @@ Il service worker risponde con `sendResponse` + `return true`, che funziona in t
 
 `entrypoints/sidepanel`: WXT lo dichiara come `side_panel.default_path` e aggiunge il permesso `sidePanel`. Il service worker chiama `sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`, quindi il clic sull'icona (e `_execute_action`, cioè `Alt+Shift+G`) apre il pannello invece di un popup. **Perché:** un popup si chiude al primo clic fuori, mentre con i provider locali il calcolo può durare decine di secondi; il pannello resta aperto mentre l'utente cambia tab e mentre l'AI lavora.
 
-All'apertura legge la finestra corrente e chiede `organizer/propose`. Struttura Material 3:
+All'apertura legge la finestra corrente e chiede `organizer/propose` con la modalità salvata.
+
+**Scelta della modalità nel pannello.** Sotto la barra in alto c'è un pulsante segmentato *Per sito* / *Con l'AI*: cambiarlo salva `settings.mode` e ricalcola subito, così l'utente sceglie il tipo di classificazione prima di applicare. Sotto il selettore c'è un riepilogo di cosa verrà usato: i provider attivi (es. "Rizzo Flow → Unsloth Studio" o "Gemini Nano") con il link per cambiarli, oppure "Nessun provider AI configurato". Le impostazioni sono lette dal vivo (`storage.onChanged`), quindi il pannello si aggiorna anche se l'utente le cambia nella pagina opzioni.
+
+**Tutta la finestra, non solo la proposta** (`src/organizer/window-view.ts`, `buildWindowView`). Il pannello legge dal vivo tab e gruppi della propria finestra e ci sovrappone la proposta. La funzione è pura e testata, e divide la finestra in quattro sezioni:
+- **Nuovi gruppi**: i gruppi della proposta che non esistono ancora, modificabili come prima.
+- **Gruppi già aperti**, nell'ordine della barra: nome e colore di Chrome (bloccati), le tab che hanno adesso (solo da vedere) e quelle che la proposta aggiunge, segnate "nuova" e removibili o spostabili. Un gruppo senza aggiunte resta chiuso.
+- **Senza gruppo**: le tab libere che la proposta lascia fuori, con "Aggiungi a…".
+- **Non organizzabili** (chiusa): tab fissate, pagine del browser, domini esclusi e tab in caricamento, con il motivo.
+
+**Chiudi la tab.** Ogni riga ha ✕ "Chiudi la tab" (anche tab dei gruppi aperti, libere e non organizzabili); "−" toglie la tab dal gruppo proposto lasciandola aperta. Il pannello chiama `organizer/close-tab`, e `Organizer.closeTab` chiude la tab e la toglie dalla proposta, nella coda delle operazioni. Se la proposta era attuale e la tab non era in un gruppo aperto, l'impronta viene ricalcolata dopo la chiusura, quindi riaprendo il pannello la proposta viene riusata senza nuove chiamate AI. Se invece la tab era l'ultima di un gruppo aperto che la proposta estende, il gruppo sparisce: l'impronta resta vecchia e la proposta scaduta, per non applicare tab a un gruppo che non c'è più. Le chiusure fatte dal pannello non fanno comparire l'avviso di proposta superata.
+
+**Modifica `add-tab`.** "Sposta in…" e "Aggiungi a…" usano la nuova modifica `{ kind: 'add-tab', tab, to }`, dove `to` è un gruppo della proposta oppure un gruppo aperto che la proposta non tocca ancora. In questo secondo caso la proposta riceve un gruppo `existing` nuovo (`id: e<idChrome>`). L'Organizzatore (`checkAddTab`) accetta solo una tab già nella proposta o ancora libera nella finestra, con le stesse regole della selezione, e solo verso un gruppo di quella finestra. I dati della tab sono riletti dal browser, non presi dal messaggio.
+
+Struttura Material 3:
 - barra in alto con il titolo e ⚙ per le impostazioni;
 - durante il calcolo, barra di avanzamento lineare indeterminata e "Interrompi";
 - contenuto che scorre;

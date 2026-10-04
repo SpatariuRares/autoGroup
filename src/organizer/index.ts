@@ -1,10 +1,36 @@
-import type { OrganizerState, ProposalEdit } from '../shared/types';
+import { browser } from 'wxt/browser';
+import { loadSettings } from '../settings';
+import type { OrganizerState, Proposal, ProposalEdit } from '../shared/types';
 import { applyProposal } from './applier';
 import { buildProposal, collectInputs, signatureOf } from './proposal-builder';
+import { TAB_GROUP_ID_NONE } from './tab-selection';
 import { editProposal } from './proposal-edits';
 import { saveGroupToList } from './save-to-list';
 import { loadState, saveState } from './session-state';
+import { selectCandidateTabs } from './tab-selection';
 import { restoreSnapshot } from './undo';
+
+/**
+ * "add-tab" arriva dal pannello con i dati della tab: si accetta solo una tab già nella proposta o
+ * ancora libera nella finestra (stesse regole della selezione), e solo verso un gruppo di quella finestra.
+ * I dati della tab vengono riletti dal browser, non presi dal messaggio.
+ */
+async function checkAddTab(proposal: Proposal, edit: Extract<ProposalEdit, { kind: 'add-tab' }>): Promise<ProposalEdit | null> {
+  const inProposal = proposal.groups.flatMap((g) => g.tabs).find((t) => t.tabId === edit.tab.tabId);
+  let tab = inProposal;
+  if (!tab) {
+    const { excludedDomains } = await loadSettings();
+    const tabs = await browser.tabs.query({ windowId: proposal.windowId });
+    const candidate = selectCandidateTabs(tabs, excludedDomains).find((t) => t.tabId === edit.tab.tabId);
+    if (!candidate) return null;
+    tab = { tabId: candidate.tabId, title: candidate.title, url: candidate.url, favIconUrl: candidate.favIconUrl };
+  }
+  if ('existingGroup' in edit.to) {
+    const group = await browser.tabGroups.get(edit.to.existingGroup.id).catch(() => null);
+    if (!group || group.windowId !== proposal.windowId) return null;
+  }
+  return { ...edit, tab };
+}
 
 export interface OrganizerOptions {
   /** Chiamato a ogni cambio di stato, per avvisare il pannello se è aperto. */
@@ -27,6 +53,11 @@ export interface Organizer {
   apply(): Promise<OrganizerState>;
   /** Annulla l'ultima organizzazione applicata. */
   undo(): Promise<OrganizerState>;
+  /**
+   * Chiude una tab dal pannello e la toglie dalla proposta. Se la proposta era ancora attuale resta
+   * attuale (nuova impronta), così chiudere una tab non costa un nuovo calcolo.
+   */
+  closeTab(tabId: number): Promise<OrganizerState>;
   /** "Interrompi": annulla le richieste in corso e i calcoli in coda; nessuno produce una proposta. */
   abort(): Promise<OrganizerState>;
   /** Stato corrente: fase, proposta, annulla disponibile. */
@@ -101,8 +132,10 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
       return exclusive(async () => {
         const current = await loadState();
         if (current.phase !== 'ready' || !current.proposal) return current;
+        const checked = edit.kind === 'add-tab' ? await checkAddTab(current.proposal, edit) : edit;
+        if (!checked) return current;
         const { notice: _done, ...rest } = current;
-        return setState({ ...rest, proposal: editProposal(current.proposal, edit) });
+        return setState({ ...rest, proposal: editProposal(current.proposal, checked) });
       });
     },
 
@@ -143,6 +176,26 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
           console.error('autoGroup: annullamento fallito', err);
           return await setState({ ...current, error: 'errorUndo' });
         }
+      });
+    },
+
+    closeTab(tabId) {
+      return exclusive(async () => {
+        const current = await loadState();
+        const tab = await browser.tabs.get(tabId).catch(() => null);
+        if (!tab) return current;
+        const proposal = current.phase === 'ready' && current.proposal?.windowId === tab.windowId ? current.proposal : undefined;
+        // Solo una tab senza gruppo cambia l'impronta (tab candidate). Se era in un gruppo aperto e ne era
+        // l'ultima, il gruppo sparisce: la proposta resta scaduta e il pannello propone di ricalcolare.
+        const refresh =
+          proposal !== undefined &&
+          (tab.groupId ?? TAB_GROUP_ID_NONE) === TAB_GROUP_ID_NONE &&
+          proposal.signature === signatureOf(await collectInputs(proposal.windowId));
+        await browser.tabs.remove(tabId);
+        if (!proposal) return current;
+        let next = editProposal(proposal, { kind: 'remove-tab', tabId });
+        if (refresh) next = { ...next, signature: signatureOf(await collectInputs(proposal.windowId)) };
+        return setState({ ...current, proposal: next });
       });
     },
 

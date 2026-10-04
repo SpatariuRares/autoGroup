@@ -57,7 +57,11 @@ describe('Gemini Nano come Generatore integrato', () => {
       { id: 't3', title: 'B1', url: 'b.com/1' },
       { id: 't4', title: 'B2', url: 'b.com/2' },
     ]);
-    expect(calls[0]!.system).toContain('in italiano');
+    // Nano non risponde in italiano: lingua dichiarata e nomi chiesti in inglese, come vuole la Prompt API.
+    expect(calls[0]!.system).toContain('in English');
+    const declared = { expectedInputs: [{ type: 'text', languages: ['en'] }], expectedOutputs: [{ type: 'text', languages: ['en'] }] };
+    expect(LanguageModel.availability).toHaveBeenCalledWith(declared);
+    expect(LanguageModel.create).toHaveBeenCalledWith(expect.objectContaining(declared));
   });
 
   it('il Generatore configurato ha la precedenza su Nano', async () => {

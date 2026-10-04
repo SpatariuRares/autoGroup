@@ -8,7 +8,8 @@ export type OrganizerRequest =
   | { type: 'organizer/save-to-list'; groupId: string }
   | { type: 'organizer/apply' }
   | { type: 'organizer/abort' }
-  | { type: 'organizer/undo' };
+  | { type: 'organizer/undo' }
+  | { type: 'organizer/close-tab'; tabId: number };
 
 /** Notifica dal service worker al pannello quando lo stato cambia. */
 export interface StateChangedMessage {
@@ -26,6 +27,7 @@ const REQUEST_TYPES = new Set<string>([
   'organizer/apply',
   'organizer/abort',
   'organizer/undo',
+  'organizer/close-tab',
 ] satisfies OrganizerRequest['type'][]);
 
 export function isOrganizerRequest(message: unknown): message is OrganizerRequest {

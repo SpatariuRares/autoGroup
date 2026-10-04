@@ -24,14 +24,14 @@ export function isInternalUrl(url: string | undefined): boolean {
 }
 
 /** Una tab ancora in caricamento ha un titolo vuoto, oppure uguale all'URL. */
-function hasRealTitle(tab: Browser.tabs.Tab): boolean {
+export function hasRealTitle(tab: Browser.tabs.Tab): boolean {
   const title = tab.title?.trim();
   if (!title) return false;
   const url = tab.url ?? '';
   return title !== url && title !== url.replace(/^https?:\/\//, '');
 }
 
-function isExcluded(url: string, excludedDomains: string[]): boolean {
+export function isExcluded(url: string, excludedDomains: string[]): boolean {
   try {
     return isExcludedHost(new URL(url).hostname, excludedDomains);
   } catch {
