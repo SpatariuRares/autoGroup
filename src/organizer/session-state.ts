@@ -3,7 +3,7 @@ import type { OrganizerState } from '../shared/types';
 
 const KEY = 'organizer';
 
-/** Stato dell'Organizzatore in chrome.storage.session: sopravvive al popup, non alla chiusura di Chrome. */
+/** Stato dell'Organizzatore in chrome.storage.session: sopravvive al pannello, non alla chiusura di Chrome. */
 export async function loadState(): Promise<OrganizerState> {
   const stored = await browser.storage.session.get(KEY);
   return (stored[KEY] as OrganizerState | undefined) ?? { phase: 'idle' };

@@ -17,7 +17,7 @@ npm run build        # crea .output/chrome-mv3
 2. **Carica estensione non pacchettizzata** e scegli la cartella `.output/chrome-mv3`.
 3. (Facoltativo) Fissa l'icona di autoGroup nella barra degli strumenti.
 
-La scorciatoia suggerita per aprire il popup è `Alt+Shift+G`. Si cambia da `chrome://extensions/shortcuts`; se un'altra estensione la usa già, Chrome non la assegna e va scelta lì.
+Il clic sull'icona apre il **pannello laterale** di autoGroup. La scorciatoia suggerita è `Alt+Shift+G`. Si cambia da `chrome://extensions/shortcuts`; se un'altra estensione la usa già, Chrome non la assegna e va scelta lì.
 
 Per lo sviluppo: `npm run dev` apre Chrome con l'estensione caricata e la ricarica a ogni modifica. Comandi di verifica:
 
@@ -27,13 +27,13 @@ Per lo sviluppo: `npm run dev` apre Chrome con l'estensione caricata e la ricari
 | `npm run smoke` | Prova completa in Chrome for Testing con Puppeteer, con provider AI finti in locale |
 | `npm run zip` | Crea lo zip per il Chrome Web Store |
 
-Senza nessun provider configurato l'estensione funziona subito: raggruppa le tab per dominio (o usa Gemini Nano se Chrome lo rende disponibile).
+Senza nessuna configurazione l'estensione funziona subito: usa Gemini Nano se Chrome lo rende disponibile, altrimenti raggruppa le tab per sito. Chi vuole solo il raggruppamento per sito lo sceglie in cima alle impostazioni.
 
 ## Come funziona
 
 1. Clicchi l'icona dell'estensione (o `Alt+Shift+G`).
 2. Il service worker raccoglie le tab della **finestra corrente** e calcola una proposta di gruppi.
-3. Il popup mostra un'**anteprima modificabile**.
+3. Il pannello laterale mostra un'**anteprima modificabile**. Resta aperto mentre l'AI calcola e mentre cambi tab.
 4. Premi **Applica**: i gruppi vengono creati. Se qualcosa non ti piace, **Annulla** riporta tutto com'era.
 
 L'estensione non tocca mai le tab senza conferma. Non c'è raggruppamento automatico all'apertura di nuove tab.
@@ -66,7 +66,9 @@ Due ruoli distinti, ognuno con il suo adattatore:
 | no | sì | Il Generatore fa tutto in una chiamata: sceglie dalla lista o dai gruppi esistenti, oppure inventa |
 | no | no | Raggruppamento per dominio |
 
-Generatore usato, in ordine: quello configurato dall'utente, altrimenti Gemini Nano se `LanguageModel.availability()` lo segnala disponibile, altrimenti nessuno.
+Generatore usato: quello scelto dall'utente nelle impostazioni, cioè un server compatibile OpenAI, Gemini Nano (il default, usato solo se `LanguageModel.availability()` lo dà disponibile) oppure **Nessuno**. Un server senza permesso o non raggiungibile non viene sostituito da Nano: si scende di livello con un avviso.
+
+In cima alle impostazioni si sceglie **come raggruppare**: *Per sito* (sempre per dominio: nessuna AI, nessun dato inviato, nessuna pagina letta) oppure *Per argomento, con l'AI* (la tabella sopra).
 
 Il Classificatore viene saltato se non ci sono opzioni (lista vuota e nessun gruppo aperto); il passo 2 se le tab rimaste sono meno del minimo per un gruppo nuovo.
 
@@ -83,7 +85,7 @@ Su OpenRouter c'è `typesafe/jev-router`, che però **non** è il classificatore
 
 ## Configurazione dei provider
 
-Nelle impostazioni (clic destro sull'icona → **Opzioni**, oppure il link negli avvisi del popup) ogni ruolo ha un preset, l'URL, la chiave API e il modello. I campi si possono modificare anche partendo da un preset; **Personalizzato** serve per qualsiasi altro server compatibile.
+Nelle impostazioni (clic destro sull'icona → **Opzioni**, oppure ⚙ nel pannello e il link negli avvisi) ogni ruolo ha un preset, l'URL, la chiave API e il modello. I campi si possono modificare anche partendo da un preset; **Personalizzato** serve per qualsiasi altro server compatibile.
 
 - Al **Salva** Chrome chiede il permesso di contattare l'host del provider: è un permesso opzionale, concesso solo per quell'host. Cambiando provider il permesso del vecchio host viene tolto, a meno che l'altro ruolo non lo usi ancora.
 - **Prova connessione** fa una richiesta minima e mostra l'esito (chiave non valida, server non raggiungibile, modello inesistente, …).
@@ -95,7 +97,7 @@ Nelle impostazioni (clic destro sull'icona → **Opzioni**, oppure il link negli
 |---|---|---|---|---|
 | Jev | `https://api.typesafe.ai` | sì (TypeSafe) | `jev-latest` | Servizio remoto: titoli e URL escono dal computer |
 | Kev | `http://127.0.0.1:8009` | no | facoltativo | Locale. Su un Mac portatile usare `kev-0.8b` (~4 GB); la 4B di default richiede ~17 GB |
-| Rizzo Flow | `http://127.0.0.1:8017` | no | facoltativo | Locale. 1.7B (~1,8 GB) o 4B (~4,4 GB), con Metal, MLX o CPU |
+| Rizzo Flow | `http://127.0.0.1:8017` | no | `rizzo-latest` (obbligatorio: senza, il server risponde 422) | Locale. 1.7B (~1,8 GB) o 4B (~4,4 GB), con Metal, MLX o CPU. `jev-latest` è un alias che risponde con Rizzo Flow, non con Jev |
 
 La soglia di confidenza (default 0,7) si imposta nella stessa sezione: le tab sotto soglia passano al Generatore.
 
@@ -106,18 +108,20 @@ La soglia di confidenza (default 0,7) si imposta nella stessa sezione: le tab so
 | OpenRouter | `https://openrouter.ai/api/v1` | sì | `openai/gpt-4o-mini` (modificabile) | Servizio remoto |
 | Ollama | `http://localhost:11434/v1` | no | `llama3.2` (o un altro modello scaricato) | Vedi sotto per `OLLAMA_ORIGINS` |
 | LM Studio | `http://localhost:1234/v1` | no | quello caricato | Avviare il server locale da LM Studio |
-| Unsloth Studio | `http://127.0.0.1:8888/v1` | sì | quello caricato | La chiave API si crea in Studio dopo l'accesso |
+| Unsloth Studio | `http://127.0.0.1:8888/v1` | sì | quello caricato (es. `rizzoaiacademy/rizzo-flow`) | La chiave API si crea in Studio dopo l'accesso; il modello va caricato in Studio (o attivare "Model auto-switch" in Settings > API) |
 
 Il Generatore chiede una risposta in JSON con schema (`response_format: json_schema`); se il server non lo supporta e risponde 400, ripete la richiesta senza schema e valida la risposta lato estensione.
 
-**Ollama.** Ollama controlla l'origine delle richieste e può rifiutare quelle che arrivano da `chrome-extension://…` con un 403, che nel popup appare come "chiave API non valida". In quel caso avviarlo consentendo le estensioni:
+**Modelli locali e tempo massimo.** Ogni richiesta al Generatore ha 30 s. Un modello locale piccolo con il "ragionamento" attivo può non bastare con molte tab: con Unsloth Studio e `rizzo-flow` 10 tab hanno richiesto 11 s, 30 tab hanno superato il limite. In quel caso la proposta ripiega sul livello successivo, con l'avviso "non ha risposto in tempo".
+
+**Ollama.** Ollama controlla l'origine delle richieste e può rifiutare quelle che arrivano da `chrome-extension://…` con un 403, che nel pannello appare come "chiave API non valida". In quel caso avviarlo consentendo le estensioni:
 
 ```bash
 OLLAMA_ORIGINS="chrome-extension://*" ollama serve
 # app per macOS: launchctl setenv OLLAMA_ORIGINS "chrome-extension://*" e riavviare Ollama
 ```
 
-**Gemini Nano.** Non richiede configurazione: con il Generatore su **Nessuno**, la sezione mostra lo stato del modello integrato in Chrome (disponibile, da scaricare, in download, non disponibile) e un pulsante per avviare il download. Serve un Chrome recente con la Prompt API e hardware supportato (spazio su disco e GPU o RAM sufficienti, secondo i requisiti di Google). Se il modello non è ancora scaricato, il popup lo segnala con un avviso e usa il livello successivo.
+**Gemini Nano.** Non richiede configurazione ed è il Generatore predefinito: con **Gemini Nano** selezionato, la sezione mostra lo stato del modello integrato in Chrome (disponibile, da scaricare, in download, non disponibile) e un pulsante per avviare il download. Serve un Chrome recente con la Prompt API e hardware supportato (spazio su disco e GPU o RAM sufficienti, secondo i requisiti di Google). Se il modello non è ancora scaricato, il popup lo segnala con un avviso e usa il livello successivo.
 
 ## Categorie
 
@@ -133,18 +137,20 @@ Default, nella lingua del browser: Lavoro, Sviluppo, AI, Social, Notizie, Video,
 - **Gruppi inventati dall'AI:** non vengono salvati in automatico. Nell'anteprima c'è il pulsante **Salva nella lista**, che aggiunge la categoria con una descrizione generata e modificabile.
 - I gruppi inventati ricevono un colore a rotazione tra quelli non ancora usati nella finestra.
 
-## Anteprima (popup)
+## Anteprima (pannello laterale)
 
-- Il calcolo gira nel **service worker** e la proposta è salvata in `chrome.storage.session`: se il popup si chiude (basta cliccare fuori), riaprendolo la si ritrova.
+- Il pannello laterale di Chrome resta aperto mentre si naviga: con i provider locali il calcolo può durare decine di secondi, e un popup si chiuderebbe al primo clic fuori.
+- Il calcolo gira nel **service worker** e la proposta è salvata in `chrome.storage.session`: chiudendo e riaprendo il pannello la si ritrova.
+- Se le tab della finestra cambiano dopo la proposta (tab aperte, chiuse, spostate, raggruppate a mano), il pannello lo segnala e offre **Ricalcola**. Non ricalcola da solo, per non rifare chiamate AI a ogni tab aperta.
 - Si può: rinominare un gruppo e cambiarne il colore, togliere una tab (✕, la tab resta libera), spostare una tab in un altro gruppo (menu a tendina), scartare un gruppo intero.
-- Ogni gruppo ha un'etichetta con la provenienza: *lista*, *esistente*, *nuovo (AI)*, *dominio*.
+- Ogni gruppo ha un'etichetta con la provenienza: *lista*, *esistente*, *nuovo (AI)*, *sito*.
 - Pulsante **Interrompi** durante il calcolo.
 - Il drag & drop è rimandato a dopo.
 
 ## Annulla
 
 - Prima di applicare si salva una foto dello stato in `chrome.storage.session`: per ogni tab l'ID, il gruppo (o nessuno) e la posizione.
-- **Annulla ultima organizzazione** resta disponibile nel popup fino all'organizzazione successiva o alla chiusura di Chrome.
+- **Annulla ultima organizzazione** resta disponibile nel pannello fino all'organizzazione successiva o alla chiusura di Chrome.
 - Il ripristino è "per quanto possibile": le tab chiuse nel frattempo vengono ignorate, quelle nuove non vengono toccate, i gruppi rinominati dopo non vengono rinominati all'indietro.
 
 ## Errori
@@ -172,26 +178,27 @@ Con i provider locali (Kev, Rizzo, Ollama, LM Studio, Gemini Nano) nessun dato e
 
 ## Impostazioni
 
-Pagina opzioni in una tab intera (`options_ui.open_in_tab`):
+Pagina opzioni in una tab intera (`options_ui.open_in_tab`), con un menu laterale per le sezioni:
 
-1. **Categorie**: nome, descrizione e colore; si possono aggiungere, modificare, eliminare e riordinare; c'è un pulsante "Ripristina default".
-2. **Classificatore**: preset, URL, chiave API, modello, soglia di confidenza, pulsante "Prova connessione".
-3. **Generatore**: preset, URL, chiave API, modello, pulsante "Prova connessione"; con **Nessuno**, lo stato di Gemini Nano.
-4. **Comportamento**: numero minimo di tab per gruppo.
-5. **Privacy**: interruttore per la descrizione delle pagine, domini esclusi.
+1. **Come raggruppare**: *Per sito* oppure *Per argomento, con l'AI*. In modalità per sito le sezioni AI (Categorie, Classificatore, Generatore, descrizione delle pagine) sono nascoste.
+2. **Categorie**: una riga per categoria con colore (tavolozza a comparsa), nome e descrizione; si possono aggiungere, modificare, eliminare e riordinare; c'è un pulsante "Ripristina default".
+3. **Classificatore**: provider (Nessuno, Jev, Kev, Rizzo Flow, Personalizzato), URL, modello, chiave API, "Salva" e "Prova connessione"; sotto, la soglia di confidenza. In alto a destra, il provider attivo o "Disattivato".
+4. **Generatore**: provider (Nessuno, Gemini Nano, OpenRouter, Ollama, LM Studio, Unsloth Studio, Personalizzato); con Gemini Nano, il suo stato e il download.
+5. **Comportamento**: numero minimo di tab per gruppo.
+6. **Privacy**: interruttore per la descrizione delle pagine (solo in modalità AI), domini esclusi.
 
 Salvataggio: chiavi API in `chrome.storage.local` (non sincronizzate); categorie e preferenze in `chrome.storage.sync`.
 
 ## Permessi
 
-- Obbligatori: `tabs`, `tabGroups`, `storage`, `scripting`.
+- Obbligatori: `tabs`, `tabGroups`, `storage`, `scripting`, `sidePanel` (quest'ultimo non mostra avvisi all'installazione).
 - Opzionali, richiesti al momento: gli host dei provider configurati (al salvataggio del provider) e `<all_urls>` per la descrizione delle pagine (all'accensione dell'interruttore). Spegnendo l'opzione o cambiando provider il permesso viene tolto.
-- Scorciatoia: `commands._execute_action`, che non richiede permessi.
+- Scorciatoia: `commands._execute_action`, che apre il pannello come il clic sull'icona e non richiede permessi.
 
 ## Stack
 
 - [WXT](https://wxt.dev) + TypeScript
-- React per popup e impostazioni
+- React per pannello laterale e impostazioni, con **Material Design 3**: token `--md-sys-*` generati da `npm run theme` (`scripts/generate-theme.mjs`, colore di partenza il blu di Chrome) e icone Material Symbols incluse come SVG
 - Vitest + fake browser di WXT per testare pipeline, fallback, validazione e annulla senza aprire Chrome
 - Testi tramite `chrome.i18n` fin dall'inizio (italiano e inglese)
 
@@ -199,7 +206,7 @@ Salvataggio: chiavi API in `chrome.storage.local` (non sincronizzate); categorie
 
 Tutte completate; il dettaglio per issue è in [`docs/lavoro-svolto.md`](docs/lavoro-svolto.md).
 
-1. **Struttura di base**: progetto WXT, popup, service worker, anteprima modificabile, Applica e Annulla, raggruppamento per dominio.
+1. **Struttura di base**: progetto WXT, popup (poi pannello laterale), service worker, anteprima modificabile, Applica e Annulla, raggruppamento per dominio.
 2. **Impostazioni**: pagina opzioni, categorie, privacy, comportamento, corrispondenza per nome con i gruppi aperti.
 3. **Generatore**: adattatore compatibile OpenAI (OpenRouter, Ollama, LM Studio) + Gemini Nano.
 4. **Classificatore**: adattatore System One (Jev, Kev, Rizzo), soglia, passaggio delle tab rimaste al Generatore, Salva nella lista.
@@ -216,7 +223,7 @@ Per ora l'estensione è per uso personale (caricata come estensione non pacchett
 - [ ] Pagina dello store: descrizione, screenshot, icone in tutte le dimensioni richieste.
 - [x] Traduzioni complete in italiano e inglese per l'interfaccia (controllate dai test).
 - [ ] Traduzioni della scheda dello store.
-- [x] Verificare che nessun permesso obbligatorio vada oltre il necessario (solo `tabs`, `tabGroups`, `storage`, `scripting`).
+- [x] Verificare che nessun permesso obbligatorio vada oltre il necessario (solo `tabs`, `tabGroups`, `storage`, `scripting`, `sidePanel`).
 - [ ] Motivare ogni permesso nella richiesta di revisione.
 - [ ] Provare a mano la rimozione di `<all_urls>` quando un provider usa un host già coperto (vedi [review AG-R3](docs/review/AG-R3.md)).
 - [ ] Generare lo zip con `wxt zip` e caricarlo.

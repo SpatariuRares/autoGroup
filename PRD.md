@@ -129,7 +129,7 @@ L'utente decide quali dati vengono inviati: di default titolo e URL ripulito; in
 
 ### Architettura generale
 
-- Estensione Manifest V3 costruita con **WXT** e **TypeScript**, con **React** per popup e impostazioni.
+- Estensione Manifest V3 costruita con **WXT** e **TypeScript**, con **React** per pannello laterale e impostazioni, in stile Material Design 3.
 - Tutta la logica gira nel **service worker**. Il popup è solo un'interfaccia: chiede di organizzare, mostra la proposta, invia le modifiche, "Applica" e "Annulla", e comunica con il service worker tramite messaggi.
 - Lo stato della sessione (calcolo in corso, proposta corrente, foto per l'annulla) sta in `chrome.storage.session`, così sopravvive alla chiusura del popup ma non alla chiusura di Chrome.
 - Testi dell'interfaccia in `chrome.i18n` fin dall'inizio, in italiano e inglese.
@@ -159,7 +159,9 @@ L'utente decide quali dati vengono inviati: di default titolo e URL ripulito; in
   | no | sì | Generatore in modalità *completo* |
   | no | no | raggruppamento per dominio |
 
-  Generatore usato, in ordine: quello configurato dall'utente, altrimenti Gemini Nano se `LanguageModel.availability()` lo dà disponibile, altrimenti nessuno.
+  Generatore usato: quello scelto dall'utente nelle impostazioni, cioè un server compatibile OpenAI, Gemini Nano (il default, usato solo se `LanguageModel.availability()` lo dà disponibile) oppure **Nessuno**. Un server senza permesso o non raggiungibile non viene sostituito da Nano: si scende di livello con un avviso.
+
+  Prima della tabella c'è la **modalità**, scelta dall'utente: *Per sito* salta tutta la pipeline AI e raggruppa per dominio; *Per argomento, con l'AI* (default) segue la tabella.
 - **Regole sui gruppi** (dentro la pipeline):
   - un gruppo nuovo richiede almeno N tab (default 2, configurabile);
   - una tab può entrare da sola in un gruppo esistente;
@@ -188,9 +190,10 @@ Una proposta è un elenco di gruppi più un elenco di avvisi. Ogni gruppo ha: no
 - `chrome.storage.sync`: categorie, soglia, numero minimo di tab, preset e URL dei provider, opzione descrizioni, domini esclusi.
 - `chrome.storage.local`: chiavi API.
 - `chrome.storage.session`: stato del calcolo, proposta corrente, foto per l'annulla.
-- Permessi obbligatori: `tabs`, `tabGroups`, `storage`, `scripting`.
+- Permessi obbligatori: `tabs`, `tabGroups`, `storage`, `scripting`, `sidePanel`.
 - Permessi opzionali, chiesti al momento con un gesto dell'utente: gli host dei provider configurati e `<all_urls>` per le descrizioni.
-- Scorciatoia da tastiera: `Alt+Shift+G` per aprire il popup.
+- Scorciatoia da tastiera: `Alt+Shift+G` per aprire il pannello laterale.
+- L'interfaccia è il **pannello laterale** di Chrome invece di un popup: resta aperto mentre l'AI calcola e mentre l'utente cambia tab.
 
 ## Testing Decisions
 

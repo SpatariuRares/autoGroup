@@ -5,10 +5,14 @@ import { isOrganizerRequest, type OrganizerRequest, type OrganizerResponse, type
 import type { OrganizerState } from '../src/shared/types';
 
 export default defineBackground(() => {
+  // Il clic sull'icona (e la scorciatoia) apre il pannello laterale: a differenza di un popup resta
+  // aperto mentre l'utente cambia tab e mentre l'AI calcola la proposta.
+  browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err) => console.error('autoGroup:', err));
+
   const organizer = createOrganizer({
     onStateChange(state) {
       const message: StateChangedMessage = { type: 'organizer/state-changed', state };
-      // Se il popup è chiuso non c'è nessun destinatario: l'errore è atteso.
+      // Se il pannello è chiuso non c'è nessun destinatario: l'errore è atteso.
       browser.runtime.sendMessage(message).catch(() => {});
     },
   });

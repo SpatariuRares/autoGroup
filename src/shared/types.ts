@@ -35,7 +35,7 @@ export interface ProposedTab {
 }
 
 export interface ProposedGroup {
-  /** ID stabile dentro la proposta, usato dal popup per le modifiche. */
+  /** ID stabile dentro la proposta, usato dal pannello per le modifiche. */
   id: string;
   name: string;
   color: GroupColor;
@@ -96,6 +96,6 @@ export interface OrganizerState {
   undo?: UndoSnapshot;
   /** Chiave i18n dell'ultimo errore, se il calcolo o l'applicazione sono falliti. */
   error?: string;
-  /** Esito dell'ultima operazione da mostrare nel popup (chiave i18n e argomento), es. dopo "Salva nella lista". */
+  /** Esito dell'ultima operazione da mostrare nel pannello (chiave i18n e argomento), es. dopo "Salva nella lista". */
   notice?: { key: string; arg?: string };
 }

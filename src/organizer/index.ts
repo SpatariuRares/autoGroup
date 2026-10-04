@@ -7,7 +7,7 @@ import { loadState, saveState } from './session-state';
 import { restoreSnapshot } from './undo';
 
 export interface OrganizerOptions {
-  /** Chiamato a ogni cambio di stato, per avvisare il popup se è aperto. */
+  /** Chiamato a ogni cambio di stato, per avvisare il pannello se è aperto. */
   onStateChange?: (state: OrganizerState) => void;
 }
 
@@ -85,7 +85,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
   return {
     propose(windowId, { force = false } = {}) {
-      // Due richieste ravvicinate per la stessa finestra (es. il popup aperto due volte) condividono il calcolo.
+      // Due richieste ravvicinate per la stessa finestra (es. il pannello aperto due volte) condividono il calcolo.
       if (computing && computing.windowId === windowId && !force) return computing.result;
       const controller = new AbortController();
       controllers.add(controller);

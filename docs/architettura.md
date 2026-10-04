@@ -1,13 +1,13 @@
 # Architettura
 
-Estensione Manifest V3 costruita con WXT, TypeScript e React. Tutta la logica sta nel service worker; il popup è solo interfaccia.
+Estensione Manifest V3 costruita con WXT, TypeScript e React. Tutta la logica sta nel service worker; il pannello laterale è solo interfaccia.
 
 ## Struttura delle cartelle
 
 ```
 entrypoints/
-  background.ts          service worker: crea l'Organizzatore e risponde ai messaggi del popup
-  popup/                 popup React (index.html, main.tsx, App.tsx, style.css)
+  background.ts          service worker: crea l'Organizzatore, risponde ai messaggi del pannello, apre il pannello al clic sull'icona
+  sidepanel/             pannello laterale React (index.html, main.tsx, App.tsx, style.css)
   options/               pagina impostazioni React, aperta in una tab intera
 src/
   organizer/             l'Organizzatore e i suoi moduli interni
@@ -30,7 +30,9 @@ src/
     index.ts             caricamento e salvataggio, validazione, domini esclusi
     categories.ts        categorie predefinite (da chrome.i18n), validazione della lista
     providers.ts         preset dei due ruoli, configurazione, chiavi API, permessi host
-  ui/base.css            colori, pulsanti e tavolozza comuni a popup e impostazioni
+  ui/md3-tokens.css      colori Material 3 (--md-sys-color-*) chiari e scuri, generati da scripts/generate-theme.mjs
+  ui/base.css            basi Material 3: tipografia, forme, pulsanti, campi, interruttore, chip, avanzamento
+  ui/Icon.tsx            icone Material Symbols incluse come SVG
   ai/                    adattatori dei provider AI, senza dipendenze dall'Organizzatore
     types.ts             contratti di Generatore e Classificatore, AiTab, AiOption, ProviderError
     http.ts              POST JSON comune: Bearer, timeout, un nuovo tentativo, classificazione degli errori; tempi (TIMINGS)
@@ -38,10 +40,10 @@ src/
     prompt.ts            istruzioni, schema JSON della risposta, lettura della risposta
     openai-generator.ts  Generatore compatibile OpenAI e "Prova connessione"
     nano-generator.ts    Gemini Nano (Prompt API): disponibilità, download, generazione a blocchi
-  shared/                codice usato sia dal service worker sia dal popup
+  shared/                codice usato sia dal service worker sia dal pannello
     types.ts             forma dei dati: Proposal, ProposedGroup, OrganizerState, colori
-    messages.ts          contratto dei messaggi popup ↔ service worker
-    organizer-client.ts  lato popup: invio delle richieste e ascolto dei cambi di stato
+    messages.ts          contratto dei messaggi pannello ↔ service worker
+    organizer-client.ts  Lato pannello: invio delle richieste e ascolto dei cambi di stato
     i18n.ts              t(): testi tramite chrome.i18n
 public/
   _locales/{it,en}/      testi dell'interfaccia
@@ -55,7 +57,7 @@ scripts/
 
 ## L'Organizzatore
 
-È il modulo principale e **l'unico punto chiamato dal popup**. Interfaccia:
+È il modulo principale e **l'unico punto chiamato dal pannello**. Interfaccia:
 
 | Metodo | Cosa fa |
 |---|---|
@@ -69,7 +71,7 @@ scripts/
 
 ### Modifiche alla proposta
 
-Il popup non modifica la proposta da solo: invia una `ProposalEdit` e riceve lo stato aggiornato. Le modifiche possibili:
+Il pannello non modifica la proposta da solo: invia una `ProposalEdit` e riceve lo stato aggiornato. Le modifiche possibili:
 
 | `kind` | Effetto |
 |---|---|
@@ -79,22 +81,22 @@ Il popup non modifica la proposta da solo: invia una `ProposalEdit` e riceve lo 
 | `move-tab` (`tabId`, `toGroupId`) | Sposta la tab in fondo a un altro gruppo della proposta. |
 | `discard-group` (`groupId`) | Scarta il gruppo: le sue tab restano libere. |
 
-Un gruppo rimasto senza tab sparisce dalla proposta. Le modifiche a gruppi o tab inesistenti vengono ignorate. Siccome la proposta modificata è salvata in `storage.session`, le modifiche sopravvivono alla chiusura del popup, e "Applica" usa sempre la versione modificata.
+Un gruppo rimasto senza tab sparisce dalla proposta. Le modifiche a gruppi o tab inesistenti vengono ignorate. Siccome la proposta modificata è salvata in `storage.session`, le modifiche sopravvivono alla chiusura del pannello, e "Applica" usa sempre la versione modificata.
 
 ### Salva nella lista (`save-to-list.ts`)
 
-Solo per i gruppi con provenienza `ai`. La categoria nuova prende **nome e colore attuali** del gruppo nella proposta (quindi anche quelli cambiati dall'utente) e una descrizione chiesta al Generatore con `describe` (stesso ordine di scelta della pipeline: configurato, poi Gemini Nano). Al Generatore arrivano il nome e fino a 8 tab di esempio, con titolo e URL ripulito.
+Solo per i gruppi con provenienza `ai`. La categoria nuova prende **nome e colore attuali** del gruppo nella proposta (quindi anche quelli cambiati dall'utente) e una descrizione chiesta al Generatore con `describe` (lo stesso Generatore della pipeline). Al Generatore arrivano il nome e fino a 8 tab di esempio, con titolo e URL ripulito.
 
 - Generatore assente o in errore: la categoria viene salvata con la descrizione vuota e l'avviso invita a completarla nelle impostazioni (con un link alla sezione Categorie).
 - Esiste già una categoria con lo stesso nome (senza distinguere maiuscole e minuscole): niente duplicato, avviso.
-- Dopo il salvataggio il gruppo diventa `list` e l'impronta della proposta viene aggiornata con la nuova lista: la proposta resta attuale (le categorie sono cambiate, ma la proposta le tiene già in conto), quindi riaprendo il popup non si perdono le modifiche. Le tab sono lette una sola volta, prima di chiedere la descrizione: se la proposta era già scaduta resta scaduta, e una tab aperta durante la descrizione (fino a 30 s) la fa scadere.
-- L'esito va nel campo `notice` dello stato (chiave i18n e nome), mostrato nel popup; la modifica successiva lo toglie.
+- Dopo il salvataggio il gruppo diventa `list` e l'impronta della proposta viene aggiornata con la nuova lista: la proposta resta attuale (le categorie sono cambiate, ma la proposta le tiene già in conto), quindi riaprendo il pannello non si perdono le modifiche. Le tab sono lette una sola volta, prima di chiedere la descrizione: se la proposta era già scaduta resta scaduta, e una tab aperta durante la descrizione (fino a 30 s) la fa scadere.
+- L'esito va nel campo `notice` dello stato (chiave i18n e nome), mostrato nel pannello; la modifica successiva lo toglie.
 
 ### Operazioni in coda
 
 Tutte le operazioni (`propose`, `edit`, `saveToList`, `apply`, `undo`) passano dalla coda `exclusive` e vengono eseguite una alla volta, nell'ordine di arrivo. Ognuna legge lo stato, eventualmente tocca le tab e riscrive lo stato: senza la coda, una proposta calcolata durante "Applica" potrebbe riscrivere la vecchia foto per "Annulla". `state()` è una sola lettura e non passa dalla coda. Nemmeno `abort()` ci passa, perché deve agire proprio mentre il calcolo la occupa.
 
-Una `propose` arrivata mentre un'altra è in corso o in coda ne condivide il risultato solo se è per la stessa finestra e senza `force`. Per un'altra finestra, o con "Ricalcola", si mette in coda un calcolo nuovo: altrimenti il popup della seconda finestra riceverebbe la proposta della prima.
+Una `propose` arrivata mentre un'altra è in corso o in coda ne condivide il risultato solo se è per la stessa finestra e senza `force`. Per un'altra finestra, o con "Ricalcola", si mette in coda un calcolo nuovo: altrimenti il pannello della seconda finestra riceverebbe la proposta della prima.
 
 ### Interrompi
 
@@ -102,7 +104,7 @@ Ogni `propose` crea un `AbortController` già al momento della richiesta, prima 
 
 ### Impronta della proposta
 
-Ogni proposta ha una `signature`: ID e URL delle tab candidate, gruppi aperti (ID, nome, colore), impostazioni usate, disponibilità dei provider e di Gemini Nano, e lettura delle descrizioni attiva o no. Quando il popup si riapre, `propose` rilegge gli input e confronta l'impronta: se coincide restituisce la proposta salvata (con le modifiche dell'utente), altrimenti ne calcola una nuova. Il titolo non fa parte dell'impronta, perché cambia spesso da solo (contatori come "(3) Posta").
+Ogni proposta ha una `signature`: ID e URL delle tab candidate, gruppi aperti (ID, nome, colore), impostazioni usate, disponibilità dei provider e di Gemini Nano, e lettura delle descrizioni attiva o no. Quando il pannello si riapre, `propose` rilegge gli input e confronta l'impronta: se coincide restituisce la proposta salvata (con le modifiche dell'utente), altrimenti ne calcola una nuova. Il titolo non fa parte dell'impronta, perché cambia spesso da solo (contatori come "(3) Posta").
 
 ### Pipeline AI (`pipeline.ts`)
 
@@ -127,13 +129,15 @@ Se non ci sono opzioni (nessuna categoria né gruppo aperto) il Classificatore n
 
 **Passo 2**: solo se c'è un Generatore **e** le tab rimaste sono almeno `minTabs` (altrimenti nessun gruppo nuovo sarebbe valido, quindi nessuna chiamata). Il Generatore riceve solo le rimaste, in modalità "solo nuovi", con le opzioni note perché non le duplichi. I gruppi del passo 1 e del passo 2 vengono uniti per nome (`mergeByName`) e passano una volta sola da `applyGroupRules`: i gruppi nuovi sotto il minimo vengono sciolti e i colori assegnati in un unico punto.
 
-**Scelta del Generatore** (`resolveGenerator`), nell'ordine del PRD:
+**Modalità** (`settings.mode`): con `domain` (*Per sito*) `runPipeline` restituisce subito i gruppi per dominio, senza avvisi, senza leggere pagine né interrogare provider. Con `ai` (default) segue la tabella dei fallback.
 
-1. quello configurato dall'utente (preset compatibile OpenAI con URL e modello), se il permesso host è stato concesso; se manca il permesso si aggiunge l'avviso `no-permission` e si passa al punto 2;
-2. Gemini Nano, se `LanguageModel.availability()` restituisce `available`; con `downloadable` o `downloading` non viene usato e si aggiunge l'avviso `needs-download` o `downloading`; con `unavailable` (o senza Prompt API) nessun avviso;
-3. nessuno: raggruppamento per dominio.
+**Scelta del Generatore** (`resolveGenerator`): è quella dell'utente, senza sostituzioni.
 
-La disponibilità di Nano viene letta in `collectInputs` solo se il Generatore configurato non è utilizzabile, e fa parte dell'impronta: quando il download finisce, la proposta successiva viene ricalcolata.
+- **Server compatibile OpenAI** (preset o personalizzato): usato se ha URL, modello e permesso host. Senza permesso si aggiunge l'avviso `no-permission` e si scende di livello: Gemini Nano **non** prende il suo posto, perché l'utente ha scelto un altro modello.
+- **Gemini Nano** (`preset: 'nano'`, il default): usato se `LanguageModel.availability()` restituisce `available`; con `downloadable` o `downloading` non viene usato e si aggiunge l'avviso `needs-download` o `downloading`; con `unavailable` (o senza Prompt API) nessun avviso.
+- **Nessuno** (`preset: 'none'`): nessun Generatore; Nano non viene nemmeno interrogato.
+
+La disponibilità di Nano viene letta in `collectInputs` solo in modalità AI con Nano scelto, e fa parte dell'impronta: quando il download finisce, la proposta successiva viene ricalcolata.
 
 **Descrizione delle pagine** (`description-reader.ts`): se l'opzione è accesa e il permesso `<all_urls>` è concesso (`inputs.readDescriptions`), e solo se c'è almeno un livello AI da interrogare, prima delle chiamate la pipeline legge la meta description (o `og:description`, se la prima manca o è vuota) delle tab candidate con `chrome.scripting.executeScript`, tutte in parallelo e con un tempo massimo di 500 ms per tab. Le tab sospese da Risparmio memoria (`discarded`) non vengono mai lette, perché leggerle le risveglierebbe; sono saltate anche le pagine non `http(s)`, il Web Store e i PDF. Una tab che non risponde in tempo o non è accessibile resta con titolo e URL. Le tab dei domini esclusi non ci arrivano, perché la selezione le ha già scartate. La descrizione (al massimo 300 caratteri, spazi compattati) diventa `AiTab.description`, quindi arriva sia al Generatore sia al Classificatore (nello `state`). Con il raggruppamento per dominio non si legge nulla.
 
@@ -183,7 +187,23 @@ L'AC di AG-08 chiede di scegliere misurando. Durante lo sviluppo non era disponi
 
 - entrambe le strategie sono implementate e testate (`strategy: 'per-tab' | 'batch'`);
 - il default è **`per-tab` con 4 richieste in parallelo**, per ragioni di qualità: lo `state` contiene una sola tab, quindi il classificatore non può confondere le tab tra loro, mentre in `batch` ogni domanda vede tutte le tab e deve trovare quella giusta tramite l'ID nelle istruzioni. Il costo è simile: in `per-tab` si ripetono i `criteria` a ogni richiesta, in `batch` si ripetono per ogni domanda (TypeSafe dichiara $0,042 per milione di token di input). La latenza dichiarata è 70–500 ms per richiesta: con 30 tab e 4 richieste in parallelo sono circa 8 giri, 1–4 s;
-- `scripts/measure-classifier.mjs` misura le due strategie su un server reale (tempo mediano, token di input, accordo tra le strategie, scelte corrette su 10 tab di esempio). **La scelta va confermata eseguendo lo script su Jev, Kev o Rizzo Flow** (issue AG-13); cambiare default significa cambiare un valore in `createSystemOneClassifier`.
+- `scripts/measure-classifier.mjs` misura le due strategie su un server reale (tempo mediano, token di input, accordo tra le strategie, scelte corrette su 10 tab di esempio).
+
+**Misure (AG-13, 2026-10-04).** Rizzo Flow locale (`rizzo-flow-1.7b-q8_0`, llama.cpp su Apple M4, Metal), 30 tab, 3 prove per strategia:
+
+| Strategia | Tempo totale (mediana) | Token di input | Scelte attese |
+|---|---|---|---|
+| `per-tab`, 1 richiesta alla volta | 11,6 s (1 prova) | 10.344 | 30/30 |
+| `per-tab`, 4 in parallelo | 11,7 s | 10.344 | 30/30 |
+| `batch` | 10,1 s | 7.684 | 29/30 |
+
+Le due strategie danno la stessa scelta per 29 tab su 30.
+
+**Decisione: resta `per-tab` con 4 richieste in parallelo.**
+- `batch` è più veloce solo del 14% e costa il 26% di token in meno, ma è una sola richiesta da circa 10 s: supera il tempo massimo di 5 s per richiesta del Classificatore, quindi nell'estensione andrebbe sempre in timeout.
+- Con `per-tab` ogni richiesta dura circa 0,4 s, ognuna resta ben sotto i 5 s anche in coda, e la precisione è piena.
+- Rizzo Flow esegue le richieste una alla volta, quindi il parallelismo non lo accelera. Non lo rallenta nemmeno, e serve con server che lavorano in parallelo, come Jev.
+- Con 30 tab il Classificatore locale impiega quindi circa 12 s. Con Jev la latenza dichiarata è 70–500 ms per richiesta, quindi con 4 in parallelo 1–4 s; non misurata, perché manca una chiave TypeSafe.
 
 ### Adattatore compatibile OpenAI (`src/ai/openai-generator.ts`)
 
@@ -241,7 +261,7 @@ La foto (`UndoSnapshot`) contiene, per ogni tab coinvolta, finestra, posizione e
 
 I gruppi creati spariscono da soli quando restano senza tab. Le tab aperte dopo non vengono toccate, i gruppi non vengono mai rinominati. Dopo l'annullamento la proposta viene azzerata, perché era stata calcolata con le tab ancora raggruppate.
 
-La foto resta disponibile finché non si applica un'altra organizzazione (calcolare una nuova proposta non la cancella) o finché Chrome non si chiude (`storage.session`). Il popup mostra "Annulla ultima organizzazione" solo nella finestra a cui la foto si riferisce.
+La foto resta disponibile finché non si applica un'altra organizzazione (calcolare una nuova proposta non la cancella) o finché Chrome non si chiude (`storage.session`). Il pannello mostra "Annulla ultima organizzazione" solo nella finestra a cui la foto si riferisce.
 
 ## Stato e persistenza
 
@@ -258,9 +278,9 @@ interface OrganizerState {
 }
 ```
 
-Lo stato ha sempre il `windowId` a cui si riferisce: è unico per tutte le finestre, e il popup mostra solo gli aggiornamenti della propria. Aprire il popup in un'altra finestra sostituisce la proposta precedente.
+Lo stato ha sempre il `windowId` a cui si riferisce: è unico per tutte le finestre, e il pannello mostra solo gli aggiornamenti della propria. Aprire il pannello in un'altra finestra sostituisce la proposta precedente.
 
-Sopravvive alla chiusura del popup e al riavvio del service worker, ma non alla chiusura di Chrome. Se il popup si chiude durante il calcolo, il service worker finisce comunque e salva la proposta; riaprendo il popup, `propose` trova la proposta pronta e la restituisce.
+Sopravvive alla chiusura del pannello e al riavvio del service worker, ma non alla chiusura di Chrome. Se il pannello si chiude durante il calcolo, il service worker finisce comunque e salva la proposta; riaprendo il pannello, `propose` trova la proposta pronta e la restituisce.
 
 Divisione degli storage prevista dal PRD: `sync` per categorie e preferenze, `local` per le chiavi API, `session` per lo stato dell'Organizzatore. Oggi: `session` per lo stato, `sync` per le impostazioni.
 
@@ -324,40 +344,68 @@ Funzioni: `loadSettings`, `saveSettings(patch)`, `isValidMinTabs`, `normalizeDom
 
 ### Pagina opzioni
 
-`entrypoints/options`, dichiarata con `open_in_tab`: si apre in una tab intera da `chrome://extensions` e dal pulsante "⚙ Impostazioni" del popup (`runtime.openOptionsPage`). Le modifiche si salvano subito, con l'indicazione "Salvato". Sezioni attuali:
+`entrypoints/options`, dichiarata con `open_in_tab`: si apre in una tab intera da `chrome://extensions` e dal pulsante "⚙ Impostazioni" del pannello (`runtime.openOptionsPage`). Struttura: menu laterale fisso con i link alle sezioni (nascosto sotto gli 860 px) e una colonna di schede (`Card.tsx`: titolo, sottotitolo, eventuale etichetta a destra). Le modifiche si salvano subito, con l'indicazione "✓ Salvato" in alto; solo i provider hanno un pulsante "Salva", perché il salvataggio chiede un permesso. Gli avvisi del pannello aprono `options.html#<sezione>`: la pagina scorre alla sezione appena le impostazioni sono caricate.
 
-- **Categorie**: per ogni categoria nome, descrizione e tavolozza dei 9 colori, pulsanti ↑ ↓ per riordinare e ✕ per eliminare; "Aggiungi categoria" (nome "Nuova categoria", numerato se già presente, e il primo colore non ancora usato) e "Ripristina default". La pagina tiene una bozza locale: una modifica non valida (es. nome duplicato) resta visibile con l'errore e non viene salvata finché non è corretta. Nome e descrizione si salvano all'uscita dal campo, colore e ordine subito.
-- **Comportamento**: numero minimo di tab (campo numerico; un valore non valido viene segnalato e non salvato).
-- **Privacy**: interruttore "Leggi la descrizione delle pagine per una maggiore precisione". Accendendolo si chiede `<all_urls>` nel gesto dell'utente; se il permesso viene rifiutato l'interruttore resta spento con un avviso. Spegnendolo il permesso viene tolto e si torna a titolo e URL. L'interruttore risulta acceso solo se l'opzione è salvata **e** il permesso c'è davvero. Poi i domini esclusi, con aggiunta (Invio o "Aggiungi"), rifiuto dei duplicati e dei valori non validi, rimozione con ✕.
+- **Come raggruppare**: due schede selezionabili, *Per sito* e *Per argomento, con l'AI* (`settings.mode`). In modalità per sito le sezioni Categorie, Classificatore e Generatore e l'interruttore delle descrizioni non vengono mostrati, e una nota spiega perché.
+- **Categorie**: una riga per categoria, con il pallino del colore (un clic apre la tavolozza dei 9 colori in un riquadro a comparsa), il nome e la descrizione (un campo che cresce con il testo, `field-sizing: content`), e i pulsanti ↑ ↓ ✕, più evidenti al passaggio del mouse. "Aggiungi categoria" (nome "Nuova categoria", numerato se già presente, e il primo colore non ancora usato) e "Ripristina default". La pagina tiene una bozza locale: una modifica non valida (es. nome duplicato) resta visibile con l'errore e non viene salvata finché non è corretta. Nome e descrizione si salvano all'uscita dal campo, colore e ordine subito.
+- **Classificatore** e **Generatore**: la stessa sezione generica (`ProviderSection`, parametrizzata per ruolo), con i campi in righe etichetta–campo allineate e, in alto a destra, il provider salvato oppure "Disattivato". Provider, URL base, modello, chiave API (campo password, salvata in `storage.local`), "Salva" e "Prova connessione", e "Modifiche non salvate" se la bozza è diversa dal salvato. Il preset compila URL e modello. "Salva" chiede il permesso host **nel gesto dell'utente, prima di ogni `await`** (altrimenti Chrome rifiuta la richiesta), toglie il permesso del provider precedente se nessuno dei due ruoli usa più quell'host, e mostra l'esito. Il Classificatore ha sotto la soglia di confidenza (cursore da 0 a 100%, salvato al rilascio). Il Generatore ha le voci *Nessuno* e *Gemini Nano*: con Nano la sezione mostra lo stato del modello (disponibile, da scaricare, in download, non supportato) e, se è da scaricare, "Scarica Gemini Nano" con l'avanzamento.
+- **Comportamento**: numero minimo di tab (un valore non valido viene segnalato e non salvato).
+- **Privacy**: interruttore (stile *switch*) "Leggi la descrizione delle pagine", solo in modalità AI. Accendendolo si chiede `<all_urls>` nel gesto dell'utente; se il permesso viene rifiutato l'interruttore resta spento con un avviso; spegnendolo il permesso viene tolto. L'interruttore risulta acceso solo se l'opzione è salvata **e** il permesso c'è davvero. Poi i domini esclusi, mostrati come etichette con ✕, con aggiunta (Invio o "Aggiungi") e rifiuto dei duplicati e dei valori non validi.
 
-- **Classificatore** e **Generatore**: la stessa sezione generica (`ProviderSection`, parametrizzata per ruolo). Il Classificatore ha in più la soglia di confidenza (cursore da 0 a 100%, salvato al rilascio); il Generatore, con "Gemini Nano" selezionato, mostra lo stato di Nano. Generatore: provider (Gemini Nano, OpenRouter, Ollama, LM Studio, Unsloth Studio, Personalizzato), URL base, modello, chiave API (campo password, salvata in `storage.local`), "Salva" e "Prova connessione". Il preset compila URL e modello. "Salva" chiede il permesso host **nel gesto dell'utente, prima di ogni `await`** (altrimenti Chrome rifiuta la richiesta), toglie il permesso del provider precedente se nessuno dei due ruoli usa più quell'host, e mostra l'esito: salvato con permesso, permesso mancante, configurazione incompleta o Generatore disattivato. La sezione si apre anche da `options.html#generator`. Con "Gemini Nano" selezionato la sezione mostra lo stato del modello (disponibile, da scaricare, in download, non supportato); se è da scaricare, il pulsante "Scarica Gemini Nano" avvia il download con `LanguageModel.create()` (serve il clic dell'utente) e mostra l'avanzamento in percentuale.
+Stili: token Material 3 (`src/ui/md3-tokens.css`, `src/ui/base.css`) e `entrypoints/options/style.css`. La navigazione a sinistra ha voci a forma piena come un *navigation drawer*, le sezioni sono schede piene (`surface-container-low`) e la modalità selezionata usa `secondary-container`. Le icone sono Material Symbols.
 
-La sezione Classificatore arriverà con AG-08.
+### Avvisi nel pannello
 
-### Avvisi nel popup
+Gli avvisi della proposta compaiono in cima all'anteprima ("Proposta meno precisa: OpenRouter (openrouter.ai) non raggiungibile.") con un link che apre le impostazioni sulla sezione del provider. Il testo viene dalla chiave `warning_<causa>` (con `-` sostituito da `_` tramite `warningKey`, perché Chrome non accetta `-` nelle chiavi). I gruppi `existing` non si possono rinominare né ricolorare nel pannello, perché "Applica" non ne cambia nome e colore.
 
-Gli avvisi della proposta compaiono in cima all'anteprima ("Proposta meno precisa: OpenRouter (openrouter.ai) non raggiungibile.") con un link che apre le impostazioni sulla sezione del provider. Il testo viene dalla chiave `warning_<causa>` (con `-` sostituito da `_` tramite `warningKey`, perché Chrome non accetta `-` nelle chiavi). I gruppi `existing` non si possono rinominare né ricolorare nel popup, perché "Applica" non ne cambia nome e colore.
-
-## Messaggi popup ↔ service worker
+## Messaggi pannello ↔ service worker
 
 Definiti in `src/shared/messages.ts`.
 
 | Messaggio | Direzione | Risposta |
 |---|---|---|
-| `organizer/state` | popup → SW | `{ ok, state }` |
-| `organizer/propose` (`windowId`, `force?`) | popup → SW | `{ ok, state }` a calcolo finito |
-| `organizer/edit` (`edit`) | popup → SW | `{ ok, state }` |
-| `organizer/save-to-list` (`groupId`) | popup → SW | `{ ok, state }` con `state.notice` |
-| `organizer/apply` | popup → SW | `{ ok, state }` |
-| `organizer/undo` | popup → SW | `{ ok, state }` |
-| `organizer/abort` | popup → SW | `{ ok, state }`; non passa dalla coda |
-| `organizer/state-changed` (`state`) | SW → popup | nessuna; il SW ignora l'errore se il popup è chiuso |
+| `organizer/state` | pannello → SW | `{ ok, state }` |
+| `organizer/propose` (`windowId`, `force?`) | pannello → SW | `{ ok, state }` a calcolo finito |
+| `organizer/edit` (`edit`) | pannello → SW | `{ ok, state }` |
+| `organizer/save-to-list` (`groupId`) | pannello → SW | `{ ok, state }` con `state.notice` |
+| `organizer/apply` | pannello → SW | `{ ok, state }` |
+| `organizer/undo` | pannello → SW | `{ ok, state }` |
+| `organizer/abort` | pannello → SW | `{ ok, state }`; non passa dalla coda |
+| `organizer/state-changed` (`state`) | SW → pannello | nessuna; il SW ignora l'errore se il pannello è chiuso |
 
-Il service worker risponde con `sendResponse` + `return true`, che funziona in tutte le versioni di Chrome MV3, e ignora i messaggi che non superano `isOrganizerRequest`. Se la risposta è un errore, il popup mostra "Si è verificato un errore imprevisto. Riprova.".
+Il service worker risponde con `sendResponse` + `return true`, che funziona in tutte le versioni di Chrome MV3, e ignora i messaggi che non superano `isOrganizerRequest`. Se la risposta è un errore, il pannello mostra "Si è verificato un errore imprevisto. Riprova.".
 
-## Popup
+## Pannello laterale
 
-All'apertura legge la finestra corrente e chiede `organizer/propose`. Mostra "Calcolo della proposta…", poi i gruppi. Per ogni gruppo: pallino del colore (cliccandolo si apre la tavolozza dei 9 colori), nome modificabile (si conferma con Invio o uscendo dal campo, Esc annulla), etichetta di provenienza, numero di tab, ✕ per scartare il gruppo. Per ogni tab: favicon, titolo (URL nel tooltip), menu "Sposta in…" verso gli altri gruppi e ✕ per toglierla. I gruppi "nuovo AI" hanno il pulsante "Salva nella lista". Sotto ci sono e i pulsanti "Ricalcola" e "Applica". Dopo un'organizzazione mostra anche "Annulla ultima organizzazione" e un avviso di conferma ("Gruppi creati.", "Organizzazione annullata."). Non contiene logica di raggruppamento.
+`entrypoints/sidepanel`: WXT lo dichiara come `side_panel.default_path` e aggiunge il permesso `sidePanel`. Il service worker chiama `sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`, quindi il clic sull'icona (e `_execute_action`, cioè `Alt+Shift+G`) apre il pannello invece di un popup. **Perché:** un popup si chiude al primo clic fuori, mentre con i provider locali il calcolo può durare decine di secondi; il pannello resta aperto mentre l'utente cambia tab e mentre l'AI lavora.
+
+All'apertura legge la finestra corrente e chiede `organizer/propose`. Struttura Material 3:
+- barra in alto con il titolo e ⚙ per le impostazioni;
+- durante il calcolo, barra di avanzamento lineare indeterminata e "Interrompi";
+- contenuto che scorre;
+- barra delle azioni fissa in basso: "Annulla ultima organizzazione", "Ricalcola" (pulsante con contorno), "Applica" (pulsante pieno).
+
+Gli esiti ("Gruppi creati.", "Salva nella lista") compaiono in una *snackbar*. Senza proposta c'è uno stato vuoto con il messaggio dell'ultima operazione.
+
+Ogni gruppo è una scheda con contorno:
+- pallino del colore, che apre la tavolozza dei 9 colori;
+- nome modificabile: si conferma con Invio o uscendo dal campo, Esc annulla; i gruppi esistenti sono bloccati e hanno l'icona del lucchetto;
+- etichetta di provenienza, colorata per "lista" e "nuovo AI";
+- numero di tab;
+- "Salva nella lista" per i gruppi "nuovo AI";
+- ✕ per scartare il gruppo.
+
+Ogni tab ha favicon e titolo, con l'URL nel tooltip. Al passaggio del mouse compaiono "Sposta in…" (icona con il menu nativo trasparente sopra) e ✕.
+
+**Proposta superata** (`useTabChanges`): il pannello resta aperto, quindi ascolta gli eventi di tab e gruppi della propria finestra. Contano tab create, chiuse, spostate tra finestre e cambi di URL, fissaggio o gruppo; non contano titolo e favicon, che cambiano da soli. Se arrivano mentre c'è una proposta, mostra "Le tab sono cambiate dopo questa proposta." con "Ricalcola". Non ricalcola da solo: ogni calcolo può costare chiamate AI. Gli eventi causati da "Applica" e "Annulla" non contano.
+
+Lo stile segue Material Design 3 in CSS, senza `@material/web`, che è solo in manutenzione e non ha la versione Expressive sul web:
+- **colori:** ruoli `--md-sys-color-*` generati con `@material/material-color-utilities` (schema Tonal Spot dal blu di Chrome `#1a73e8`) in `src/ui/md3-tokens.css`, per tema chiaro e scuro. Si rigenerano con `npm run theme`;
+- **tipografia, forme e movimento:** token `--md-sys-typescale-*`, `--md-sys-shape-corner-*` e le curve di movimento in `src/ui/base.css`;
+- **icone:** Material Symbols Rounded importate come SVG (`?raw`), quindi nessun font remoto e nessuna richiesta a Google;
+- **eccezione:** gli unici colori scritti a mano sono i 9 colori dei gruppi di Chrome, che sono dati e non tema.
+
+Il pannello non contiene logica di raggruppamento.
 
 ## Testi e lingue
 
@@ -367,11 +415,11 @@ Alcune chiavi sono composte a runtime: `warning_<causa>` (via `warningKey`, che 
 
 ## Scorciatoia da tastiera
 
-`manifest.commands._execute_action` con `suggested_key` `Alt+Shift+G` apre il popup come un clic sull'icona, quindi parte subito il calcolo della proposta. Non richiede permessi e non serve codice: Chrome gestisce il comando da solo. Senza `description`, che Chrome ignora per `_execute_action` (in `chrome://extensions/shortcuts` mostra il titolo dell'azione). La scorciatoia è solo suggerita: si cambia da `chrome://extensions/shortcuts` e Chrome non la assegna se un'altra estensione la usa già.
+`manifest.commands._execute_action` con `suggested_key` `Alt+Shift+G` apre il pannello come un clic sull'icona, quindi parte subito il calcolo della proposta. Non richiede permessi e non serve codice: Chrome gestisce il comando da solo. Senza `description`, che Chrome ignora per `_execute_action` (in `chrome://extensions/shortcuts` mostra il titolo dell'azione). La scorciatoia è solo suggerita: si cambia da `chrome://extensions/shortcuts` e Chrome non la assegna se un'altra estensione la usa già.
 
 ## Permessi
 
-Obbligatori: `tabs`, `tabGroups`, `storage`, `scripting`. Opzionali: `optional_host_permissions: ["http://*/*", "https://*/*", "<all_urls>"]`, da cui si chiedono solo l'host del provider configurato (al salvataggio) e `<all_urls>` (all'accensione delle descrizioni). Solo la build dello smoke test (`AUTOGROUP_SMOKE=1`) concede in anticipo `<all_urls>`, perché in headless le richieste di permesso non si possono accettare.
+Obbligatori: `tabs`, `tabGroups`, `storage`, `scripting`, `sidePanel` (aggiunto da WXT per il pannello laterale, senza avvisi all'installazione). Opzionali: `optional_host_permissions: ["http://*/*", "https://*/*", "<all_urls>"]`, da cui si chiedono solo l'host del provider configurato (al salvataggio) e `<all_urls>` (all'accensione delle descrizioni). Solo la build dello smoke test (`AUTOGROUP_SMOKE=1`) concede in anticipo `<all_urls>`, perché in headless le richieste di permesso non si possono accettare.
 
 Verifica nella build normale (`scripts/permissions-check.mjs`): senza permessi host all'avvio, il clic su "Salva" del Generatore e quello sull'interruttore delle descrizioni aprono la finestra di Chrome; una richiesta fatta fuori da un gesto viene rifiutata ("This function must be called during a user gesture").
 

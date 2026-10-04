@@ -5,6 +5,7 @@ import {
   hasHostPermission,
   isProviderConfigured,
   loadApiKey,
+  NANO_PRESET,
   loadSettings,
   type ProviderRole,
   type ProviderSettings,
@@ -33,7 +34,7 @@ export interface ProposalInputs {
   settings: Settings;
   classifier: ProviderInput;
   generator: ProviderInput;
-  /** Stato di Gemini Nano; letto solo se il Generatore configurato non è utilizzabile. */
+  /** Stato di Gemini Nano; letto solo se l'utente ha scelto Nano come Generatore e la modalità AI. */
   nano: NanoAvailability;
   /** Vero se l'opzione "descrizione delle pagine" è accesa e il permesso <all_urls> è concesso. */
   readDescriptions: boolean;
@@ -58,7 +59,7 @@ export async function collectInputs(windowId: number): Promise<ProposalInputs> {
     providerInput('classifier', settings.classifier),
     providerInput('generator', settings.generator),
   ]);
-  const nano = generator.usable ? 'unavailable' : await nanoAvailability();
+  const nano = settings.mode === 'ai' && settings.generator.preset === NANO_PRESET ? await nanoAvailability() : 'unavailable';
   const readDescriptions = settings.readDescriptions && (await hasDescriptionPermission());
   return {
     windowId,

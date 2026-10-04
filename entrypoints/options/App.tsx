@@ -15,22 +15,39 @@ import {
   saveSettings,
   SettingsError,
   validateCategories,
+  type GroupingMode,
   type Settings,
 } from '../../src/settings';
-import { GROUP_COLORS, type Category } from '../../src/shared/types';
+import { GROUP_COLORS, type Category, type GroupColor } from '../../src/shared/types';
+import { Icon, type IconName } from '../../src/ui/Icon';
+import { Card } from './Card';
 import { NanoStatus } from './NanoStatus';
 import { ProviderSection } from './ProviderSection';
+
+/** Sezioni nell'ordine della pagina; quelle `ai` si vedono solo in modalità AI. */
+const SECTIONS: { id: string; title: string; ai?: boolean }[] = [
+  { id: 'mode', title: 'optionsMode' },
+  { id: 'categories', title: 'optionsCategories', ai: true },
+  { id: 'classifier', title: 'optionsClassifier', ai: true },
+  { id: 'generator', title: 'optionsGenerator', ai: true },
+  { id: 'behavior', title: 'optionsBehavior' },
+  { id: 'privacy', title: 'optionsPrivacy' },
+];
 
 export function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     loadSettings().then(setSettings);
   }, []);
 
-  const [saveError, setSaveError] = useState<string | null>(null);
+  // Il pannello può aprire una sezione precisa (es. options.html#generator): si scorre quando la pagina è pronta.
+  useEffect(() => {
+    if (settings && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  }, [settings === null]);
 
   function confirmSaved() {
     setSaveError(null);
@@ -53,55 +70,113 @@ export function App() {
   }
 
   if (!settings) return null;
+  const ai = settings.mode === 'ai';
 
   return (
-    <main>
-      <header>
-        <h1>{t('optionsTitle')}</h1>
-        <span className="saved" role="status">
-          {saved ? t('optionsSaved') : ''}
-        </span>
-      </header>
-      {saveError && (
-        <p className="notice error" role="alert">
-          {t(saveError)}
-        </p>
-      )}
-      <CategoriesSection
-        categories={settings.categories}
-        onChange={(categories) => update({ categories })}
-        onReset={async () => {
-          const categories = await resetCategories();
-          setSettings((current) => (current ? { ...current, categories } : current));
-          confirmSaved();
-        }}
-      />
-      <ProviderSection
-        role="classifier"
-        saved={settings.classifier}
-        onSaved={(classifier) => {
-          setSettings((current) => (current ? { ...current, classifier } : current));
-          confirmSaved();
-        }}
-        extra={<ThresholdField threshold={settings.threshold} onChange={(threshold) => update({ threshold })} />}
-      />
-      <ProviderSection
-        role="generator"
-        saved={settings.generator}
-        whenNone={<NanoStatus />}
-        onSaved={(generator) => {
-          setSettings((current) => (current ? { ...current, generator } : current));
-          confirmSaved();
-        }}
-      />
-      <BehaviorSection minTabs={settings.minTabs} onChange={(minTabs) => update({ minTabs })} />
-      <PrivacySection
-        readDescriptions={settings.readDescriptions}
-        onReadDescriptions={(readDescriptions) => update({ readDescriptions })}
-        excludedDomains={settings.excludedDomains}
-        onChange={(excludedDomains) => update({ excludedDomains })}
-      />
-    </main>
+    <div className="layout">
+      <nav className="sidebar" aria-label={t('optionsTitle')}>
+        <div className="brand">
+          <img src="/icon/32.png" alt="" width={24} height={24} />
+          <span>autoGroup</span>
+        </div>
+        <ul>
+          {SECTIONS.filter((s) => ai || !s.ai).map((s) => (
+            <li key={s.id}>
+              <a href={`#${s.id}`}>{t(s.title)}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <main>
+        <header className="page-header">
+          <h1>{t('optionsTitle')}</h1>
+          <span className={`saved${saved ? ' visible' : ''}`} role="status">
+            {saved && (
+              <>
+                <Icon name="check" size={18} />
+                {t('optionsSaved')}
+              </>
+            )}
+          </span>
+        </header>
+        {saveError && (
+          <p className="banner error" role="alert">
+            {t(saveError)}
+          </p>
+        )}
+
+        <ModeSection mode={settings.mode} onChange={(mode) => update({ mode })} />
+
+        {ai ? (
+          <>
+            <CategoriesSection
+              categories={settings.categories}
+              onChange={(categories) => update({ categories })}
+              onReset={async () => {
+                const categories = await resetCategories();
+                setSettings((current) => (current ? { ...current, categories } : current));
+                confirmSaved();
+              }}
+            />
+            <ProviderSection
+              role="classifier"
+              saved={settings.classifier}
+              onSaved={(classifier) => {
+                setSettings((current) => (current ? { ...current, classifier } : current));
+                confirmSaved();
+              }}
+              extra={<ThresholdField threshold={settings.threshold} onChange={(threshold) => update({ threshold })} />}
+            />
+            <ProviderSection
+              role="generator"
+              saved={settings.generator}
+              nano={<NanoStatus />}
+              onSaved={(generator) => {
+                setSettings((current) => (current ? { ...current, generator } : current));
+                confirmSaved();
+              }}
+            />
+          </>
+        ) : (
+          <p className="banner">{t('optionsModeDomainNote')}</p>
+        )}
+
+        <BehaviorSection minTabs={settings.minTabs} onChange={(minTabs) => update({ minTabs })} />
+        <PrivacySection
+          ai={ai}
+          readDescriptions={settings.readDescriptions}
+          onReadDescriptions={(readDescriptions) => update({ readDescriptions })}
+          excludedDomains={settings.excludedDomains}
+          onChange={(excludedDomains) => update({ excludedDomains })}
+        />
+      </main>
+    </div>
+  );
+}
+
+const MODES: { id: GroupingMode; icon: IconName; title: string; hint: string }[] = [
+  { id: 'domain', icon: 'language', title: 'optionsModeDomain', hint: 'optionsModeDomainHint' },
+  { id: 'ai', icon: 'category', title: 'optionsModeAi', hint: 'optionsModeAiHint' },
+];
+
+function ModeSection({ mode, onChange }: { mode: GroupingMode; onChange: (mode: GroupingMode) => unknown }) {
+  return (
+    <Card id="mode" title={t('optionsMode')}>
+      <div className="modes" role="radiogroup" aria-label={t('optionsMode')}>
+        {MODES.map((m) => (
+          <label key={m.id} className={`mode${mode === m.id ? ' selected' : ''}`}>
+            <input type="radio" name="mode" value={m.id} checked={mode === m.id} onChange={() => onChange(m.id)} />
+            <span className="mode-icon">
+              <Icon name={m.icon} />
+            </span>
+            <span className="mode-text">
+              <strong>{t(m.title)}</strong>
+              <span>{t(m.hint)}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </Card>
   );
 }
 
@@ -145,9 +220,12 @@ function CategoriesSection({ categories, onChange, onReset }: CategoriesSectionP
   }
 
   return (
-    <section id="categories">
-      <h2>{t('optionsCategories')}</h2>
-      <p className="hint">{t('optionsCategoriesHint')}</p>
+    <Card
+      id="categories"
+      title={t('optionsCategories')}
+      hint={t('optionsCategoriesHint')}
+      aside={<span className="count-badge">{draft.length}</span>}
+    >
       {invalid && (
         <p className="hint error" role="alert">
           {t(invalid)}
@@ -157,68 +235,57 @@ function CategoriesSection({ categories, onChange, onReset }: CategoriesSectionP
       <ol className="categories">
         {draft.map((category, index) => (
           <li key={category.id} className="category">
-            <div className="category-main">
-              <input
-                type="text"
-                className="category-name"
-                value={category.name}
-                maxLength={MAX_NAME_LENGTH}
-                aria-label={t('optionsCategoryName')}
-                placeholder={t('optionsCategoryName')}
-                onChange={(e) => setDraft(update(category.id, { name: e.target.value }))}
-                onBlur={() => commit(draft)}
-              />
-              <textarea
-                className="category-description"
-                value={category.description}
-                maxLength={MAX_DESCRIPTION_LENGTH}
-                rows={2}
-                aria-label={t('optionsCategoryDescription')}
-                placeholder={t('optionsCategoryDescription')}
-                onChange={(e) => setDraft(update(category.id, { description: e.target.value }))}
-                onBlur={() => commit(draft)}
-              />
-              <div className="palette" role="radiogroup" aria-label={t('optionsCategoryColor')}>
-                {GROUP_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    role="radio"
-                    aria-checked={color === category.color}
-                    className={`swatch color-${color}${color === category.color ? ' selected' : ''}`}
-                    title={t(`color_${color}`)}
-                    aria-label={t(`color_${color}`)}
-                    onClick={() => commit(update(category.id, { color }))}
-                  />
-                ))}
-              </div>
-            </div>
+            <ColorPicker color={category.color} onChange={(color) => commit(update(category.id, { color }))} />
+            <input
+              type="text"
+              className="category-name"
+              value={category.name}
+              maxLength={MAX_NAME_LENGTH}
+              aria-label={t('optionsCategoryName')}
+              placeholder={t('optionsCategoryName')}
+              onChange={(e) => setDraft(update(category.id, { name: e.target.value }))}
+              onBlur={() => commit(draft)}
+            />
+            <textarea
+              className="category-description"
+              value={category.description}
+              maxLength={MAX_DESCRIPTION_LENGTH}
+              rows={1}
+              aria-label={t('optionsCategoryDescription')}
+              placeholder={t('optionsCategoryDescription')}
+              onChange={(e) => setDraft(update(category.id, { description: e.target.value }))}
+              onBlur={() => commit(draft)}
+            />
             <div className="category-actions">
-              <button className="icon" title={t('optionsMoveUp')} aria-label={t('optionsMoveUp')} disabled={index === 0} onClick={() => move(index, -1)}>
-                ↑
+              <button className="icon small" title={t('optionsMoveUp')} aria-label={t('optionsMoveUp')} disabled={index === 0} onClick={() => move(index, -1)}>
+                <Icon name="arrowUpward" size={18} />
               </button>
               <button
-                className="icon"
+                className="icon small"
                 title={t('optionsMoveDown')}
                 aria-label={t('optionsMoveDown')}
                 disabled={index === draft.length - 1}
                 onClick={() => move(index, 1)}
               >
-                ↓
+                <Icon name="arrowDownward" size={18} />
               </button>
               <button
-                className="icon"
+                className="icon small danger"
                 title={t('optionsDeleteCategory')}
                 aria-label={t('optionsDeleteCategory')}
                 onClick={() => commit(draft.filter((c) => c.id !== category.id))}
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
           </li>
         ))}
       </ol>
-      <div className="row actions">
-        <button onClick={add}>{t('optionsAddCategory')}</button>
+      <div className="actions">
+        <button className="tonal" onClick={add}>
+          <Icon name="add" size={18} />
+          {t('optionsAddCategory')}
+        </button>
         <button
           className="secondary"
           onClick={async () => {
@@ -229,7 +296,50 @@ function CategoriesSection({ categories, onChange, onReset }: CategoriesSectionP
           {t('optionsResetCategories')}
         </button>
       </div>
-    </section>
+    </Card>
+  );
+}
+
+/** Pallino del colore che apre la tavolozza dei 9 colori di Chrome. */
+function ColorPicker({ color, onChange }: { color: GroupColor; onChange: (color: GroupColor) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  return (
+    <div className="color-picker" ref={ref}>
+      <button
+        className={`swatch color-${color}`}
+        title={`${t('optionsCategoryColor')}: ${t(`color_${color}`)}`}
+        aria-label={`${t('optionsCategoryColor')}: ${t(`color_${color}`)}`}
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      />
+      {open && (
+        <div className="palette popover" role="radiogroup" aria-label={t('optionsCategoryColor')}>
+          {GROUP_COLORS.map((c) => (
+            <button
+              key={c}
+              role="radio"
+              aria-checked={c === color}
+              className={`swatch color-${c}${c === color ? ' selected' : ''}`}
+              title={t(`color_${c}`)}
+              aria-label={t(`color_${c}`)}
+              onClick={() => {
+                setOpen(false);
+                if (c !== color) onChange(c);
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -237,23 +347,26 @@ function CategoriesSection({ categories, onChange, onReset }: CategoriesSectionP
 function ThresholdField({ threshold, onChange }: { threshold: number; onChange: (value: number) => unknown }) {
   const [value, setValue] = useState(threshold);
   return (
-    <>
-      <label className="field threshold">
-        <span>{t('optionsThreshold')}</span>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.05}
-          value={value}
-          onChange={(e) => setValue(Number(e.target.value))}
-          onPointerUp={() => value !== threshold && onChange(value)}
-          onKeyUp={() => value !== threshold && onChange(value)}
-        />
-        <output>{Math.round(value * 100)}%</output>
-      </label>
-      <p className="hint">{t('optionsThresholdHint')}</p>
-    </>
+    <div className="form-row">
+      <span className="form-label">{t('optionsThreshold')}</span>
+      <div className="form-control">
+        <div className="threshold">
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={value}
+            aria-label={t('optionsThreshold')}
+            onChange={(e) => setValue(Number(e.target.value))}
+            onPointerUp={() => value !== threshold && onChange(value)}
+            onKeyUp={() => value !== threshold && onChange(value)}
+          />
+          <output>{Math.round(value * 100)}%</output>
+        </div>
+        <p className="hint">{t('optionsThresholdHint')}</p>
+      </div>
+    </div>
   );
 }
 
@@ -263,36 +376,42 @@ function BehaviorSection({ minTabs, onChange }: { minTabs: number; onChange: (va
   const valid = value.trim() !== '' && isValidMinTabs(parsed);
 
   return (
-    <section id="behavior">
-      <h2>{t('optionsBehavior')}</h2>
-      <label className="field">
-        <span>{t('optionsMinTabs')}</span>
-        <input
-          type="number"
-          min={1}
-          step={1}
-          value={value}
-          aria-invalid={!valid}
-          onChange={(e) => {
-            setValue(e.target.value);
-            const next = Number(e.target.value);
-            if (e.target.value.trim() !== '' && isValidMinTabs(next) && next !== minTabs) onChange(next);
-          }}
-        />
-      </label>
-      <p className={valid ? 'hint' : 'hint error'}>{valid ? t('optionsMinTabsHint') : t('optionsMinTabsInvalid')}</p>
-    </section>
+    <Card id="behavior" title={t('optionsBehavior')}>
+      <div className="form-row">
+        <label className="form-label" htmlFor="min-tabs">
+          {t('optionsMinTabs')}
+        </label>
+        <div className="form-control">
+          <input
+            id="min-tabs"
+            type="number"
+            min={1}
+            step={1}
+            value={value}
+            aria-invalid={!valid}
+            onChange={(e) => {
+              setValue(e.target.value);
+              const next = Number(e.target.value);
+              if (e.target.value.trim() !== '' && isValidMinTabs(next) && next !== minTabs) onChange(next);
+            }}
+          />
+          <p className={valid ? 'hint' : 'hint error'}>{valid ? t('optionsMinTabsHint') : t('optionsMinTabsInvalid')}</p>
+        </div>
+      </div>
+    </Card>
   );
 }
 
 interface PrivacySectionProps {
+  /** In modalità "solo dominio" la descrizione delle pagine non serve: l'interruttore non c'è. */
+  ai: boolean;
   readDescriptions: boolean;
   onReadDescriptions: (value: boolean) => unknown;
   excludedDomains: string[];
   onChange: (value: string[]) => unknown;
 }
 
-function PrivacySection({ readDescriptions, onReadDescriptions, excludedDomains, onChange }: PrivacySectionProps) {
+function PrivacySection({ ai, readDescriptions, onReadDescriptions, excludedDomains, onChange }: PrivacySectionProps) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [permitted, setPermitted] = useState<boolean | null>(null);
@@ -338,55 +457,65 @@ function PrivacySection({ readDescriptions, onReadDescriptions, excludedDomains,
   }
 
   return (
-    <section id="privacy">
-      <h2>{t('optionsPrivacy')}</h2>
-      <label className="toggle">
-        <input type="checkbox" checked={on} disabled={permitted === null} onChange={(e) => toggle(e.target.checked)} />
-        <span>{t('optionsReadDescriptions')}</span>
-      </label>
-      <p className="hint">{t('optionsReadDescriptionsHint')}</p>
-      {denied && <p className="hint error">{t('optionsReadDescriptionsDenied')}</p>}
-      <h3>{t('optionsExcludedDomains')}</h3>
-      <p className="hint">{t('optionsExcludedDomainsHint')}</p>
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          add();
-        }}
-      >
-        <input
-          type="text"
-          value={draft}
-          placeholder={t('optionsDomainPlaceholder')}
-          aria-label={t('optionsExcludedDomains')}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            setError(null);
-          }}
-        />
-        <button type="submit">{t('optionsAdd')}</button>
-      </form>
-      {error && <p className="hint error">{t(error)}</p>}
-      {excludedDomains.length === 0 ? (
-        <p className="empty">{t('optionsNoExcludedDomains')}</p>
-      ) : (
-        <ul className="domains">
-          {excludedDomains.map((domain) => (
-            <li key={domain}>
-              <span>{domain}</span>
-              <button
-                className="icon"
-                title={t('optionsRemove')}
-                aria-label={`${t('optionsRemove')}: ${domain}`}
-                onClick={() => onChange(excludedDomains.filter((d) => d !== domain))}
-              >
-                ✕
-              </button>
-            </li>
-          ))}
-        </ul>
+    <Card id="privacy" title={t('optionsPrivacy')}>
+      {ai && (
+        <div className="setting">
+          <label className="toggle">
+            <span className="setting-text">
+              <strong>{t('optionsReadDescriptions')}</strong>
+              <span className="hint">{t('optionsReadDescriptionsHint')}</span>
+            </span>
+            <input type="checkbox" role="switch" checked={on} disabled={permitted === null} onChange={(e) => toggle(e.target.checked)} />
+          </label>
+          {denied && <p className="hint error">{t('optionsReadDescriptionsDenied')}</p>}
+        </div>
       )}
-    </section>
+      <div className="setting">
+        <strong>{t('optionsExcludedDomains')}</strong>
+        <p className="hint">{t('optionsExcludedDomainsHint')}</p>
+        <form
+          className="inline-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            add();
+          }}
+        >
+          <input
+            type="text"
+            value={draft}
+            placeholder={t('optionsDomainPlaceholder')}
+            aria-label={t('optionsExcludedDomains')}
+            aria-invalid={error !== null}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setError(null);
+            }}
+          />
+          <button type="submit" className="tonal">
+            {t('optionsAdd')}
+          </button>
+        </form>
+        {error && <p className="hint error">{t(error)}</p>}
+        {excludedDomains.length === 0 ? (
+          <p className="empty">{t('optionsNoExcludedDomains')}</p>
+        ) : (
+          <ul className="domains">
+            {excludedDomains.map((domain) => (
+              <li key={domain} className="chip">
+                <span>{domain}</span>
+                <button
+                  className="icon danger"
+                  title={t('optionsRemove')}
+                  aria-label={`${t('optionsRemove')}: ${domain}`}
+                  onClick={() => onChange(excludedDomains.filter((d) => d !== domain))}
+                >
+                  <Icon name="close" size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Card>
   );
 }

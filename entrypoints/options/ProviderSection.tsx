@@ -3,10 +3,13 @@ import { browser } from 'wxt/browser';
 import { testOpenAiConnection } from '../../src/ai/openai-generator';
 import { testSystemOneConnection } from '../../src/ai/systemone-classifier';
 import { ProviderError } from '../../src/ai/types';
+import { NANO_LABEL } from '../../src/ai/nano-generator';
 import {
   hasHostPermission,
+  isLocalOnly,
   loadSettings,
   isProviderConfigured,
+  NANO_PRESET,
   loadApiKey,
   originPattern,
   presetsOf,
@@ -17,13 +20,14 @@ import {
   type ProviderSettings,
 } from '../../src/settings';
 import { t, warningKey } from '../../src/shared/i18n';
+import { Card } from './Card';
 
 type Status = { kind: 'ok' | 'error' | 'info'; key: string; sub?: string } | null;
 
 /** Testi che cambiano tra Classificatore e Generatore. */
 const TEXT = {
   classifier: { title: 'optionsClassifier', hint: 'optionsClassifierHint', none: 'optionsClassifierNone', disabled: 'optionsClassifierDisabled', modelPlaceholder: 'optionsClassifierModelPlaceholder' },
-  generator: { title: 'optionsGenerator', hint: 'optionsGeneratorHint', none: 'optionsPresetNone', disabled: 'optionsGeneratorDisabled', modelPlaceholder: 'optionsModelPlaceholder' },
+  generator: { title: 'optionsGenerator', hint: 'optionsGeneratorHint', none: 'optionsGeneratorNone', disabled: 'optionsGeneratorDisabled', modelPlaceholder: 'optionsModelPlaceholder' },
 } as const;
 
 /** "Prova connessione" per ruolo: protocollo System One o compatibile OpenAI. */
@@ -36,8 +40,8 @@ interface ProviderSectionProps {
   role: ProviderRole;
   saved: ProviderSettings;
   onSaved: (settings: ProviderSettings) => void;
-  /** Contenuto mostrato quando non c'è un provider (es. lo stato di Gemini Nano). */
-  whenNone?: ReactNode;
+  /** Solo per il Generatore: lo stato di Gemini Nano, mostrato quando è scelto Nano. */
+  nano?: ReactNode;
   /** Campi in più sotto il modello (es. la soglia del Classificatore). */
   extra?: ReactNode;
 }
@@ -50,12 +54,19 @@ async function releaseUnusedPermission(previousBaseUrl: string) {
   const previous = originPattern(previousBaseUrl);
   if (!previous) return;
   const { classifier, generator } = await loadSettings();
-  const inUse = [classifier, generator].some((p) => p.preset !== 'none' && originPattern(p.baseUrl) === previous);
+  const inUse = [classifier, generator].some((p) => !isLocalOnly(p) && originPattern(p.baseUrl) === previous);
   if (!inUse) await browser.permissions.remove({ origins: [previous] }).catch(() => {});
 }
 
 /** Sezione impostazioni di un provider: preset, URL base, modello, chiave API, Salva e Prova connessione. */
-export function ProviderSection({ role, saved, onSaved, whenNone, extra }: ProviderSectionProps) {
+/** Nome del provider salvato, per l'etichetta in alto a destra della sezione. */
+function savedLabel(role: ProviderRole, saved: ProviderSettings): string | null {
+  if (saved.preset === 'none') return null;
+  if (saved.preset === NANO_PRESET) return NANO_LABEL;
+  return presetsOf(role)[saved.preset]?.label ?? t('optionsPresetCustom');
+}
+
+export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderSectionProps) {
   const text = TEXT[role];
   const presets = presetsOf(role);
   const [draft, setDraft] = useState(saved);
@@ -79,8 +90,9 @@ export function ProviderSection({ role, saved, onSaved, whenNone, extra }: Provi
   }
 
   function save() {
-    const origin = draft.preset === 'none' ? null : originPattern(draft.baseUrl);
-    if (draft.preset !== 'none' && !origin) return setStatus({ kind: 'error', key: 'optionsGeneratorBadUrl' });
+    const local = isLocalOnly(draft);
+    const origin = local ? null : originPattern(draft.baseUrl);
+    if (!local && !origin) return setStatus({ kind: 'error', key: 'optionsGeneratorBadUrl' });
     // permissions.request va chiamato subito, dentro il gesto dell'utente, prima di ogni await.
     const granted = origin ? browser.permissions.request({ origins: [origin] }) : Promise.resolve(false);
     (async () => {
@@ -91,6 +103,7 @@ export function ProviderSection({ role, saved, onSaved, whenNone, extra }: Provi
       setPermission(origin ? ok : null);
       onSaved(draft);
       if (draft.preset === 'none') setStatus({ kind: 'info', key: text.disabled });
+      else if (draft.preset === NANO_PRESET) setStatus({ kind: 'ok', key: 'optionsSaved' });
       else if (!isProviderConfigured(role, draft)) setStatus({ kind: 'error', key: 'optionsGeneratorIncomplete' });
       else setStatus(ok ? { kind: 'ok', key: 'optionsSavedProvider' } : { kind: 'error', key: 'warning_no_permission', sub: providerLabel(role, draft) });
     })().catch((err) => {
@@ -113,55 +126,83 @@ export function ProviderSection({ role, saved, onSaved, whenNone, extra }: Provi
     }
   }
 
-  const none = draft.preset === 'none';
+  const local = isLocalOnly(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  const active = savedLabel(role, saved);
 
   return (
-    <section id={role}>
-      <h2>{t(text.title)}</h2>
-      <p className="hint">{t(text.hint)}</p>
-      <label className="field">
-        <span>{t('optionsPreset')}</span>
-        <select value={draft.preset} onChange={(e) => choosePreset(e.target.value)}>
-          <option value="none">{t(text.none)}</option>
-          {Object.entries(presets).map(([id, p]) => (
-            <option key={id} value={id}>
-              {p.label}
-            </option>
-          ))}
-          <option value="custom">{t('optionsPresetCustom')}</option>
-        </select>
-      </label>
-      {none && whenNone}
-      {!none && (
+    <Card
+      id={role}
+      title={t(text.title)}
+      hint={t(text.hint)}
+      aside={<span className={`status-badge${active ? ' on' : ''}`}>{active ?? t('optionsStatusOff')}</span>}
+    >
+      <div className="form-row">
+        <label className="form-label" htmlFor={`${role}-preset`}>
+          {t('optionsPreset')}
+        </label>
+        <div className="form-control">
+          <select id={`${role}-preset`} value={draft.preset} onChange={(e) => choosePreset(e.target.value)}>
+            <option value="none">{t(text.none)}</option>
+            {role === 'generator' && <option value={NANO_PRESET}>{t('optionsPresetNano')}</option>}
+            {Object.entries(presets).map(([id, p]) => (
+              <option key={id} value={id}>
+                {p.label}
+              </option>
+            ))}
+            <option value="custom">{t('optionsPresetCustom')}</option>
+          </select>
+          {draft.preset === NANO_PRESET && nano}
+        </div>
+      </div>
+      {!local && (
         <>
-          <label className="field">
-            <span>{t('optionsBaseUrl')}</span>
-            <input type="text" className="wide" value={draft.baseUrl} placeholder="https://…" onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>{t('optionsModel')}</span>
-            <input type="text" className="wide" value={draft.model} placeholder={t(text.modelPlaceholder)} onChange={(e) => setDraft({ ...draft, model: e.target.value })} />
-          </label>
-          <label className="field">
-            <span>{t('optionsApiKey')}</span>
-            <input type="password" className="wide" value={apiKey} autoComplete="off" placeholder={t('optionsApiKeyPlaceholder')} onChange={(e) => setApiKey(e.target.value)} />
-          </label>
-          <p className="hint">{t('optionsApiKeyHint')}</p>
+          <div className="form-row">
+            <label className="form-label" htmlFor={`${role}-url`}>
+              {t('optionsBaseUrl')}
+            </label>
+            <div className="form-control">
+              <input id={`${role}-url`} type="text" value={draft.baseUrl} placeholder="https://…" onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value })} />
+            </div>
+          </div>
+          <div className="form-row">
+            <label className="form-label" htmlFor={`${role}-model`}>
+              {t('optionsModel')}
+            </label>
+            <div className="form-control">
+              <input id={`${role}-model`} type="text" value={draft.model} placeholder={t(text.modelPlaceholder)} onChange={(e) => setDraft({ ...draft, model: e.target.value })} />
+            </div>
+          </div>
+          <div className="form-row">
+            <label className="form-label" htmlFor={`${role}-key`}>
+              {t('optionsApiKey')}
+            </label>
+            <div className="form-control">
+              <input
+                id={`${role}-key`}
+                type="password"
+                value={apiKey}
+                autoComplete="off"
+                placeholder={t('optionsApiKeyPlaceholder')}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+              <p className="hint">{t('optionsApiKeyHint')}</p>
+            </div>
+          </div>
         </>
       )}
-      <div className="row actions">
+      <div className="actions">
         <button onClick={save}>{t('optionsSaveProvider')}</button>
-        {!none && (
+        {!local && (
           <button className="secondary" onClick={test} disabled={testing || !isProviderConfigured(role, draft)}>
             {testing ? t('optionsTesting') : t('optionsTestConnection')}
           </button>
         )}
+        {dirty && <span className="hint unsaved">{t('optionsUnsaved')}</span>}
       </div>
-      {dirty && <p className="hint">{t('optionsUnsaved')}</p>}
       {status && <p className={`hint ${status.kind === 'error' ? 'error' : status.kind === 'ok' ? 'ok' : ''}`}>{t(status.key, status.sub)}</p>}
       {!status && permission === false && <p className="hint error">{t('warning_no_permission', providerLabel(role, saved))}</p>}
-      {extra}
-    </section>
+      {extra && <div className="extra">{extra}</div>}
+    </Card>
   );
 }

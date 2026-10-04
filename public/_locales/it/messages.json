@@ -44,7 +44,7 @@
     "message": "nuovo AI"
   },
   "provenance_domain": {
-    "message": "dominio"
+    "message": "sito"
   },
   "color_grey": {
     "message": "grigio"
@@ -289,13 +289,10 @@
     "message": "Generatore"
   },
   "optionsGeneratorHint": {
-    "message": "Il Generatore sceglie tra le categorie o inventa gruppi nuovi. Gemini Nano gira nel browser, senza chiavi e senza inviare dati; in alternativa puoi usare un modello compatibile OpenAI. Se nessun Generatore è disponibile le tab vengono raggruppate per dominio."
+    "message": "Il Generatore sceglie tra le categorie o inventa gruppi nuovi. Gemini Nano gira nel browser, senza chiavi e senza inviare dati; in alternativa puoi usare un modello compatibile OpenAI."
   },
   "optionsPreset": {
     "message": "Provider"
-  },
-  "optionsPresetNone": {
-    "message": "Gemini Nano (integrato in Chrome)"
   },
   "optionsPresetCustom": {
     "message": "Personalizzato"
@@ -334,7 +331,7 @@
     "message": "Modifiche non salvate."
   },
   "optionsGeneratorDisabled": {
-    "message": "Verrà usato Gemini Nano se disponibile, altrimenti il raggruppamento per dominio."
+    "message": "Generatore disattivato: decide solo il Classificatore, oppure si raggruppa per sito."
   },
   "optionsGeneratorIncomplete": {
     "message": "Inserisci URL base e modello per usare il Generatore."
@@ -438,7 +435,7 @@
     "message": "Download di Gemini Nano in corso…"
   },
   "nanoStatus_unavailable": {
-    "message": "Gemini Nano non è supportato da questo browser o computer: le tab verranno raggruppate per dominio."
+    "message": "Gemini Nano non è supportato da questo browser o computer: le tab verranno raggruppate per sito."
   },
   "nanoDownload": {
     "message": "Scarica Gemini Nano"
@@ -520,5 +517,38 @@
   },
   "optionsReadDescriptionsDenied": {
     "message": "Permesso non concesso: verranno usati solo titolo e URL."
+  },
+  "optionsMode": {
+    "message": "Come raggruppare"
+  },
+  "optionsModeDomain": {
+    "message": "Per sito"
+  },
+  "optionsModeDomainHint": {
+    "message": "Le tab dello stesso sito finiscono nello stesso gruppo. Immediato, nessuna configurazione, nessun dato esce dal computer."
+  },
+  "optionsModeAi": {
+    "message": "Per argomento, con l'AI"
+  },
+  "optionsModeAiHint": {
+    "message": "L'AI sceglie tra le tue categorie o ne inventa di nuove. Se nessun provider risponde, si raggruppa per sito."
+  },
+  "optionsModeDomainNote": {
+    "message": "Raggruppamento per sito: categorie e provider AI non vengono usati. Scegli \"Per argomento, con l'AI\" per configurarli."
+  },
+  "optionsPresetNano": {
+    "message": "Gemini Nano (integrato in Chrome)"
+  },
+  "optionsGeneratorNone": {
+    "message": "Nessuno"
+  },
+  "optionsStatusOff": {
+    "message": "Disattivato"
+  },
+  "panelStale": {
+    "message": "Le tab sono cambiate dopo questa proposta."
+  },
+  "panelIdle": {
+    "message": "Premi «Ricalcola» per proporre i gruppi delle tab libere di questa finestra."
   }
 }

@@ -1,5 +1,5 @@
 // Prova manuale automatizzata in Chrome for Testing: carica l'estensione da .output/chrome-mv3,
-// apre alcune pagine, apre il popup come pagina e preme "Applica".
+// apre alcune pagine, apre il pannello laterale come pagina e preme "Applica".
 // Uso: npm run build && node scripts/smoke.mjs
 import http from 'node:http';
 import path from 'node:path';
@@ -87,7 +87,7 @@ try {
   const popup = await browser.newPage();
   popup.on('console', (m) => m.type() === 'error' && errors.push(`[popup] ${m.text()}`));
   popup.on('pageerror', (e) => errors.push(`[popup] ${e.message}`));
-  await popup.goto(`chrome-extension://${extId}/popup.html`);
+  await popup.goto(`chrome-extension://${extId}/sidepanel.html`);
   await popup.waitForSelector('.group', { timeout: 10000 });
   const preview = await popup.$$eval('.group', (els) =>
     els.map((el) => `${el.querySelector('.group-name').value} (${el.querySelector('.badge').textContent}): ${el.querySelectorAll('.tab').length} tab`),
@@ -108,7 +108,7 @@ try {
   await popup.keyboard.press('Enter');
   await popup.click('.group .swatch');
   await popup.click('.palette .color-purple');
-  await popup.select('.group:nth-child(1) .tab:nth-child(1) .move', 'g2');
+  await popup.select('.group:nth-child(1) .tab:nth-child(1) .move select', 'g2');
   await popup.waitForFunction(() => document.querySelectorAll('.group:nth-child(2) .tab').length === 3, { timeout: 5000 });
   await popup.screenshot({ path: 'scripts/smoke-popup.png' });
   await popup.reload();
@@ -217,8 +217,8 @@ try {
   console.log('Proposta dal Generatore:', await repropose());
   const sent = JSON.parse(ai.requests.at(-1).messages[1].content);
   await popup.click('.group .save');
-  await popup.waitForFunction(() => /categor/i.test(document.querySelector('.notice')?.textContent ?? ''), { timeout: 10000 });
-  console.log('Salva nella lista:', await popup.$eval('.notice', (el) => el.textContent), '| badge:', await popup.$eval('.group .badge', (el) => el.textContent));
+  await popup.waitForFunction(() => /categor/i.test(document.querySelector('.snackbar')?.textContent ?? ''), { timeout: 10000 });
+  console.log('Salva nella lista:', await popup.$eval('.snackbar', (el) => el.textContent), '| badge:', await popup.$eval('.group .badge', (el) => el.textContent));
   const savedCategory = (await sw.evaluate(() => chrome.storage.sync.get('categories'))).categories.at(-1);
   console.log('Categoria salvata:', JSON.stringify({ name: savedCategory.name, description: savedCategory.description, color: savedCategory.color }));
   console.log('Tab inviate all\'AI:', JSON.stringify(sent.tabs));
@@ -238,7 +238,7 @@ try {
   await popup.waitForSelector('.status.computing button', { timeout: 10000 });
   await popup.click('.status.computing button');
   await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 10000 });
-  console.log('Dopo Interrompi:', await popup.$eval('.notice', (el) => el.textContent).catch(() => 'nessun avviso'), '| gruppi:', (await popup.$$('.group')).length);
+  console.log('Dopo Interrompi:', await popup.$eval('.empty-state', (el) => el.textContent).catch(() => 'nessun avviso'), '| gruppi:', (await popup.$$('.group')).length);
   ai.hang = false;
 
   // Descrizione delle pagine: interruttore nella sezione Privacy, poi una nuova proposta.
@@ -300,6 +300,18 @@ try {
       '| Generatore', ai.requests.filter((r) => !r.systemone).length, warnings ? `| avvisi: ${warnings}` : '');
   }
   ai.unsure = false;
+
+  // Modalità "Per sito" scelta dall'interfaccia: con entrambi i provider configurati nessuna AI viene interrogata.
+  await sw.evaluate((c, g) => chrome.storage.sync.set({ classifier: c, generator: g }), classifierOn, generatorOn);
+  await options.bringToFront();
+  await options.reload();
+  await options.waitForSelector('.mode');
+  await options.click('.mode:first-child');
+  await options.waitForFunction(() => !document.querySelector('#classifier'), { timeout: 5000 });
+  console.log('Modalità salvata:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('mode'))));
+  const domainOnly = await repropose();
+  console.log('Modalità per sito:', JSON.stringify(domainOnly), '| richieste AI', ai.requests.length);
+  if (ai.requests.length > 0 || domainOnly.some((g) => !g.includes('(site)'))) throw new Error('La modalità per sito ha usato l\'AI');
 } finally {
   await browser.close();
   // Chiude anche le connessioni lasciate appese apposta (prova di "Interrompi").

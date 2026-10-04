@@ -20,7 +20,7 @@ interface SaveResult {
  * Una categoria con lo stesso nome (senza distinguere maiuscole e minuscole) non viene duplicata.
  *
  * Dopo il salvataggio il gruppo diventa "lista" e l'impronta della proposta viene aggiornata con la
- * nuova lista, così la proposta (con le modifiche dell'utente) resta valida riaprendo il popup.
+ * nuova lista, così la proposta (con le modifiche dell'utente) resta valida riaprendo il pannello.
  * Le tab sono lette una sola volta, prima della descrizione: se erano già cambiate la proposta resta
  * scaduta, e se cambiano durante la descrizione la nuova impronta non lo nasconde.
  */

@@ -44,7 +44,7 @@
     "message": "new AI"
   },
   "provenance_domain": {
-    "message": "domain"
+    "message": "site"
   },
   "color_grey": {
     "message": "grey"
@@ -289,13 +289,10 @@
     "message": "Generator"
   },
   "optionsGeneratorHint": {
-    "message": "The Generator picks among the categories or invents new groups. Gemini Nano runs in the browser, with no keys and no data sent; alternatively you can use an OpenAI-compatible model. If no Generator is available, tabs are grouped by domain."
+    "message": "The Generator picks among the categories or invents new groups. Gemini Nano runs in the browser, with no keys and no data sent; alternatively you can use an OpenAI-compatible model."
   },
   "optionsPreset": {
     "message": "Provider"
-  },
-  "optionsPresetNone": {
-    "message": "Gemini Nano (built into Chrome)"
   },
   "optionsPresetCustom": {
     "message": "Custom"
@@ -334,7 +331,7 @@
     "message": "Unsaved changes."
   },
   "optionsGeneratorDisabled": {
-    "message": "Gemini Nano will be used if available, otherwise grouping by domain."
+    "message": "Generator off: only the Classifier decides, or tabs are grouped by site."
   },
   "optionsGeneratorIncomplete": {
     "message": "Enter base URL and model to use the Generator."
@@ -438,7 +435,7 @@
     "message": "Downloading Gemini Nano…"
   },
   "nanoStatus_unavailable": {
-    "message": "Gemini Nano is not supported by this browser or computer: tabs will be grouped by domain."
+    "message": "Gemini Nano is not supported by this browser or computer: tabs will be grouped by site."
   },
   "nanoDownload": {
     "message": "Download Gemini Nano"
@@ -520,5 +517,38 @@
   },
   "optionsReadDescriptionsDenied": {
     "message": "Permission not granted: only title and URL will be used."
+  },
+  "optionsMode": {
+    "message": "How to group"
+  },
+  "optionsModeDomain": {
+    "message": "By site"
+  },
+  "optionsModeDomainHint": {
+    "message": "Tabs from the same site go in the same group. Instant, no setup, no data leaves your computer."
+  },
+  "optionsModeAi": {
+    "message": "By topic, with AI"
+  },
+  "optionsModeAiHint": {
+    "message": "AI picks from your categories or invents new ones. If no provider answers, tabs are grouped by site."
+  },
+  "optionsModeDomainNote": {
+    "message": "Grouping by site: categories and AI providers are not used. Choose \"By topic, with AI\" to set them up."
+  },
+  "optionsPresetNano": {
+    "message": "Gemini Nano (built into Chrome)"
+  },
+  "optionsGeneratorNone": {
+    "message": "None"
+  },
+  "optionsStatusOff": {
+    "message": "Off"
+  },
+  "panelStale": {
+    "message": "Your tabs changed after this proposal."
+  },
+  "panelIdle": {
+    "message": "Press “Recompute” to suggest groups for the free tabs in this window."
   }
 }

@@ -28,9 +28,9 @@ function resolveClassifier(inputs: ProposalInputs, warnings: ProposalWarning[]):
 }
 
 /**
- * Il Generatore, nell'ordine del PRD: quello configurato dall'utente, poi Gemini Nano se è
- * disponibile, altrimenti nessuno. Un Generatore configurato ma senza permesso host e un Gemini Nano
- * ancora da scaricare o in download producono un avviso.
+ * Il Generatore scelto dall'utente: un server compatibile OpenAI, Gemini Nano (se disponibile) o
+ * nessuno. Un Generatore senza permesso host e un Gemini Nano ancora da scaricare o in download
+ * producono un avviso. `inputs.nano` è "unavailable" se l'utente non ha scelto Nano.
  */
 export function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarning[] = []): Generator | null {
   const { settings, apiKey, usable, missingPermission } = inputs.generator;
@@ -99,7 +99,7 @@ function recordFailure(
 }
 
 /**
- * Tabella dei fallback del PRD:
+ * Modalità AI. Tabella dei fallback del PRD:
  *
  * | Classificatore | Generatore | Comportamento                                                    |
  * |----------------|------------|------------------------------------------------------------------|
@@ -111,6 +111,8 @@ function recordFailure(
  * Se un provider va in errore si scende di un livello e si aggiunge un avviso.
  */
 export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal): Promise<PipelineResult> {
+  // Modalità "solo dominio": nessuna AI, nessuna pagina letta, nessun avviso sui provider.
+  if (inputs.settings.mode === 'domain') return { groups: domainGroups(inputs), warnings: [] };
   const warnings: ProposalWarning[] = [];
   const classifier = resolveClassifier(inputs, warnings);
   const generator = resolveGenerator(inputs, warnings);

@@ -17,7 +17,7 @@ const PROVIDER_PRESETS = {
   classifier: {
     jev: { label: 'Jev', baseUrl: 'https://api.typesafe.ai', model: 'jev-latest' },
     kev: { label: 'Kev', baseUrl: 'http://127.0.0.1:8009', model: '' },
-    rizzo: { label: 'Rizzo Flow', baseUrl: 'http://127.0.0.1:8017', model: '' },
+    rizzo: { label: 'Rizzo Flow', baseUrl: 'http://127.0.0.1:8017', model: 'rizzo-latest' },
   },
   generator: {
     openrouter: { label: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini' },
@@ -27,7 +27,10 @@ const PROVIDER_PRESETS = {
   },
 } satisfies Record<ProviderRole, Record<string, ProviderPreset>>;
 
-/** "none" = nessun provider; "custom" = URL e modello scelti dall'utente. */
+/**
+ * "none" = nessun provider; "custom" = URL e modello scelti dall'utente; per il Generatore anche
+ * "nano" = Gemini Nano integrato in Chrome, senza URL né chiave.
+ */
 type ProviderPresetId = string;
 
 /** Configurazione di un provider in storage.sync. La chiave API sta a parte, in storage.local. */
@@ -39,6 +42,15 @@ export interface ProviderSettings {
 
 export const NO_PROVIDER: ProviderSettings = { preset: 'none', baseUrl: '', model: '' };
 
+/** Generatore Gemini Nano: è il default, così senza configurazione si usa Nano se il browser lo ha. */
+export const NANO_PRESET = 'nano';
+export const NANO_PROVIDER: ProviderSettings = { preset: NANO_PRESET, baseUrl: '', model: '' };
+
+/** Vero se il provider non ha un server da contattare (nessuno, oppure Gemini Nano): niente URL né permesso. */
+export function isLocalOnly(settings: ProviderSettings): boolean {
+  return settings.preset === 'none' || settings.preset === NANO_PRESET;
+}
+
 export function presetsOf(role: ProviderRole): Record<string, ProviderPreset> {
   return PROVIDER_PRESETS[role];
 }
@@ -49,7 +61,7 @@ export function isProviderSettings(role: ProviderRole, value: unknown): value is
     typeof v === 'object' &&
     v !== null &&
     typeof v.preset === 'string' &&
-    (v.preset in presetsOf(role) || v.preset === 'custom' || v.preset === 'none') &&
+    (v.preset in presetsOf(role) || v.preset === 'custom' || v.preset === 'none' || (role === 'generator' && v.preset === NANO_PRESET)) &&
     typeof v.baseUrl === 'string' &&
     typeof v.model === 'string'
   );
@@ -57,10 +69,11 @@ export function isProviderSettings(role: ProviderRole, value: unknown): value is
 
 /**
  * Vero se l'utente ha scelto un provider utilizzabile. Il Generatore richiede sempre il modello;
- * per il Classificatore è facoltativo, perché i server locali (Kev, Rizzo Flow) ne servono uno solo.
+ * per il Classificatore il protocollo System One lo rende facoltativo. Rizzo Flow però lo richiede
+ * (422 senza), quindi il suo preset ha già `rizzo-latest`.
  */
 export function isProviderConfigured(role: ProviderRole, settings: ProviderSettings): boolean {
-  if (settings.preset === 'none' || settings.baseUrl.trim() === '') return false;
+  if (isLocalOnly(settings) || settings.baseUrl.trim() === '') return false;
   return role === 'classifier' || settings.model.trim() !== '';
 }
 

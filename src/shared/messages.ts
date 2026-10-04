@@ -1,6 +1,6 @@
 import type { OrganizerState, ProposalEdit } from './types';
 
-/** Richieste dal popup al service worker. L'Organizzatore è l'unico destinatario. */
+/** Richieste dal pannello al service worker. L'Organizzatore è l'unico destinatario. */
 export type OrganizerRequest =
   | { type: 'organizer/state' }
   | { type: 'organizer/propose'; windowId: number; force?: boolean }
@@ -10,7 +10,7 @@ export type OrganizerRequest =
   | { type: 'organizer/abort' }
   | { type: 'organizer/undo' };
 
-/** Notifica dal service worker al popup quando lo stato cambia. */
+/** Notifica dal service worker al pannello quando lo stato cambia. */
 export interface StateChangedMessage {
   type: 'organizer/state-changed';
   state: OrganizerState;

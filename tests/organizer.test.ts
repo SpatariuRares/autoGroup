@@ -83,12 +83,12 @@ describe('proposta per dominio', () => {
     expect(strip.groupsIn()).toEqual([]);
   });
 
-  it('conserva la proposta nello stato di sessione, così il popup la ritrova', async () => {
+  it('conserva la proposta nello stato di sessione, così il pannello la ritrova', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
 
     const first = await organizer.propose(W);
-    // Un nuovo Organizzatore simula il service worker riavviato o il popup riaperto.
+    // Un nuovo Organizzatore simula il service worker riavviato o il pannello riaperto.
     const reopened = createOrganizer();
     const state = await reopened.state();
 
@@ -247,7 +247,7 @@ describe('annulla', () => {
     await organizer.apply();
     const afterFirst = strip.layout();
 
-    // Riaprendo il popup si calcola una nuova proposta: l'annulla resta.
+    // Riaprendo il pannello si calcola una nuova proposta: l'annulla resta.
     strip.addTab({ url: 'https://b.com/2', title: 'B2' });
     const reopened = await organizer.propose(W);
     expect(reopened.undo).toBeDefined();
@@ -303,7 +303,7 @@ describe('anteprima modificabile', () => {
     ]);
   });
 
-  it('le modifiche restano nello stato, così sopravvivono alla chiusura del popup', async () => {
+  it('le modifiche restano nello stato, così sopravvivono alla chiusura del pannello', async () => {
     const { id } = await threeDomains();
 
     const edited = await organizer.edit({ kind: 'rename', groupId: id('b.com'), name: 'Video' });
@@ -434,7 +434,7 @@ describe('robustezza (review AG-R1)', () => {
     expect(strip.layout()).toEqual(before);
   });
 
-  it('riaprendo il popup ricalcola se le tab libere sono cambiate', async () => {
+  it('riaprendo il pannello ricalcola se le tab libere sono cambiate', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     await organizer.propose(W);
@@ -448,7 +448,7 @@ describe('robustezza (review AG-R1)', () => {
     ]);
   });
 
-  it('riaprendo il popup tiene la proposta modificata se le tab libere non sono cambiate', async () => {
+  it('riaprendo il pannello tiene la proposta modificata se le tab libere non sono cambiate', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     const { proposal } = await organizer.propose(W);

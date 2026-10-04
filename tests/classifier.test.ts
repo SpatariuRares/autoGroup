@@ -286,6 +286,19 @@ describe('strategie di richiesta del Classificatore', () => {
     expect(requests.every((r) => r.signal?.aborted)).toBe(true);
   });
 
+  it('in modalità "solo dominio" nessuna AI viene interrogata, anche se configurata, e non ci sono avvisi', async () => {
+    await saveSettings({ mode: 'domain' });
+    strip.addTab({ url: 'https://mail.com/1', title: 'Posta' });
+    strip.addTab({ url: 'https://mail.com/2', title: 'Posta 2' });
+    const { fetchMock } = installFakeFetch(httpError(500));
+
+    const state = await organizer.propose(W);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(summary(state)).toEqual([['mail.com', 'domain', ['Posta', 'Posta 2']]]);
+    expect(state.proposal!.warnings).toEqual([]);
+  });
+
   it('una scelta sconosciuta o "nessuna" lascia la tab senza categoria', async () => {
     installFakeFetch(systemOneReply({ t1: { choice: 'Inventata', confidence: 0.99 }, t2: { choice: 'none_of_the_above', confidence: 0.99 } }));
 

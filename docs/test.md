@@ -46,7 +46,7 @@ Un solo seam: **l'interfaccia dell'Organizzatore** (`propose`, `apply`, `state`,
 
 - "Applica" dopo rinomina, cambio colore, spostamento di una tab, rimozione di una tab e scarto di un gruppo crea esattamente i gruppi modificati; le tab tolte o scartate restano libere.
 - Un gruppo svuotato dagli spostamenti sparisce dalla proposta.
-- Le modifiche restano nello stato e un nuovo Organizzatore (popup riaperto) le ritrova.
+- Le modifiche restano nello stato e un nuovo Organizzatore (pannello riaperto) le ritrova.
 - Le modifiche a gruppi o tab inesistenti vengono ignorate.
 - Ogni gruppo ha provenienza e tab.
 
@@ -61,7 +61,7 @@ Un solo seam: **l'interfaccia dell'Organizzatore** (`propose`, `apply`, `state`,
 ## Scenari coperti (AG-R1)
 
 - Una proposta chiesta durante "Applica" non cancella la foto per "Annulla".
-- Riaprendo il popup la proposta viene ricalcolata se le tab libere sono cambiate, e mantenuta (con le modifiche) se non lo sono.
+- Riaprendo il pannello la proposta viene ricalcolata se le tab libere sono cambiate, e mantenuta (con le modifiche) se non lo sono.
 - Lo stato indica sempre la finestra.
 
 ## Scenari coperti (AG-05)
@@ -122,7 +122,7 @@ Prova di mutazione: togliendo il confronto con la soglia falliscono 3 test; chia
 ## Scenari coperti (AG-09), in `tests/save-to-list.test.ts`
 
 - La categoria prende nome e colore attuali del gruppo (dopo rinomina e cambio colore) e la descrizione generata, ripulita; alla descrizione arrivano nome ed esempi con URL ripuliti; il gruppo diventa "lista".
-- La proposta resta valida riaprendo il popup.
+- La proposta resta valida riaprendo il pannello.
 - Generatore in errore: descrizione vuota e avviso.
 - Nome già presente (maiuscole diverse): nessun duplicato, avviso.
 - Solo i gruppi "nuovo AI".
@@ -170,7 +170,7 @@ Ogni test nuovo è stato provato con una mutazione: rimettendo il comportamento 
 
 ## Prova in Chrome
 
-`npm run smoke` compila e lancia `scripts/smoke.mjs`: apre Chrome for Testing con l'estensione caricata, apre pagine servite da un server locale su `localhost` e `127.0.0.1` (due domini diversi), apre il popup come pagina, ricarica il popup per verificare che la proposta resti, rinomina un gruppo, ne cambia il colore e sposta una tab (salvando uno screenshot in `scripts/smoke-popup.png`), ricarica di nuovo per verificare che le modifiche restino, preme "Applica", poi "Annulla ultima organizzazione" e controlla che ordine delle tab e gruppi tornino come prima; infine apre la pagina opzioni, prova la sezione Categorie (nome duplicato rifiutato, rinomina, aggiunta, riordino, ripristino, controllando `storage.sync`), imposta il minimo a 3 ed esclude `127.0.0.1` (screenshot in `scripts/smoke-options.png`), controlla `storage.sync` e ricalcola la proposta. Stampa i gruppi creati e gli eventuali errori in console del service worker e del popup.
+`npm run smoke` compila e lancia `scripts/smoke.mjs`: apre Chrome for Testing con l'estensione caricata, apre pagine servite da un server locale su `localhost` e `127.0.0.1` (due domini diversi), apre il pannello laterale come pagina (`sidepanel.html`), ricarica il pannello per verificare che la proposta resti, rinomina un gruppo, ne cambia il colore e sposta una tab (salvando uno screenshot in `scripts/smoke-popup.png`), ricarica di nuovo per verificare che le modifiche restino, preme "Applica", poi "Annulla ultima organizzazione" e controlla che ordine delle tab e gruppi tornino come prima; infine apre la pagina opzioni, prova la sezione Categorie (nome duplicato rifiutato, rinomina, aggiunta, riordino, ripristino, controllando `storage.sync`), imposta il minimo a 3 ed esclude `127.0.0.1` (screenshot in `scripts/smoke-options.png`), controlla `storage.sync` e ricalcola la proposta. Stampa i gruppi creati e gli eventuali errori in console del service worker e del pannello.
 
 Poi lo script accende "Leggi la descrizione delle pagine" nella sezione Privacy, ricalcola e controlla che al finto Generatore arrivino le meta description lette dalle pagine con `chrome.scripting`, quindi spegne l'interruttore.
 
@@ -182,11 +182,11 @@ Lo script legge anche lo stato di Gemini Nano mostrato nelle impostazioni. In Ch
 
 Dopo le impostazioni lo script configura il Generatore dall'interfaccia (preset Personalizzato verso un finto server compatibile OpenAI dentro lo script stesso), lo salva, preme "Prova connessione", controlla che la chiave sia in `storage.local` e non in `sync`, ricalcola la proposta (gruppo "nuovo AI"), preme "Salva nella lista" e controlla la categoria salvata in `storage.sync`, controlla che le richieste non contengano query, frammenti né tab escluse, poi fa fallire il server (500) e verifica il nuovo tentativo (2 richieste) e il ripiego sul dominio con l'avviso, poi lascia il server senza risposta e preme "Interrompi" (nessuna proposta, avviso di calcolo interrotto) (screenshot in `scripts/smoke-popup-warning.png`).
 
-Alla fine lo script prova le quattro righe della tabella dei fallback con tutte le tab, accendendo e spegnendo i provider in `storage.sync`. Il finto System One risponde con confidenza bassa per le pagine `/c` e `/d`. Risultati attesi e ottenuti: entrambi → "Work" (lista, 3 tab) + "Nuovo Tema" (nuovo AI, 2 tab), 5 richieste System One e 1 al Generatore; solo Classificatore → "Work" (3 tab), le altre 2 libere, nessuna richiesta al Generatore; solo Generatore → un gruppo da 5 tab; nessuno → due gruppi per dominio. `repropose` conta solo le richieste del calcolo forzato da "Ricalcola", non quelle del calcolo che il popup fa da solo all'apertura. La pagina `/e` ha la meta description vuota e una `og:description`, che deve arrivare all'AI.
+Alla fine lo script prova le quattro righe della tabella dei fallback con tutte le tab, accendendo e spegnendo i provider in `storage.sync`. Il finto System One risponde con confidenza bassa per le pagine `/c` e `/d`. Risultati attesi e ottenuti: entrambi → "Work" (lista, 3 tab) + "Nuovo Tema" (nuovo AI, 2 tab), 5 richieste System One e 1 al Generatore; solo Classificatore → "Work" (3 tab), le altre 2 libere, nessuna richiesta al Generatore; solo Generatore → un gruppo da 5 tab; nessuno → due gruppi per dominio. `repropose` conta solo le richieste del calcolo forzato da "Ricalcola", non quelle del calcolo che il pannello fa da solo all'apertura. La pagina `/e` ha la meta description vuota e una `og:description`, che deve arrivare all'AI.
 
 `scripts/permissions-check.mjs` (a parte, sulla build normale) controlla che le richieste di permesso partano dentro il gesto dell'utente: il clic su "Salva" del Generatore e sull'interruttore delle descrizioni lasciano aperta la finestra di Chrome, mentre una richiesta dal service worker viene rifiutata. Una richiesta da `page.evaluate` non serve come controprova, perché Puppeteer la esegue come gesto dell'utente. Prova di mutazione: spostando `permissions.request` dopo un'attesa di 6 s, il salvataggio fallisce con "must be called during a user gesture".
 
-All'avvio lo script controlla anche con `chrome.commands.getAll()` che la scorciatoia per il popup sia registrata (su macOS: `⌥⇧G`).
+All'avvio lo script controlla anche con `chrome.commands.getAll()` che la scorciatoia per il pannello sia registrata (su macOS: `⌥⇧G`).
 
 `npm run smoke` compila con `AUTOGROUP_SMOKE=1`, che aggiunge `<all_urls>` ai permessi host: in headless la finestra di Chrome che chiede il permesso non si può accettare. Alla fine ricompila la build normale.
 

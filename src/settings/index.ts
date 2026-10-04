@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import type { Category } from '../shared/types';
 import { defaultCategories, normalizeCategories, validateCategories } from './categories';
-import { isProviderSettings, NO_PROVIDER, normalizeProvider, type ProviderSettings } from './providers';
+import { isProviderSettings, NANO_PROVIDER, NO_PROVIDER, normalizeProvider, type ProviderSettings } from './providers';
 
 export * from './categories';
 export * from './providers';
@@ -9,8 +9,15 @@ export * from './providers';
 /** Soglia di confidenza di default del Classificatore. */
 export const DEFAULT_THRESHOLD = 0.7;
 
+/**
+ * Come raggruppare: "domain" = sempre per dominio, senza nessuna AI; "ai" = Classificatore e
+ * Generatore configurati, con il dominio come ultimo ripiego.
+ */
+export type GroupingMode = 'ai' | 'domain';
+
 /** Preferenze sincronizzate tra i Chrome dell'utente (chrome.storage.sync). */
 export interface Settings {
+  mode: GroupingMode;
   /** Numero minimo di tab per creare un gruppo nuovo. Intero ≥ 1. */
   minTabs: number;
   /** Domini le cui tab non vengono mai proposte né inviate all'AI. Valgono anche per i sottodomini. */
@@ -20,7 +27,7 @@ export interface Settings {
    * non è salvata e vale la lista predefinita nella lingua del browser.
    */
   categories: Category[];
-  /** Generatore compatibile OpenAI scelto dall'utente (senza la chiave API, che sta in storage.local). */
+  /** Generatore scelto dall'utente: compatibile OpenAI, Gemini Nano o nessuno (senza la chiave API, che sta in storage.local). */
   generator: ProviderSettings;
   /** Classificatore System One scelto dall'utente (senza la chiave API). */
   classifier: ProviderSettings;
@@ -30,12 +37,13 @@ export interface Settings {
   readDescriptions: boolean;
 }
 
-const KEYS: (keyof Settings)[] = ['minTabs', 'excludedDomains', 'categories', 'generator', 'classifier', 'threshold', 'readDescriptions'];
+const KEYS: (keyof Settings)[] = ['mode', 'minTabs', 'excludedDomains', 'categories', 'generator', 'classifier', 'threshold', 'readDescriptions'];
 
 export const DEFAULT_SETTINGS: Omit<Settings, 'categories'> = {
+  mode: 'ai',
   minTabs: 2,
   excludedDomains: [],
-  generator: NO_PROVIDER,
+  generator: NANO_PROVIDER,
   classifier: NO_PROVIDER,
   threshold: DEFAULT_THRESHOLD,
   readDescriptions: false,
@@ -44,10 +52,11 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'categories'> = {
 export async function loadSettings(): Promise<Settings> {
   const stored = await browser.storage.sync.get<Partial<Settings>>(KEYS);
   return {
+    mode: stored.mode === 'domain' ? 'domain' : 'ai',
     minTabs: isValidMinTabs(stored.minTabs) ? stored.minTabs : DEFAULT_SETTINGS.minTabs,
     excludedDomains: Array.isArray(stored.excludedDomains) ? stored.excludedDomains : DEFAULT_SETTINGS.excludedDomains,
     categories: validateCategories(stored.categories) === null ? stored.categories! : defaultCategories(),
-    generator: isProviderSettings('generator', stored.generator) ? stored.generator : NO_PROVIDER,
+    generator: isProviderSettings('generator', stored.generator) ? stored.generator : NANO_PROVIDER,
     classifier: isProviderSettings('classifier', stored.classifier) ? stored.classifier : NO_PROVIDER,
     threshold: isValidThreshold(stored.threshold) ? stored.threshold : DEFAULT_THRESHOLD,
     readDescriptions: stored.readDescriptions === true,
@@ -63,6 +72,9 @@ export class SettingsError extends Error {
 
 /** Salva solo i campi indicati. I valori non validi vengono rifiutati con un `SettingsError`. */
 export async function saveSettings(patch: Partial<Settings>): Promise<void> {
+  if (patch.mode !== undefined && patch.mode !== 'ai' && patch.mode !== 'domain') {
+    throw new SettingsError('optionsProviderInvalid');
+  }
   if (patch.minTabs !== undefined && !isValidMinTabs(patch.minTabs)) {
     throw new SettingsError('optionsMinTabsInvalid');
   }

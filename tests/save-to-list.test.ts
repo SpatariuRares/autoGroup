@@ -68,7 +68,7 @@ describe('Salva nella lista', () => {
     });
   });
 
-  it('la proposta resta valida dopo il salvataggio: riaprendo il popup non viene ricalcolata', async () => {
+  it('la proposta resta valida dopo il salvataggio: riaprendo il pannello non viene ricalcolata', async () => {
     generator();
     await organizer.propose(W);
     const id = await groupId('Cucina');
@@ -78,7 +78,7 @@ describe('Salva nella lista', () => {
     expect((await createOrganizer().propose(W)).proposal).toEqual(saved.proposal);
   });
 
-  it('una tab aperta mentre si genera la descrizione rende la proposta scaduta: riaprendo il popup si ricalcola', async () => {
+  it('una tab aperta mentre si genera la descrizione rende la proposta scaduta: riaprendo il pannello si ricalcola', async () => {
     installFakeFetch((request: RecordedRequest) => {
       if (!request.body.messages[0].content.includes('description of a category')) {
         return openAiReply({ groups: [{ name: 'Cucina', tabs: ['t1', 't2'] }, { name: 'Lavoro', tabs: ['t3', 't4'] }] });
@@ -100,6 +100,22 @@ describe('Salva nella lista', () => {
 
     const state = await organizer.saveToList(await groupId('Cucina'));
 
+    expect((await loadSettings()).categories.at(-1)).toMatchObject({ name: 'Cucina', description: '' });
+    expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'Cucina' });
+  });
+
+  it('una descrizione tagliata dal limite di token non viene salvata: categoria senza descrizione e avviso', async () => {
+    // Come un modello con il "ragionamento" che esaurisce i token prima di finire la frase.
+    const truncated = new Response(
+      JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'Pasta, tiramisù, and' }, finish_reason: 'length' }] }),
+      { headers: { 'content-type': 'application/json' } },
+    );
+    const { requests } = generator(truncated);
+    await organizer.propose(W);
+
+    const state = await organizer.saveToList(await groupId('Cucina'));
+
+    expect(requests.at(-1)!.body.max_tokens).toBeGreaterThanOrEqual(1000);
     expect((await loadSettings()).categories.at(-1)).toMatchObject({ name: 'Cucina', description: '' });
     expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'Cucina' });
   });

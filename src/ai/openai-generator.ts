@@ -17,15 +17,16 @@ export interface OpenAiGeneratorConfig {
  * se il server rifiuta `response_format` ritenta senza, affidandosi alle istruzioni e alla validazione.
  */
 export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator {
-  async function chat(body: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
+  async function chat(body: Record<string, unknown>, signal?: AbortSignal): Promise<{ content: string; truncated: boolean }> {
     const json = (await postJson(
       `${config.baseUrl}/chat/completions`,
       { model: config.model, ...body },
       { apiKey: config.apiKey, timeoutMs: config.timeoutMs ?? TIMINGS.generator, signal },
-    )) as { choices?: { message?: { content?: unknown } }[] };
-    const content = json?.choices?.[0]?.message?.content;
+    )) as { choices?: { message?: { content?: unknown }; finish_reason?: unknown }[] };
+    const choice = json?.choices?.[0];
+    const content = choice?.message?.content;
     if (typeof content !== 'string') throw new ProviderError('invalid-response', 'risposta senza contenuto');
-    return content;
+    return { content, truncated: choice?.finish_reason === 'length' };
   }
 
   return {
@@ -42,11 +43,11 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
       };
       let content: string;
       try {
-        content = await chat({ messages, temperature: 0, response_format: structured }, signal);
+        ({ content } = await chat({ messages, temperature: 0, response_format: structured }, signal));
       } catch (err) {
         // Alcuni server non supportano lo structured output: si ritenta una volta senza.
         if (!(err instanceof ProviderError) || err.status !== 400) throw err;
-        content = await chat({ messages, temperature: 0 }, signal);
+        ({ content } = await chat({ messages, temperature: 0 }, signal));
       }
       const groups = parseGroups(content);
       if (!groups) throw new ProviderError('invalid-response', 'JSON fuori schema');
@@ -55,10 +56,14 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
 
     async describe(request: DescribeRequest, signal?: AbortSignal): Promise<string> {
       const { system, user } = describePrompt(request);
-      const content = await chat(
-        { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0.2, max_tokens: 120 },
+      // Il limite comprende anche il "ragionamento" dei modelli che lo usano (es. Unsloth Studio):
+      // con 120 token la frase arrivava tagliata a metà. Gli altri modelli si fermano da soli dopo la frase.
+      const { content, truncated } = await chat(
+        { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0.2, max_tokens: 1000 },
         signal,
       );
+      // Una frase tagliata non va salvata come descrizione: meglio vuota, da completare nelle impostazioni.
+      if (truncated) throw new ProviderError('invalid-response', 'descrizione troncata');
       return cleanDescription(content);
     },
   };

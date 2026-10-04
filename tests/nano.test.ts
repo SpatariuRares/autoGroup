@@ -74,15 +74,29 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(summary(state)).toEqual([['Tutto', 'ai', ['A1', 'A2', 'B1', 'B2']]]);
   });
 
-  it('un Generatore configurato senza permesso lascia il posto a Nano, con un avviso', async () => {
+  it('un Generatore configurato senza permesso non viene sostituito da Nano: dominio, con un avviso', async () => {
     await saveSettings({ generator: { preset: 'openrouter', baseUrl: 'https://openrouter.ai/api/v1', model: 'm' } });
     openPairs();
-    installFakeNano({ availability: 'available', respond: () => ({ groups: [{ name: 'Tutto', tabs: ['t1', 't2'] }] }) });
+    const nano = installFakeNano({ availability: 'available' });
 
     const state = await organizer.propose(W);
 
-    expect(summary(state)).toEqual([['Tutto', 'ai', ['A1', 'A2']]]);
+    expect(nano.created.count).toBe(0);
+    expect(summary(state).map(([, provenance]) => provenance)).toEqual(['domain', 'domain']);
     expect(state.proposal!.warnings.map((w) => w.cause)).toEqual(['no-permission']);
+  });
+
+  it('con il Generatore su "Nessuno" Nano non viene usato né interrogato', async () => {
+    await saveSettings({ generator: { preset: 'none', baseUrl: '', model: '' } });
+    openPairs();
+    const nano = installFakeNano({ availability: 'available' });
+
+    const state = await organizer.propose(W);
+
+    expect(nano.created.count).toBe(0);
+    expect(LanguageModel.availability).not.toHaveBeenCalled();
+    expect(summary(state).map(([, provenance]) => provenance)).toEqual(['domain', 'domain']);
+    expect(state.proposal!.warnings).toEqual([]);
   });
 
   it.each([
