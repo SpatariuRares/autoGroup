@@ -727,5 +727,8 @@
   },
   "optionsCoffee": {
     "message": "Offrimi un caffè"
+  },
+  "optionsReadDescriptionsProviderLost": {
+    "message": "Descrizioni spente, ma un provider ha perso l'accesso al suo server: salvalo di nuovo nella sua sezione."
   }
 }

@@ -84,6 +84,12 @@ try {
   await guide.waitForSelector('.levels em', { timeout: 5000 });
   console.log('Guida, riepilogo:', await guide.$$eval('.levels li', (els) => els.map((el) => el.innerText.replace(/\s+/g, ' ').trim()).join(' | ')));
   await guide.screenshot({ path: 'scripts/smoke-onboarding.png', fullPage: true });
+  // "Apri il pannello" chiama sidePanel.open nel clic: il pannello laterale vero deve aprirsi.
+  await guide.click('.actions button:not(.secondary)');
+  const sidePanel = await browser.waitForTarget((t) => t.url().endsWith('/sidepanel.html'), { timeout: 5000 }).catch(() => null);
+  console.log('Guida, "Apri il pannello":', sidePanel ? `pannello aperto (${sidePanel.type()})` : 'nessun pannello');
+  if (!sidePanel) throw new Error('"Apri il pannello" non ha aperto il pannello laterale');
+  await (await sidePanel.asPage()).close();
   // "Per sito" accorcia la guida: niente passi dei provider.
   await guide.click('.onboarding-nav button.text');
   await guide.click('.onboarding-nav button.text');
@@ -174,7 +180,12 @@ try {
   options.on('pageerror', (e) => errors.push(`[options] ${e.message}`));
   await options.goto(`chrome-extension://${extId}/options.html`);
   await options.waitForSelector('#behavior input');
-  console.log('Pulsante caffè:', await options.$eval('.sidebar a.coffee', (el) => `${el.textContent} → ${el.href} (${el.target})`));
+  // 800 px: menu laterale nascosto, i link sono in fondo alla pagina; 1280 px: sono sotto il menu.
+  console.log('Pulsante caffè:', await options.$eval('.page-footer a.coffee', (el) => `${el.textContent} → ${el.href} (${el.target}) | visibile: ${el.checkVisibility()}`));
+  await options.setViewport({ width: 1280, height: 800 });
+  console.log('Pulsante caffè nel menu a 1280 px:', await options.$eval('.sidebar a.coffee', (el) => el.checkVisibility()), '| in fondo:', await options.$eval('.page-footer a.coffee', (el) => el.checkVisibility()));
+  await options.screenshot({ path: 'scripts/smoke-options-wide.png' });
+  await options.setViewport({ width: 800, height: 600 });
   await options.$eval('#behavior input', (el) => el.select());
   await options.type('#behavior input', '3');
   await options.type('#privacy input[type=text]', 'https://127.0.0.1/qualcosa');

@@ -194,6 +194,17 @@ Ogni test nuovo è stato provato con una mutazione: rimettendo il comportamento 
 - Il test delle traduzioni controlla anche le chiavi con prefisso `onboarding`.
 - Smoke test: la guida aperta all'installazione si percorre fino in fondo (5 passi con l'AI, con le sezioni Generatore e Classificatore), il riepilogo mostra i tre livelli e l'avviso "Gemini Nano non supportato"; passando a "Per sito" i passi diventano 3. Screenshot del passo del Generatore e del riepilogo.
 
+## Scenari coperti (permessi dei provider e `<all_urls>`), in `tests/permissions.test.ts`
+
+Con un finto `permissions` che riproduce il caso peggiore di Chrome (un host già coperto da `<all_urls>` viene concesso senza essere registrato):
+- spegnendo le descrizioni gli host dei provider rimasti senza permesso vengono richiesti di nuovo, tutti in una richiesta;
+- se Chrome li aveva registrati non si chiede nulla;
+- se l'utente rifiuta, vengono restituiti gli host rimasti senza permesso;
+- senza provider su un server si toglie solo `<all_urls>`.
+- Prova di mutazione: senza la nuova richiesta falliscono 2 test.
+
+Smoke test: "Apri il pannello" nella guida apre davvero il pannello laterale (bersaglio `sidepanel.html`); nelle impostazioni il pulsante "Offrimi un caffè" punta a Buy Me a Coffee ed è visibile a 800 px (in fondo) e a 1280 px (nel menu).
+
 ## Prova in Chrome
 
 `npm run smoke` compila e lancia `scripts/smoke.mjs`: apre Chrome for Testing con l'estensione caricata, apre pagine servite da un server locale su `localhost` e `127.0.0.1` (due domini diversi), apre il pannello laterale come pagina (`sidepanel.html`), ricarica il pannello per verificare che la proposta resti, rinomina un gruppo, ne cambia il colore e sposta una tab (salvando uno screenshot in `scripts/smoke-popup.png`), ricarica di nuovo per verificare che le modifiche restino, preme "Applica", poi "Annulla ultima organizzazione" e controlla che ordine delle tab e gruppi tornino come prima; infine apre la pagina opzioni, prova la sezione Categorie (nome duplicato rifiutato, rinomina, aggiunta, riordino, ripristino, controllando `storage.sync`), imposta il minimo a 3 ed esclude `127.0.0.1` (screenshot in `scripts/smoke-options.png`), controlla `storage.sync` e ricalcola la proposta. Stampa i gruppi creati e gli eventuali errori in console del service worker e del pannello.

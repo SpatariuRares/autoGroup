@@ -11,6 +11,7 @@ import {
   MAX_NAME_LENGTH,
   newCategoryId,
   normalizeDomain,
+  removeDescriptionPermission,
   resetCategories,
   saveSettings,
   SettingsError,
@@ -27,6 +28,24 @@ import { ThresholdField } from './ThresholdField';
 
 /** Pagina Buy Me a Coffee dell'autore. */
 const COFFEE_URL = 'https://www.buymeacoffee.com/SpatariuRares';
+
+/**
+ * "Rivedi la guida" e "Offrimi un caffè". Il secondo è un pulsante locale nello stile di Buy Me a
+ * Coffee: l'immagine ufficiale verrebbe scaricata dal loro sito a ogni apertura della pagina.
+ */
+function ExtraLinks() {
+  return (
+    <div className="extra-links">
+      <a className="guide-link" href="/onboarding.html" target="_blank">
+        {t('optionsOnboarding')}
+      </a>
+      <a className="coffee" href={COFFEE_URL} target="_blank" rel="noopener noreferrer">
+        <span aria-hidden="true">✈️</span>
+        {t('optionsCoffee')}
+      </a>
+    </div>
+  );
+}
 
 /** Sezioni nell'ordine della pagina; quelle `ai` si vedono solo in modalità AI. */
 const SECTIONS: { id: string; title: string; ai?: boolean }[] = [
@@ -90,14 +109,7 @@ export function App() {
             </li>
           ))}
         </ul>
-        <a className="guide-link" href="/onboarding.html" target="_blank">
-          {t('optionsOnboarding')}
-        </a>
-        {/* Pulsante locale nello stile di Buy Me a Coffee: l'immagine ufficiale verrebbe scaricata dal loro sito a ogni apertura. */}
-        <a className="coffee" href={COFFEE_URL} target="_blank" rel="noopener noreferrer">
-          <span aria-hidden="true">✈️</span>
-          {t('optionsCoffee')}
-        </a>
+        <ExtraLinks />
       </nav>
       <main>
         <header className="page-header">
@@ -161,6 +173,10 @@ export function App() {
           excludedDomains={settings.excludedDomains}
           onChange={(excludedDomains) => update({ excludedDomains })}
         />
+        {/* Sotto i 900 px il menu laterale è nascosto: gli stessi link vanno in fondo alla pagina. */}
+        <footer className="page-footer">
+          <ExtraLinks />
+        </footer>
       </main>
     </div>
   );
@@ -375,6 +391,7 @@ function PrivacySection({ ai, readDescriptions, onReadDescriptions, excludedDoma
   const [error, setError] = useState<string | null>(null);
   const [permitted, setPermitted] = useState<boolean | null>(null);
   const [denied, setDenied] = useState(false);
+  const [providerLost, setProviderLost] = useState(false);
 
   useEffect(() => {
     hasDescriptionPermission().then(setPermitted);
@@ -385,6 +402,7 @@ function PrivacySection({ ai, readDescriptions, onReadDescriptions, excludedDoma
 
   function toggle(next: boolean) {
     setDenied(false);
+    setProviderLost(false);
     if (next) {
       // permissions.request va chiamato subito, dentro il gesto dell'utente, prima di ogni await.
       browser.permissions
@@ -396,8 +414,9 @@ function PrivacySection({ ai, readDescriptions, onReadDescriptions, excludedDoma
         })
         .catch((err) => console.error('autoGroup:', err));
     } else {
-      browser.permissions
-        .remove({ origins: [ALL_URLS] })
+      // Senza await prima: se un provider perde l'accesso, la nuova richiesta parte ancora dentro il clic.
+      removeDescriptionPermission()
+        .then((missing) => setProviderLost(missing.length > 0))
         .catch((err) => console.error('autoGroup:', err))
         .then(async () => {
           setPermitted(await hasDescriptionPermission());
@@ -427,6 +446,7 @@ function PrivacySection({ ai, readDescriptions, onReadDescriptions, excludedDoma
             <input type="checkbox" role="switch" checked={on} disabled={permitted === null} onChange={(e) => toggle(e.target.checked)} />
           </label>
           {denied && <p className="hint error">{t('optionsReadDescriptionsDenied')}</p>}
+          {providerLost && <p className="hint error">{t('optionsReadDescriptionsProviderLost')}</p>}
         </div>
       )}
       <div className="setting">

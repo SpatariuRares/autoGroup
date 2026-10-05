@@ -228,17 +228,22 @@ Tutte completate; il dettaglio per issue è in [`docs/lavoro-svolto.md`](docs/la
 
 Per ora l'estensione è per uso personale (caricata come estensione non pacchettizzata), ma è già progettata per essere pubblicata: permessi opzionali e testi in `chrome.i18n`. Prima di pubblicare serve:
 
-- [ ] **Informativa privacy** pubblica: inviamo titoli, URL e, se attivata, la descrizione delle pagine a servizi esterni (TypeSafe, OpenRouter). Il Web Store la richiede.
-- [ ] Compilare la sezione **Privacy practices** della dashboard sviluppatore (dati raccolti, finalità, nessuna vendita a terzi).
+Materiale e passi in [docs/store](docs/store/README.md).
+
+- [x] **Informativa privacy** scritta, in inglese e italiano: [docs/store/privacy.md](docs/store/privacy.md).
+- [ ] Pubblicarla a un indirizzo pubblico, con un'email di contatto al posto del segnaposto (serve l'account o un sito dello sviluppatore).
+- [x] Risposte per la sezione **Privacy practices** (scopo unico, dati, dichiarazioni): [docs/store/revisione.md](docs/store/revisione.md).
+- [ ] Incollarle nella dashboard sviluppatore.
 - [x] **Onboarding** al primo avvio: spiegare i livelli di fallback e guidare la configurazione di un provider.
-- [ ] Provare a mano in un Chrome normale "Apri il pannello" dalla guida (`sidePanel.open`): in headless non si può verificare.
-- [ ] Pagina dello store: descrizione, screenshot, icone in tutte le dimensioni richieste.
+- [x] "Apri il pannello" dalla guida (`sidePanel.open`): verificato dallo smoke test, il clic apre il pannello laterale.
+- [x] Pagina dello store: descrizione, 4 screenshot 1280×800 e tile 440×280 per lingua, icona 128×128 con margine (`npm run store-assets`).
 - [x] Traduzioni complete in italiano e inglese per l'interfaccia (controllate dai test).
-- [ ] Traduzioni della scheda dello store.
+- [x] Traduzioni della scheda dello store: italiano e inglese in [docs/store/scheda.md](docs/store/scheda.md).
 - [x] Verificare che nessun permesso obbligatorio vada oltre il necessario (solo `tabs`, `tabGroups`, `storage`, `scripting`, `sidePanel`).
-- [ ] Motivare ogni permesso nella richiesta di revisione.
-- [ ] Provare a mano la rimozione di `<all_urls>` quando un provider usa un host già coperto (vedi [review AG-R3](docs/review/AG-R3.md)).
-- [ ] Generare lo zip con `wxt zip` e caricarlo.
+- [x] Motivare ogni permesso nella richiesta di revisione: [docs/store/revisione.md](docs/store/revisione.md).
+- [x] Rimozione di `<all_urls>` quando un provider usa un host già coperto (vedi [review AG-R3](docs/review/AG-R3.md)): resa sicura nel codice, spegnendo le descrizioni gli host dei provider rimasti senza permesso vengono chiesti di nuovo nello stesso clic.
+- [x] Generare lo zip: `npm run zip` → `.output/autogroup-0.1.0-chrome.zip`.
+- [ ] Caricarlo sullo store e inviare la revisione (serve l'account sviluppatore).
 - [x] Pulsante **"Offrimi un caffè"** (Buy Me a Coffee): nel README e nelle impostazioni, sotto il menu laterale.
 
 ## Fuori scope (per ora)

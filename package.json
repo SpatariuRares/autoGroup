@@ -13,6 +13,7 @@
     "check": "tsc --noEmit && vitest run && wxt build",
     "postinstall": "wxt prepare",
     "smoke": "AUTOGROUP_SMOKE=1 wxt build && node scripts/smoke.mjs && wxt build",
+    "store-assets": "AUTOGROUP_SMOKE=1 wxt build && node scripts/store-assets.mjs && wxt build",
     "theme": "node --no-warnings --experimental-loader ./scripts/js-extension-loader.mjs scripts/generate-theme.mjs"
   },
   "dependencies": {

@@ -727,5 +727,8 @@
   },
   "optionsCoffee": {
     "message": "Buy me a coffee"
+  },
+  "optionsReadDescriptionsProviderLost": {
+    "message": "Descriptions are off, but a provider lost access to its server: save it again in its section."
   }
 }

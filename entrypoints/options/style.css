@@ -86,7 +86,13 @@ input[type='number'] { width: 112px; }
 .inline-form { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
 .inline-form input { flex: 1; }
 .domains { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.sidebar a.guide-link { margin-top: 8px; color: var(--md-sys-color-primary); }
+.extra-links { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; margin-top: 8px; }
+.sidebar a.guide-link { color: var(--md-sys-color-primary); }
+.page-footer { display: none; }
+@media (max-width: 900px) {
+  .page-footer { display: block; padding: 8px 0; }
+  .page-footer .extra-links { flex-direction: row; flex-wrap: wrap; align-items: center; }
+}
 /* "Offrimi un caffè": colori del pulsante Buy Me a Coffee (giallo, testo e contorno neri), uguali nei due temi. */
-.sidebar a.coffee { display: inline-flex; gap: 8px; margin: 16px 16px 0; min-height: 40px; padding: 0 16px; border: 1px solid #000; border-radius: var(--md-sys-shape-corner-small); background: #ffdd00; color: #000; font: var(--md-sys-typescale-title-small); }
-.sidebar a.coffee:hover { background: #f5d300; color: #000; }
+a.coffee { display: inline-flex; align-items: center; gap: 8px; margin: 0 16px; text-decoration: none; min-height: 40px; padding: 0 16px; border: 1px solid #000; border-radius: var(--md-sys-shape-corner-small); background: #ffdd00; color: #000; font: var(--md-sys-typescale-title-small); }
+a.coffee:hover { background: #f5d300; color: #000; }

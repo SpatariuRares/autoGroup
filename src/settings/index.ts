@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import type { Category } from '../shared/types';
 import { defaultCategories, normalizeCategories, validateCategories } from './categories';
-import { isProviderSettings, NANO_PROVIDER, NO_PROVIDER, normalizeProvider, type ProviderSettings } from './providers';
+import { isProviderConfigured, isProviderSettings, NANO_PROVIDER, NO_PROVIDER, normalizeProvider, originPattern, type ProviderSettings } from './providers';
 
 export * from './categories';
 export * from './providers';
@@ -102,6 +102,32 @@ export const ALL_URLS = '<all_urls>';
 
 export async function hasDescriptionPermission(): Promise<boolean> {
   return browser.permissions.contains({ origins: [ALL_URLS] });
+}
+
+/**
+ * Spegne la lettura delle descrizioni togliendo `<all_urls>`, senza togliere l'accesso ai provider.
+ * Se l'host di un provider è stato concesso mentre `<all_urls>` era attivo, Chrome può non averlo
+ * registrato a parte (la richiesta era già coperta): tolto `<all_urls>`, il provider resterebbe senza
+ * accesso. Per questo gli host dei provider che non hanno più il permesso vengono richiesti subito,
+ * ancora dentro il clic dell'utente sull'interruttore. Se Chrome li aveva registrati non si chiede nulla.
+ * Restituisce gli host rimasti senza permesso (l'utente ha rifiutato).
+ */
+export async function removeDescriptionPermission(): Promise<string[]> {
+  const { classifier, generator } = await loadSettings();
+  const origins = [
+    ...new Set(
+      ([['classifier', classifier], ['generator', generator]] as const)
+        .filter(([role, provider]) => isProviderConfigured(role, provider))
+        .map(([, provider]) => originPattern(provider.baseUrl))
+        .filter((origin): origin is string => origin !== null),
+    ),
+  ];
+  await browser.permissions.remove({ origins: [ALL_URLS] });
+  const missing: string[] = [];
+  for (const origin of origins) if (!(await browser.permissions.contains({ origins: [origin] }))) missing.push(origin);
+  if (missing.length === 0) return [];
+  const granted = await browser.permissions.request({ origins: missing }).catch(() => false);
+  return granted ? [] : missing;
 }
 
 /** "Ripristina default": torna alla lista predefinita nella lingua del browser. */
