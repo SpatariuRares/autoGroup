@@ -1,28 +1,27 @@
-# Documentazione di autoGroup
+# autoGroup documentation
 
-Documentazione tecnica dell'estensione, aggiornata dopo ogni issue di `issues.json`.
+Technical documentation of the extension.
 
-- [Architettura](architettura.md): moduli, flusso dei dati, stato e messaggi.
-- [Test](test.md): come si testa l'Organizzatore e il simulatore della barra delle tab.
-- [Lavoro svolto](lavoro-svolto.md): registro delle issue completate, con decisioni e verifiche.
-- Review: [AG-R1](review/AG-R1.md), [AG-R2](review/AG-R2.md), [AG-R3](review/AG-R3.md).
-- [Chrome Web Store](store/README.md): scheda, informativa privacy, risposte per la revisione, immagini e passi per pubblicare.
+- [Architecture](architecture.md): modules, data flow, state and messages.
+- [Tests](test.md): how the Organizer and the tab strip simulator are tested.
+- [Performance](performance.md): how we made the extension faster (by-site preview, cache, Generator and Gemini Nano), with the measurements.
+- [Chrome Web Store](store/README.md): listing, privacy policy, answers for the review, images and steps to publish.
 
-Per i requisiti vedi [PRD.md](../PRD.md); per l'uso vedi il [README](../README.md).
+For the requirements see [PRD.md](../PRD.md); for usage see the [README](../README.md).
 
-## Comandi
+## Commands
 
-| Comando | Cosa fa |
+| Command | What it does |
 |---|---|
-| `npm install` | Installa le dipendenze e genera i tipi di WXT (`wxt prepare`). |
-| `npm run dev` | Avvia WXT in modalità sviluppo con ricaricamento automatico. |
-| `npm run build` | Compila l'estensione in `.output/chrome-mv3`. |
-| `npm test` | Esegue i test Vitest. |
-| `npm run compile` | Typecheck con `tsc --noEmit`. |
-| `npm run check` | Typecheck, test e build in sequenza. |
-| `npm run smoke` | Build, poi prova automatica in Chrome for Testing (Puppeteer). |
-| `npm run store-assets` | Screenshot, tile e icona per il Chrome Web Store in `docs/store/`. |
-| `npm run zip` | Zip della build normale da caricare sullo store. |
-| `node scripts/permissions-check.mjs` | Dopo `npm run build`: controlla che i permessi opzionali siano chiesti dentro il gesto dell'utente. |
+| `npm install` | Installs the dependencies and generates WXT's types (`wxt prepare`). |
+| `npm run dev` | Starts WXT in development mode with automatic reloading. |
+| `npm run build` | Builds the extension into `.output/chrome-mv3`. |
+| `npm test` | Runs the Vitest tests. |
+| `npm run compile` | Typecheck with `tsc --noEmit`. |
+| `npm run check` | Typecheck, tests and build in sequence. |
+| `npm run smoke` | Build, then automated test in Chrome for Testing (Puppeteer). |
+| `npm run store-assets` | Screenshots, tiles and icon for the Chrome Web Store in `docs/store/`. |
+| `npm run zip` | Zip of the normal build to upload to the store. |
+| `node scripts/permissions-check.mjs` | After `npm run build`: checks that the optional permissions are requested inside the user gesture. |
 
-Per caricare l'estensione a mano: `npm run build`, poi `chrome://extensions` → "Modalità sviluppatore" → "Carica estensione non pacchettizzata" → cartella `.output/chrome-mv3`.
+To load the extension by hand: `npm run build`, then `chrome://extensions` → "Developer mode" → "Load unpacked" → folder `.output/chrome-mv3`.

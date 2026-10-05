@@ -1,230 +1,230 @@
-# Test
+# Tests
 
-## Principio
+## Principle
 
-Un solo seam: **l'interfaccia dell'Organizzatore** (`propose`, `apply`, `state`, e poi `undo`). I test preparano la barra delle tab, chiamano l'Organizzatore e controllano cosa esce (la proposta) o cosa resta nel browser (gruppi e ordine delle tab). Non controllano come i moduli interni si chiamano tra loro.
+A single seam: **the Organizer's interface** (`propose`, `apply`, `state`, and later `undo`). The tests set up the tab strip, call the Organizer and check what comes out (the proposal) or what is left in the browser (groups and tab order). They do not check how the internal modules call each other.
 
-`tests/organizer.test.ts` è il test modello per tutte le issue successive.
+`tests/organizer.test.ts` is the model test for all subsequent issues.
 
-## Ambiente
+## Environment
 
-- **Vitest** con il plugin `WxtVitest`, che sostituisce `wxt/browser` con il fake browser di WXT (`@webext-core/fake-browser`). Storage (`session`, `sync`, `local`) e `runtime` vengono dal fake di WXT.
-- **`tests/fake-tab-strip.ts`**: il fake di WXT non conosce gruppi, tab fissate né posizioni. Il simulatore tiene per ogni finestra la lista ordinata delle tab e sostituisce `tabs.query/get/remove/group/ungroup/move` e l'intero `tabGroups` con un comportamento simile a Chrome:
-  - `tabs.group` senza `groupId` crea un gruppo nella posizione della prima tab e vi accosta le altre; con `groupId` aggiunge le tab in fondo al gruppo;
-  - `tabs.ungroup` porta la tab subito dopo la fine del gruppo;
-  - `tabs.move` fa entrare in un gruppo una tab che finisce tra due sue tab e fa uscire dal gruppo una tab che non è più accanto a nessuna tab del gruppo;
-  - i gruppi rimasti vuoti spariscono; raggruppare una tab fissata è un errore.
-- **`tests/fake-i18n.ts`**: il fake di WXT non implementa `i18n`. Questo fake legge i veri file `public/_locales/<lingua>/messages.json` e implementa `getMessage` (con i segnaposto) e `getUILanguage`. Ogni test parte in italiano; `installFakeI18n('en')` passa all'inglese.
-- **`tests/fake-network.ts`**: `installFakePermissions(concessi)` sostituisce `permissions` (non implementato dal fake di WXT); `installFakeFetch(...risposte)` sostituisce `fetch` con una coda di risposte (o errori, o funzioni) e registra URL, intestazioni e corpo di ogni richiesta; `openAiReply(contenuto)` e `httpError(status)` costruiscono risposte nel formato OpenAI.
-- **`tests/fake-nano.ts`**: stub dell'oggetto globale `LanguageModel` con i quattro stati di disponibilità, una finestra di contesto configurabile (un "token" ogni 4 caratteri), `measureContextUsage`, `clone`, e una funzione che risponde a ogni prompt registrando sistema, opzioni, tab e schema.
-- **`tests/setup.ts`** (in `setupFiles`): prima di ogni test accorcia `TIMINGS` (timeout di 200 ms, attesa del nuovo tentativo di 1 ms), così timeout e nuovi tentativi si provano senza aspettare davvero.
-- `installFakeFetch` rispetta il segnale della richiesta come il `fetch` vero (una richiesta appesa fallisce appena il segnale viene interrotto) e registra il segnale; `HANG` è una risposta che non arriva mai.
-- **`tests/fake-scripting.ts`**: sostituisce `scripting.executeScript` (non implementato dal fake di WXT); ogni tab ha la sua pagina finta con una descrizione e un eventuale ritardo (`Infinity` = non risponde mai); una tab senza pagina simula una pagina non accessibile. Registra le tab lette.
-- Helper per i test: `addTab`, `addGroup`, `closeTab`, `groupsIn()` (gruppi con titoli delle tab, in ordine) e `layout()` (la barra come elenco di titoli).
+- **Vitest** with the `WxtVitest` plugin, which replaces `wxt/browser` with WXT's fake browser (`@webext-core/fake-browser`). Storage (`session`, `sync`, `local`) and `runtime` come from WXT's fake.
+- **`tests/fake-tab-strip.ts`**: WXT's fake knows nothing about groups, pinned tabs or positions. The simulator keeps the ordered list of tabs for each window and replaces `tabs.query/get/remove/group/ungroup/move` and the whole of `tabGroups` with Chrome-like behavior:
+  - `tabs.group` without `groupId` creates a group at the position of the first tab and moves the others next to it; with `groupId` it adds the tabs at the end of the group;
+  - `tabs.ungroup` moves the tab right after the end of the group;
+  - `tabs.move` puts a tab into a group when it lands between two of the group's tabs, and takes a tab out of a group when it is no longer next to any tab of the group;
+  - groups left empty disappear; grouping a pinned tab is an error.
+- **`tests/fake-i18n.ts`**: WXT's fake does not implement `i18n`. This fake reads the real `public/_locales/<lingua>/messages.json` files and implements `getMessage` (with placeholders) and `getUILanguage`. Every test starts in Italian; `installFakeI18n('en')` switches to English.
+- **`tests/fake-network.ts`**: `installFakePermissions(concessi)` replaces `permissions` (not implemented by WXT's fake); `installFakeFetch(...risposte)` replaces `fetch` with a queue of responses (or errors, or functions) and records the URL, headers and body of every request; `openAiReply(contenuto)` and `httpError(status)` build responses in the OpenAI format.
+- **`tests/fake-nano.ts`**: stub of the global `LanguageModel` object with the four availability states, a configurable context window (one "token" every 4 characters), `measureContextUsage`, `clone`, and a function that answers every prompt while recording system prompt, options, tabs and schema.
+- **`tests/setup.ts`** (in `setupFiles`): before every test it shortens `TIMINGS` (200 ms timeout, 1 ms wait before the retry), so timeouts and retries are tested without actually waiting.
+- `installFakeFetch` honors the request's signal like the real `fetch` (a hanging request fails as soon as the signal is aborted) and records the signal; `HANG` is a response that never arrives.
+- **`tests/fake-scripting.ts`**: replaces `scripting.executeScript` (not implemented by WXT's fake); each tab has its own fake page with a description and an optional delay (`Infinity` = never answers); a tab without a page simulates an inaccessible page. It records the tabs that were read.
+- Test helpers: `addTab`, `addGroup`, `closeTab`, `groupsIn()` (groups with their tabs' titles, in order) and `layout()` (the strip as a list of titles).
 
-## Scenari coperti (AG-01)
+## Scenarios covered (AG-01)
 
-- Raggruppamento per dominio: nome senza `www.`, provenienza `domain`, query e frammento ignorati.
-- Regola delle 2 tab.
-- Selezione: finestra corrente, tab fissate, già raggruppate, pagine interne, tab senza titolo o con titolo uguale all'URL.
-- Colori a rotazione tra quelli liberi nella finestra.
-- Nessuna modifica alla barra prima di "Applica".
-- Persistenza della proposta (un nuovo Organizzatore la ritrova).
-- Due richieste contemporanee producono un solo calcolo.
-- "Applica": gruppi con nome e colore, gruppi esistenti intatti, tab chiuse nel frattempo saltate, proposta azzerata.
+- Grouping by domain: name without `www.`, provenance `domain`, query and fragment ignored.
+- The 2-tab rule.
+- Selection: current window, pinned tabs, already grouped tabs, internal pages, tabs without a title or with a title equal to the URL.
+- Colors rotating among those free in the window.
+- No change to the strip before "Apply".
+- Persistence of the proposal (a new Organizer finds it again).
+- Two simultaneous requests produce a single computation.
+- "Apply": groups with name and color, existing groups untouched, tabs closed in the meantime skipped, proposal cleared.
 
-## Scenari coperti (AG-02)
+## Scenarios covered (AG-02)
 
-- "Annulla" non disponibile prima di "Applica", disponibile dopo.
-- Barra mista (tab fissata, gruppo dell'utente, tab libere di più domini): applica e poi annulla riporta esattamente la barra iniziale e scioglie i gruppi creati.
-- Tab chiusa tra "Applica" e "Annulla": ignorata senza errori, le altre tornano al loro posto.
-- Tab aperta dopo "Applica": resta in fondo, non viene toccata.
-- Gruppo rinominato dall'utente dopo "Applica": non viene rinominato all'indietro.
-- "Annulla" sopravvive a una nuova proposta e vale solo per l'ultima operazione applicata.
+- "Undo" not available before "Apply", available after.
+- Mixed strip (pinned tab, user group, ungrouped (free) tabs from several domains): apply and then undo restores exactly the initial strip and dissolves the groups created.
+- Tab closed between "Apply" and "Undo": ignored without errors, the others go back to their place.
+- Tab opened after "Apply": stays at the end, is not touched.
+- Group renamed by the user after "Apply": is not renamed back.
+- "Undo" survives a new proposal and applies only to the last applied operation.
 
-## Scenari coperti (AG-03)
+## Scenarios covered (AG-03)
 
-- "Applica" dopo rinomina, cambio colore, spostamento di una tab, rimozione di una tab e scarto di un gruppo crea esattamente i gruppi modificati; le tab tolte o scartate restano libere.
-- Un gruppo svuotato dagli spostamenti sparisce dalla proposta.
-- Le modifiche restano nello stato e un nuovo Organizzatore (pannello riaperto) le ritrova.
-- Le modifiche a gruppi o tab inesistenti vengono ignorate.
-- Ogni gruppo ha provenienza e tab.
+- "Apply" after renaming, changing a color, moving a tab, removing a tab and discarding a group creates exactly the modified groups; the removed or discarded tabs stay ungrouped.
+- A group emptied by moves disappears from the proposal.
+- The edits stay in the state and a new Organizer (panel reopened) finds them again.
+- Edits to non-existent groups or tabs are ignored.
+- Every group has a provenance and tabs.
 
-## Scenari coperti (AG-04)
+## Scenarios covered (AG-04)
 
-- Default (minimo 2, nessun dominio escluso) e salvataggio in `storage.sync`.
-- Minimo 3: un dominio con 2 tab non forma un gruppo. Minimo 1: anche una tab sola forma un gruppo.
-- Un minimo modificato vale per la proposta successiva; i valori non interi o minori di 1 vengono rifiutati.
-- Domini esclusi: escluso il dominio e i suoi sottodomini (`google.com` → `mail.google.com`, `www.google.com`), non i domini che finiscono con lo stesso testo (`notgoogle.com`); dopo "Applica" le tab escluse restano libere.
-- Normalizzazione dei domini scritti dall'utente.
+- Defaults (minimum 2, no excluded domain) and saving to `storage.sync`.
+- Minimum 3: a domain with 2 tabs does not form a group. Minimum 1: even a single tab forms a group.
+- A changed minimum applies to the next proposal; non-integer values or values below 1 are rejected.
+- Excluded domains: the domain and its subdomains are excluded (`google.com` → `mail.google.com`, `www.google.com`), not domains that end with the same text (`notgoogle.com`); after "Apply" the excluded tabs stay ungrouped.
+- Normalization of domains typed by the user.
 
-## Scenari coperti (AG-R1)
+## Scenarios covered (AG-R1)
 
-- Una proposta chiesta durante "Applica" non cancella la foto per "Annulla".
-- Riaprendo il pannello la proposta viene ricalcolata se le tab libere sono cambiate, e mantenuta (con le modifiche) se non lo sono.
-- Lo stato indica sempre la finestra.
+- A proposal requested during "Apply" does not erase the snapshot for "Undo".
+- When the panel is reopened the proposal is recomputed if the ungrouped tabs have changed, and kept (with its edits) if they have not.
+- The state always indicates the window.
 
-## Scenari coperti (AG-05)
+## Scenarios covered (AG-05)
 
-- Al primo avvio le 10 categorie predefinite in italiano, con descrizione e colore; in inglese con il browser in inglese.
-- Aggiunta, modifica (nome con spazi ripuliti, colore), eliminazione e riordino; la lista finisce in `storage.sync`.
-- Nomi duplicati (maiuscole e spazi ignorati) e nomi vuoti rifiutati, senza salvare nulla.
-- "Ripristina default" riporta la lista iniziale; una lista vuota è ammessa.
-- Modificare le categorie rende non più attuale una proposta salvata.
+- On first run, the 10 default categories in Italian, with description and color; in English with the browser in English.
+- Adding, editing (name with whitespace cleaned up, color), deleting and reordering; the list ends up in `storage.sync`.
+- Duplicate names (case and whitespace ignored) and empty names rejected, without saving anything.
+- "Restore defaults" brings back the initial list; an empty list is allowed.
+- Editing the categories makes a saved proposal no longer current.
 
-## Scenari coperti (AG-06), in `tests/generator.test.ts`
+## Scenarios covered (AG-06), in `tests/generator.test.ts`
 
-- Assegnazione a categoria (colore fisso), a gruppo aperto (anche una tab, nome e colore del gruppo) e a gruppo nuovo (primo colore libero), con le provenienze.
-- Privacy sulla richiesta reale: solo ID brevi, titoli e URL ripuliti; nessuna query, frammento, credenziale, ID di Chrome né tab dei domini esclusi.
-- Opzioni: categorie più gruppi aperti, corrispondenza per nome senza distinguere maiuscole, descrizione "Gruppo creato dall'utente".
-- Contratto della richiesta: URL `/chat/completions`, `Bearer`, modello, `json_schema`, lingua del browser.
-- Nuovo tentativo senza structured output dopo un 400; risposta in un blocco ```json.
-- Validazione: ID inesistenti, tab duplicate, nomi vuoti od oltre le 2 parole.
-- Regole: minimo per gruppi nuovi e categorie, non per i gruppi esistenti.
-- "Applica" estende un gruppo esistente senza cambiarne nome e colore; "Annulla" lo riporta alla composizione originale.
-- Fallback al dominio con avviso per 500, 401, 429, errore di rete, JSON illeggibile e JSON fuori schema.
-- Permesso host mancante: nessuna richiesta, proposta per dominio, avviso `no-permission`.
-- La chiave API sta in `storage.local` e mai in `sync` né nello stato di sessione.
+- Assignment to a category (fixed color), to an open group (even one tab, the group's name and color) and to a new group (first free color), with the provenances.
+- Privacy on the real request: only short IDs, titles and cleaned URLs; no query, fragment, credentials, Chrome IDs or tabs from excluded domains.
+- Options: categories plus open groups, case-insensitive name matching, description "Group created by the user".
+- Request contract: URL `/chat/completions`, `Bearer`, model, `json_schema`, browser language.
+- Retry without structured output after a 400; response in a ```json block.
+- Validation: non-existent IDs, duplicate tabs, empty names or names longer than 2 words.
+- Rules: minimum for new groups and categories, not for existing groups.
+- "Apply" extends an existing group without changing its name and color; "Undo" brings it back to its original composition.
+- Fallback to domain with a warning for 500, 401, 429, network error, unreadable JSON and JSON outside the schema.
+- Missing host permission: no request, proposal by domain, `no-permission` warning.
+- The API key lives in `storage.local` and never in `sync` or in the session state.
 
-## Scenari coperti (AG-07), in `tests/nano.test.ts`
+## Scenarios covered (AG-07), in `tests/nano.test.ts`
 
-- Nessun Generatore configurato e Nano disponibile: Nano usato con lo schema JSON, nessuna richiesta di rete, stessi dati ripuliti, lingua del browser.
-- Il Generatore configurato ha la precedenza su Nano; uno configurato senza permesso lascia il posto a Nano con l'avviso.
-- Nano da scaricare, in download o non supportato: proposta per dominio, Nano mai usato, avviso nei primi due casi; senza Prompt API nessun avviso.
-- Divisione in blocchi con un contesto piccolo: tutte le tab inviate una sola volta, il nome inventato nel primo blocco tra le opzioni del secondo, gruppi omonimi uniti.
-- Nano in errore: proposta per dominio con avviso.
-- Stessa validazione degli altri Generatori.
+- No Generator configured and Nano available: Nano used with the JSON schema, no network request, same cleaned data, browser language.
+- The configured Generator takes precedence over Nano; one configured without permission gives way to Nano with the warning.
+- Nano to be downloaded, downloading or not supported: proposal by domain, Nano never used, warning in the first two cases; without the Prompt API no warning.
+- Splitting into chunks with a small context: all tabs sent exactly once, the name invented in the first chunk among the options of the second, groups with the same name merged.
+- Nano failing: proposal by domain with a warning.
+- Same validation as the other Generators.
 
-## Scenari coperti (AG-08), in `tests/classifier.test.ts`
+## Scenarios covered (AG-08), in `tests/classifier.test.ts`
 
-`installFakeFetch` riceve una funzione che risponde secondo l'URL: `/v1/systemone` nel formato System One (`systemOneReply`), `/chat/completions` nel formato OpenAI.
+`installFakeFetch` receives a function that answers according to the URL: `/v1/systemone` in the System One format (`systemOneReply`), `/chat/completions` in the OpenAI format.
 
-- Contratto: `POST /v1/systemone`, `state` con la sola tab ripulita, `questions.group` di tipo `choice` con le opzioni (categorie e gruppi aperti) come `criteria` più `none_of_the_above`; `Bearer` solo con la chiave; `model` solo se compilato (Jev).
-- Al massimo 255 opzioni nei `criteria`.
-- Riga 2: assegnazione sopra soglia, tab incerte e categoria sotto il minimo libere, tab singola in un gruppo esistente.
-- Soglia configurabile.
-- Riga 1: al Generatore arrivano solo le rimaste, in modalità "solo nuovi"; un gruppo nuovo di una sola tab viene sciolto; una tab già assegnata al passo 1 non può essere spostata dal passo 2.
-- Nessuna chiamata al Generatore senza tab rimaste.
-- Passo 2 in errore: rimaste libere, avviso.
-- Classificatore in errore: riga 3 con avviso; senza Generatore, riga 4.
-- Permesso mancante: nessuna richiesta, avviso.
-- Strategie: `batch` (una richiesta, una domanda per tab, stesso risultato), limite di parallelismo di `per-tab`, scelta sconosciuta o "nessuna".
+- Contract: `POST /v1/systemone`, `state` with only the cleaned tab, `questions.group` of type `choice` with the options (categories and open groups) as `criteria` plus `none_of_the_above`; `Bearer` only with the key; `model` only if filled in (Jev).
+- At most 255 options in the `criteria`.
+- Row 2: assignment above the threshold, uncertain tabs and category below the minimum left ungrouped, single tab in an existing group.
+- Configurable threshold.
+- Row 1: only the remaining tabs reach the Generator, in "new only" mode; a new group of a single tab is dissolved; a tab already assigned in step 1 cannot be moved by step 2.
+- No call to the Generator when no tabs remain.
+- Step 2 failing: remaining tabs left ungrouped, warning.
+- Classifier failing: row 3 with a warning; without a Generator, row 4.
+- Missing permission: no request, warning.
+- Strategies: `batch` (one request, one question per tab, same result), concurrency limit of `per-tab`, unknown choice or "none".
 
-Prova di mutazione: togliendo il confronto con la soglia falliscono 3 test; chiamando il passo 2 anche senza rimaste ne fallisce 1.
+Mutation test: removing the comparison with the threshold makes 3 tests fail; calling step 2 even with no remaining tabs makes 1 fail.
 
-## Scenari coperti (AG-R2)
+## Scenarios covered (AG-R2)
 
-- Nomi lunghi accettati quando sono quelli di un gruppo aperto o di una categoria.
-- Senza opzioni il Classificatore non viene interrogato.
-- Il passo 2 non parte con meno tab rimaste del minimo.
-- Smoke test: nessuna query, frammento, tab esclusa né ID di Chrome nelle richieste System One.
+- Long names accepted when they are those of an open group or a category.
+- Without options the Classifier is not queried.
+- Step 2 does not start with fewer remaining tabs than the minimum.
+- Smoke test: no query, fragment, excluded tab or Chrome ID in the System One requests.
 
-## Scenari coperti (AG-09), in `tests/save-to-list.test.ts`
+## Scenarios covered (AG-09), in `tests/save-to-list.test.ts`
 
-- La categoria prende nome e colore attuali del gruppo (dopo rinomina e cambio colore) e la descrizione generata, ripulita; alla descrizione arrivano nome ed esempi con URL ripuliti; il gruppo diventa "lista".
-- La proposta resta valida riaprendo il pannello.
-- Generatore in errore: descrizione vuota e avviso.
-- Nome già presente (maiuscole diverse): nessun duplicato, avviso.
-- Solo i gruppi "nuovo AI".
-- La categoria salvata è tra le opzioni dell'organizzazione successiva.
-- Una modifica successiva toglie l'avviso.
+- The category takes the group's current name and color (after renaming and a color change) and the generated, cleaned description; the description receives the name and examples with cleaned URLs; the group becomes "list".
+- The proposal stays valid when the panel is reopened.
+- Generator failing: empty description and warning.
+- Name already present (different case): no duplicate, warning.
+- Only "new AI" groups.
+- The saved category is among the options of the next organization.
+- A later edit removes the warning.
 
-## Scenari coperti (AG-10), in `tests/errors.test.ts`
+## Scenarios covered (AG-10), in `tests/errors.test.ts`
 
-- Nuovo tentativo dopo 429, 529, 500, 503 con la seconda risposta usata; un solo nuovo tentativo (due errori → livello successivo con l'avviso giusto); nessun nuovo tentativo dopo 401, 403, 422, errore di rete e timeout; anche per il Classificatore.
-- Timeout del Generatore (→ dominio) e del Classificatore (→ Generatore), con l'avviso "timeout".
-- Risposte non JSON, senza `choices`, fuori schema, System One senza `answers`: avviso "risposta non valida".
-- "Interrompi": richieste interrotte, nessuna proposta, avviso; interrompe anche l'attesa del nuovo tentativo; dopo si può ricalcolare e "Annulla" resta; senza calcolo in corso non cambia nulla.
-- Classificatore e Generatore entrambi in errore: proposta per dominio con due avvisi.
+- Retry after 429, 529, 500, 503 with the second response used; a single retry (two errors → next level with the right warning); no retry after 401, 403, 422, network error and timeout; also for the Classifier.
+- Timeout of the Generator (→ domain) and of the Classifier (→ Generator), with the "timeout" warning.
+- Non-JSON responses, without `choices`, outside the schema, System One without `answers`: "invalid response" warning.
+- "Stop": requests aborted, no proposal, warning; it also stops the wait before the retry; afterwards you can recompute and "Undo" remains; with no computation in progress nothing changes.
+- Classifier and Generator both failing: proposal by domain with two warnings.
 
-## Scenari coperti (AG-11), in `tests/descriptions.test.ts`
+## Scenarios covered (AG-11), in `tests/descriptions.test.ts`
 
-- Opzione accesa e permesso concesso: descrizioni ripulite al Generatore e, nello `state`, al Classificatore; le pagine senza descrizione restano con titolo e URL.
-- Permesso negato oppure opzione spenta: nessuna pagina letta.
-- Tab sospesa: non letta.
-- Pagina che non risponde: dopo ~500 ms solo titolo e URL per quella tab, senza rallentare le altre.
-- Web Store (vecchio e nuovo) e PDF saltati; una pagina non accessibile non blocca le altre.
-- Domini esclusi mai letti.
-- Senza AI (raggruppamento per dominio) nessuna pagina letta.
+- Option on and permission granted: cleaned descriptions sent to the Generator and, in the `state`, to the Classifier; pages without a description keep title and URL.
+- Permission denied or option off: no page read.
+- Suspended tab: not read.
+- Page that does not answer: after ~500 ms only title and URL for that tab, without slowing down the others.
+- Web Store (old and new) and PDFs skipped; an inaccessible page does not block the others.
+- Excluded domains never read.
+- Without AI (grouping by domain) no page read.
 
-`tests/locales.test.ts` controlla che italiano e inglese abbiano le stesse chiavi e che siano tutte nel formato accettato da Chrome (`[A-Za-z0-9_]`).
+`tests/locales.test.ts` checks that Italian and English have the same keys and that they are all in the format accepted by Chrome (`[A-Za-z0-9_]`).
 
-## Scenari coperti (AG-12), in `tests/locales.test.ts`
+## Scenarios covered (AG-12), in `tests/locales.test.ts`
 
-- Ogni chiave scritta nel codice (`t('…')`, chiavi di errore e di avviso, `__MSG_…__` nel manifest e nell'HTML) esiste nelle traduzioni. Il test legge i sorgenti di `src/`, `entrypoints/` e `wxt.config.ts` e riconosce le chiavi dai prefissi usati nei file di traduzione.
-- Esistono le chiavi composte a runtime: avvisi per ogni causa, 9 colori, 4 provenienze, 4 stati di Gemini Nano, nome e descrizione delle 10 categorie predefinite.
-- Italiano e inglese usano gli stessi segnaposto (`$PROVIDER$`, `$NAME$`, …).
+- Every key written in the code (`t('…')`, error and warning keys, `__MSG_…__` in the manifest and in the HTML) exists in the translations. The test reads the sources of `src/`, `entrypoints/` and `wxt.config.ts` and recognizes the keys by the prefixes used in the translation files.
+- The keys composed at runtime exist: warnings for every cause, 9 colors, 4 provenances, 4 Gemini Nano states, name and description of the 10 default categories.
+- Italian and English use the same placeholders (`$PROVIDER$`, `$NAME$`, …).
 
-Prova di mutazione fatta a mano: cambiando `t('popupSaveToListHint')` in una chiave inesistente il test fallisce indicando la chiave.
+Mutation test done by hand: changing `t('popupSaveToListHint')` to a non-existent key makes the test fail, naming the key.
 
-Prova di mutazione fatta a mano: togliendo lo scarto delle tab duplicate o il controllo del permesso, il test corrispondente fallisce.
+Mutation test done by hand: removing the discarding of duplicate tabs or the permission check makes the corresponding test fail.
 
-## Scenari coperti (AG-R3)
+## Scenarios covered (AG-R3)
 
-- `tests/classifier.test.ts`: in modalità `per-tab`, al primo errore non partono altre richieste e quelle in corso vengono interrotte (10 tab, 3 in parallelo: 3 richieste).
-- `tests/errors.test.ts`: "Interrompi" ferma anche un calcolo ancora in coda, che non fa richieste; due richieste per la stessa finestra condividono il calcolo; una per un'altra finestra riceve la propria proposta; "Ricalcola" durante un calcolo ne avvia uno nuovo.
-- `tests/nano.test.ts`: un errore di `clone()` diventa `invalid-request`; il tempo massimo vale per ogni blocco (due blocchi da 120 ms con un limite di 200 ms riescono). Il `prompt` finto ora rispetta il segnale di interruzione, come la Prompt API.
-- `tests/save-to-list.test.ts`: una tab aperta mentre si genera la descrizione fa scadere la proposta.
+- `tests/classifier.test.ts`: in `per-tab` mode, at the first error no further requests start and those in progress are aborted (10 tabs, 3 in parallel: 3 requests).
+- `tests/errors.test.ts`: "Stop" also halts a computation still in the queue, which makes no requests; two requests for the same window share the computation; one for another window receives its own proposal; "Recompute" during a computation starts a new one.
+- `tests/nano.test.ts`: a `clone()` error becomes `invalid-request`; the maximum time applies to each chunk (two 120 ms chunks with a 200 ms limit succeed). The fake `prompt` now honors the abort signal, like the Prompt API.
+- `tests/save-to-list.test.ts`: a tab opened while the description is being generated makes the proposal expire.
 
-Ogni test nuovo è stato provato con una mutazione: rimettendo il comportamento vecchio, fallisce.
+Every new test was checked with a mutation: putting back the old behavior makes it fail.
 
-## Scenari coperti (anteprima per sito e tempi), in `tests/preview.test.ts`
+## Scenarios covered (by-site preview and timings), in `tests/preview.test.ts`
 
-- Mentre l'AI calcola, lo stato annunciato è `computing` con la proposta per sito in `preview`; la proposta AI la sostituisce e `preview` sparisce.
-- "Usa questa": richiesta interrotta, proposta per sito in `ready`, senza avviso, modificabile e applicabile; riaprendo il pannello viene riusata senza nuove richieste; senza calcolo in corso non cambia nulla; un calcolo in coda senza anteprima finisce come con "Interrompi".
-- "Interrompi" resta com'era: nessuna proposta, nemmeno l'anteprima.
-- Nessuna anteprima in modalità per sito e senza livelli AI utilizzabili.
-- Tempi: fasi misurate con il Generatore, con il Generatore in errore (anche `domain`) e in modalità per sito; il cronometro con un orologio finto.
-- Prova di mutazione: senza l'anteprima falliscono 4 test.
+- While the AI is computing, the announced state is `computing` with the by-site proposal in `preview`; the AI proposal replaces it and `preview` disappears.
+- "Use this": request aborted, by-site proposal in `ready`, without a warning, editable and applicable; when the panel is reopened it is reused without new requests; with no computation in progress nothing changes; a queued computation without a preview ends as with "Stop".
+- "Stop" stays as it was: no proposal, not even the preview.
+- No preview in by-site mode or without usable AI levels.
+- Timings: phases measured with the Generator, with the Generator failing (also `domain`) and in by-site mode; the stopwatch with a fake clock.
+- Mutation test: without the preview 4 tests fail.
 
-## Scenari coperti (cache, Generatore e Gemini Nano più veloci), in `tests/speed.test.ts`
+## Scenarios covered (cache, faster Generator and Gemini Nano), in `tests/speed.test.ts`
 
-- Cache del Classificatore: aprendo una tab si classifica solo quella, con lo stesso risultato; "Ricalcola" e il cambio di soglia non fanno richieste; cambiare la descrizione di una categoria o il modello riclassifica tutto; una risposta illeggibile non viene ricordata; dopo un errore non resta nulla in cache.
-- Cache delle descrizioni: un nuovo calcolo legge solo le pagine nuove; una pagina lenta o non accessibile si riprova; una tab sospesa ritrova la descrizione dello stesso URL senza essere letta.
-- `createSessionCache`: oltre il limite escono le voci più vecchie, una voce riscritta torna la più recente.
-- Generatore: `max_tokens` inviato; risposta tagliata → "risposta non valida" e dominio; dopo un 400 il nuovo tentativo è senza schema né tetto; in "solo nuovi" le opzioni vanno solo per nome.
-- Gemini Nano: sessione base creata una volta e riusata; con il Classificatore la sessione esiste già mentre il Classificatore lavora; una creazione fallita (anche quella anticipata) e una sessione rotta non vengono riusate.
-- Il test di privacy del Generatore cercava "token" in tutta la richiesta e ora lo trovava in `max_tokens`: cerca `token=abc` e `abc`.
-- Prove di mutazione su 16 punti del codice nuovo: ognuna fa fallire almeno un test.
+- Classifier cache: opening a tab classifies only that tab, with the same result; "Recompute" and changing the threshold make no requests; changing a category's description or the model reclassifies everything; an unreadable response is not remembered; after an error nothing is left in the cache.
+- Description cache: a new computation reads only the new pages; a slow or inaccessible page is retried; a suspended tab finds the description of the same URL again without being read.
+- `createSessionCache`: beyond the limit the oldest entries are evicted, a rewritten entry becomes the most recent again.
+- Generator: `max_tokens` sent; truncated response → "invalid response" and domain; after a 400 the retry has neither schema nor cap; in "new only" the options are sent by name only.
+- Gemini Nano: base session created once and reused; with the Classifier the session already exists while the Classifier is working; a failed creation (including the early one) and a broken session are not reused.
+- The Generator's privacy test searched for "token" in the whole request and now found it in `max_tokens`: it searches for `token=abc` and `abc`.
+- Mutation tests on 16 points of the new code: each one makes at least one test fail.
 
-## Scenari coperti (guida al primo avvio), in `tests/onboarding.test.ts`
+## Scenarios covered (first-run guide), in `tests/onboarding.test.ts`
 
-- Passi della guida con l'AI (benvenuto, modalità, Generatore, Classificatore, riepilogo) e per sito (senza i provider).
-- Alla prima installazione si apre una scheda con `onboarding.html`; dopo un aggiornamento dell'estensione, di Chrome o di un modulo condiviso no.
-- Il test delle traduzioni controlla anche le chiavi con prefisso `onboarding`.
-- Smoke test: la guida aperta all'installazione si percorre fino in fondo (5 passi con l'AI, con le sezioni Generatore e Classificatore), il riepilogo mostra i tre livelli e l'avviso "Gemini Nano non supportato"; passando a "Per sito" i passi diventano 3. Screenshot del passo del Generatore e del riepilogo.
+- Steps of the guide with AI (welcome, mode, Generator, Classifier, summary) and by site (without the providers).
+- On first install a tab opens with `onboarding.html`; after an update of the extension, of Chrome or of a shared module, it does not.
+- The translations test also checks the keys with the `onboarding` prefix.
+- Smoke test: the guide opened on install can be followed to the end (5 steps with AI, with the Generator and Classifier sections), the summary shows the three levels and the "Gemini Nano is not supported" notice; switching to "By site" the steps become 3. Screenshots of the Generator step and of the summary.
 
-## Scenari coperti (permessi dei provider e `<all_urls>`), in `tests/permissions.test.ts`
+## Scenarios covered (provider permissions and `<all_urls>`), in `tests/permissions.test.ts`
 
-Con un finto `permissions` che riproduce il caso peggiore di Chrome (un host già coperto da `<all_urls>` viene concesso senza essere registrato):
-- spegnendo le descrizioni gli host dei provider rimasti senza permesso vengono richiesti di nuovo, tutti in una richiesta;
-- se Chrome li aveva registrati non si chiede nulla;
-- se l'utente rifiuta, vengono restituiti gli host rimasti senza permesso;
-- senza provider su un server si toglie solo `<all_urls>`.
-- Prova di mutazione: senza la nuova richiesta falliscono 2 test.
+With a fake `permissions` that reproduces Chrome's worst case (a host already covered by `<all_urls>` is granted without being registered):
+- when descriptions are turned off, the provider hosts left without permission are requested again, all in one request;
+- if Chrome had registered them, nothing is requested;
+- if the user refuses, the hosts left without permission are returned;
+- without providers on a server, only `<all_urls>` is removed.
+- Mutation test: without the new request 2 tests fail.
 
-Smoke test: "Apri il pannello" nella guida apre davvero il pannello laterale (bersaglio `sidepanel.html`); nelle impostazioni il pulsante "Offrimi un caffè" punta a Buy Me a Coffee ed è visibile a 800 px (in fondo) e a 1280 px (nel menu).
+Smoke test: "Open the panel" in the guide really opens the side panel (target `sidepanel.html`); in the settings the "Buy me a coffee" button points to Buy Me a Coffee and is visible at 800 px (at the bottom) and at 1280 px (in the menu).
 
-## Prova in Chrome
+## Testing in Chrome
 
-`npm run smoke` compila e lancia `scripts/smoke.mjs`: apre Chrome for Testing con l'estensione caricata, apre pagine servite da un server locale su `localhost` e `127.0.0.1` (due domini diversi), apre il pannello laterale come pagina (`sidepanel.html`), ricarica il pannello per verificare che la proposta resti, rinomina un gruppo, ne cambia il colore e sposta una tab (salvando uno screenshot in `scripts/smoke-popup.png`), ricarica di nuovo per verificare che le modifiche restino, preme "Applica", poi "Annulla ultima organizzazione" e controlla che ordine delle tab e gruppi tornino come prima; infine apre la pagina opzioni, prova la sezione Categorie (nome duplicato rifiutato, rinomina, aggiunta, riordino, ripristino, controllando `storage.sync`), imposta il minimo a 3 ed esclude `127.0.0.1` (screenshot in `scripts/smoke-options.png`), controlla `storage.sync` e ricalcola la proposta. Stampa i gruppi creati e gli eventuali errori in console del service worker e del pannello.
+`npm run smoke` builds and runs `scripts/smoke.mjs`: it opens Chrome for Testing with the extension loaded, opens pages served by a local server on `localhost` and `127.0.0.1` (two different domains), opens the side panel as a page (`sidepanel.html`), reloads the panel to verify that the proposal stays, renames a group, changes its color and moves a tab (saving a screenshot to `scripts/smoke-popup.png`), reloads again to verify that the edits stay, presses "Apply", then "Undo last organization" and checks that tab order and groups go back to how they were; finally it opens the options page, tests the Categories section (duplicate name rejected, rename, add, reorder, restore, checking `storage.sync`), sets the minimum to 3 and excludes `127.0.0.1` (screenshot in `scripts/smoke-options.png`), checks `storage.sync` and recomputes the proposal. It prints the groups created and any console errors from the service worker and the panel.
 
-Poi lo script accende "Leggi la descrizione delle pagine" nella sezione Privacy, ricalcola e controlla che al finto Generatore arrivino le meta description lette dalle pagine con `chrome.scripting`, quindi spegne l'interruttore.
+Then the script turns on "Read page descriptions" in the Privacy section, recomputes and checks that the fake Generator receives the meta descriptions read from the pages with `chrome.scripting`, then turns the switch off.
 
-Infine lo script configura il Classificatore (preset Personalizzato verso un finto endpoint System One dello stesso server), lo salva, prova la connessione e ricalcola: la proposta viene dal Classificatore, senza chiamate al Generatore e senza avvisi.
+Finally the script configures the Classifier (Custom preset pointing to a fake System One endpoint on the same server), saves it, tests the connection and recomputes: the proposal comes from the Classifier, with no calls to the Generator and no warnings.
 
-`scripts/measure-classifier.mjs` non fa parte dello smoke test: misura le due strategie del Classificatore su un server System One reale (vedi l'architettura).
+`scripts/measure-classifier.mjs` is not part of the smoke test: it measures the Classifier's two strategies on a real System One server (see the architecture).
 
-Lo script legge anche lo stato di Gemini Nano mostrato nelle impostazioni. In Chrome for Testing headless la Prompt API esiste nel service worker dell'estensione, ma il modello risulta "non supportato": il percorso con Nano disponibile è coperto solo dallo stub e va provato a mano in un Chrome che supporta Gemini Nano.
+The script also reads the Gemini Nano status shown in the settings. In headless Chrome for Testing the Prompt API exists in the extension's service worker, but the model is reported as "not supported": the path with Nano available is covered only by the stub and must be tested by hand in a Chrome that supports Gemini Nano.
 
-Dopo le impostazioni lo script configura il Generatore dall'interfaccia (preset Personalizzato verso un finto server compatibile OpenAI dentro lo script stesso), lo salva, preme "Prova connessione", controlla che la chiave sia in `storage.local` e non in `sync`, ricalcola la proposta (gruppo "nuovo AI"), preme "Salva nella lista" e controlla la categoria salvata in `storage.sync`, controlla che le richieste non contengano query, frammenti né tab escluse, poi fa fallire il server (500) e verifica il nuovo tentativo (2 richieste) e il ripiego sul dominio con l'avviso, poi lascia il server senza risposta e preme "Interrompi" (nessuna proposta, avviso di calcolo interrotto) (screenshot in `scripts/smoke-popup-warning.png`).
+After the settings, the script configures the Generator from the interface (Custom preset pointing to a fake OpenAI-compatible server inside the script itself), saves it, presses "Test connection", checks that the key is in `storage.local` and not in `sync`, recomputes the proposal ("new AI" group), presses "Save to list" and checks the category saved in `storage.sync`, checks that the requests contain no query, fragments or excluded tabs, then makes the server fail (500) and verifies the retry (2 requests) and the fallback to domain with the warning, then leaves the server without a response and presses "Stop" (no proposal, computation-stopped warning) (screenshot in `scripts/smoke-popup-warning.png`).
 
-Alla fine lo script prova le quattro righe della tabella dei fallback con tutte le tab, accendendo e spegnendo i provider in `storage.sync`. Il finto System One risponde con confidenza bassa per le pagine `/c` e `/d`. Risultati attesi e ottenuti: entrambi → "Work" (lista, 3 tab) + "Nuovo Tema" (nuovo AI, 2 tab), 5 richieste System One e 1 al Generatore; solo Classificatore → "Work" (3 tab), le altre 2 libere, nessuna richiesta al Generatore; solo Generatore → un gruppo da 5 tab; nessuno → due gruppi per dominio. `repropose` conta solo le richieste del calcolo forzato da "Ricalcola", non quelle del calcolo che il pannello fa da solo all'apertura. La pagina `/e` ha la meta description vuota e una `og:description`, che deve arrivare all'AI.
+At the end the script tests the four rows of the fallback table with all the tabs, turning the providers on and off in `storage.sync`. The fake System One answers with low confidence for the `/c` and `/d` pages. Expected and obtained results: both → "Work" (list, 3 tabs) + "Nuovo Tema" (new AI, 2 tabs), 5 System One requests and 1 to the Generator; Classifier only → "Work" (3 tabs), the other 2 ungrouped, no request to the Generator; Generator only → one group of 5 tabs; neither → two groups by domain. `repropose` counts only the requests of the computation forced by "Recompute", not those of the computation the panel makes on its own when it opens. The `/e` page has an empty meta description and an `og:description`, which must reach the AI.
 
-`scripts/permissions-check.mjs` (a parte, sulla build normale) controlla che le richieste di permesso partano dentro il gesto dell'utente: il clic su "Salva" del Generatore e sull'interruttore delle descrizioni lasciano aperta la finestra di Chrome, mentre una richiesta dal service worker viene rifiutata. Una richiesta da `page.evaluate` non serve come controprova, perché Puppeteer la esegue come gesto dell'utente. Prova di mutazione: spostando `permissions.request` dopo un'attesa di 6 s, il salvataggio fallisce con "must be called during a user gesture".
+`scripts/permissions-check.mjs` (separately, on the normal build) checks that permission requests start inside the user gesture: clicking the Generator's "Save" and the descriptions switch leave Chrome's dialog open, while a request from the service worker is rejected. A request from `page.evaluate` is no use as a counter-check, because Puppeteer runs it as a user gesture. Mutation test: moving `permissions.request` after a 6 s wait, saving fails with "must be called during a user gesture".
 
-All'avvio lo script controlla anche con `chrome.commands.getAll()` che la scorciatoia per il pannello sia registrata (su macOS: `⌥⇧G`).
+At startup the script also checks with `chrome.commands.getAll()` that the shortcut for the panel is registered (on macOS: `⌥⇧G`).
 
-`npm run smoke` compila con `AUTOGROUP_SMOKE=1`, che aggiunge `<all_urls>` ai permessi host: in headless la finestra di Chrome che chiede il permesso non si può accettare. Alla fine ricompila la build normale.
+`npm run smoke` builds with `AUTOGROUP_SMOKE=1`, which adds `<all_urls>` to the host permissions: in headless mode Chrome's permission dialog cannot be accepted. At the end it rebuilds the normal build.
 
-Chrome stabile dalla 137 ignora `--load-extension`, quindi lo script usa Chrome for Testing scaricato da Puppeteer.
+Stable Chrome ignores `--load-extension` since version 137, so the script uses Chrome for Testing downloaded by Puppeteer.

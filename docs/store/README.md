@@ -1,29 +1,29 @@
-# Pubblicazione sul Chrome Web Store
+# Publishing on the Chrome Web Store
 
-Materiale pronto per la scheda dello store e per la revisione. Quello che richiede l'account dello sviluppatore (pubblicare l'informativa, compilare la dashboard, caricare lo zip) resta da fare a mano: i passi sono in fondo.
+Material ready for the store listing and for the review. What requires the developer account (publishing the privacy policy, filling in the dashboard, uploading the zip) remains to be done by hand: the steps are at the bottom.
 
-| File | Contenuto |
+| File | Contents |
 |---|---|
-| [scheda.md](scheda.md) | Nome, riepilogo, descrizione dettagliata e categoria, in italiano e in inglese |
-| [privacy.md](privacy.md) | Informativa privacy pubblica, in inglese e in italiano |
-| [revisione.md](revisione.md) | Scopo unico, motivazione di ogni permesso, codice remoto, uso dei dati e dichiarazioni |
-| `it/`, `en/` | 4 screenshot 1280×800 e la tile promozionale 440×280 per lingua |
-| `icon-128.png` | Icona dello store: disegno 96×96 con 16 px di margine trasparente |
+| [listing.md](listing.md) | Name, summary, detailed description and category, in Italian and in English |
+| [privacy.md](privacy.md) | Public privacy policy, in English and in Italian |
+| [privacy-practices.md](privacy-practices.md) | Single purpose, justification of each permission, remote code, data usage and certifications |
+| `it/`, `en/` | 4 screenshots 1280×800 and the 440×280 promotional tile per language |
+| `icon-128.png` | Store icon: 96×96 artwork with 16 px of transparent padding |
 
-## Rigenerare le immagini
+## Regenerating the images
 
-`npm run store-assets` (macOS o Linux, serve `openssl`). Usa la build di prova, tab con titoli realistici servite in locale e un Generatore finto, quindi le immagini escono uguali a ogni esecuzione. Testi delle immagini in `COPY` di `scripts/store-assets.mjs`.
+`npm run store-assets` (macOS or Linux, requires `openssl`). It uses the test build, tabs with realistic titles served locally and a fake Generator, so the images come out the same on every run. Image texts are in `COPY` in `scripts/store-assets.mjs`.
 
-## Lo zip
+## The zip
 
-`npm run zip` crea `.output/autogroup-<versione>-chrome.zip` dalla build normale (solo permessi host facoltativi). Prima di ogni nuova versione aumentare `version` in `package.json`.
+`npm run zip` creates `.output/autogroup-<version>-chrome.zip` from the normal build (optional host permissions only). Before each new version, increase `version` in `package.json`.
 
-## Passi a mano
+## Manual steps
 
-1. **Pubblicare l'informativa** di [privacy.md](privacy.md) a un indirizzo pubblico (per esempio una pagina del repository su GitHub, GitHub Pages o Google Sites), dopo aver sostituito **[contact email] / [email di contatto]** con un indirizzo di contatto.
-2. **Account sviluppatore** su <https://chrome.google.com/webstore/devconsole> (registrazione una tantum).
-3. **Nuovo elemento**: caricare lo zip.
-4. **Store listing**: testi di [scheda.md](scheda.md) per italiano e inglese, icona, screenshot e tile della lingua giusta.
-5. **Privacy practices**: risposte di [revisione.md](revisione.md) e URL dell'informativa.
-6. **Distribution**: visibilità (pubblica, non in elenco o privata) e paesi.
-7. Inviare per la revisione.
+1. **Publish the privacy policy** from [privacy.md](privacy.md) at a public address: a public GitHub Gist (`gh gist create --public docs/store/privacy.md`), a page in a public repository, GitHub Pages or Google Sites. For questions the policy asks readers to leave a comment on that page; add a contact email if you prefer.
+2. **Developer account** at <https://chrome.google.com/webstore/devconsole> (one-time registration).
+3. **New item**: upload the zip.
+4. **Store listing**: texts from [listing.md](listing.md) for Italian and English, icon, screenshots and tile for the right language.
+5. **Privacy practices**: answers from [privacy-practices.md](privacy-practices.md) and the privacy policy URL.
+6. **Distribution**: visibility (public, unlisted or private) and countries.
+7. Submit for review.

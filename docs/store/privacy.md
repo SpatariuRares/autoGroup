@@ -1,6 +1,6 @@
-# Informativa privacy di autoGroup
+# autoGroup privacy policy (Informativa privacy)
 
-*Versione italiana più sotto la versione inglese. Ultimo aggiornamento: 5 ottobre 2026.*
+*The Italian version follows the English one. Last updated: 5 October 2026.*
 
 ## English
 
@@ -54,7 +54,7 @@ Only if you turn the option on, autoGroup asks Chrome for permission to read the
 
 ### Changes and contact
 
-Changes to this policy will be published on this page with a new date. Questions: **[contact email]**.
+Changes to this policy will be published on this page with a new date. Questions: leave a comment at the bottom of this page.
 
 ---
 
@@ -110,4 +110,4 @@ Solo se accendi l'opzione, autoGroup chiede a Chrome il permesso di leggere i si
 
 ### Modifiche e contatti
 
-Le modifiche a questa informativa saranno pubblicate in questa pagina con una nuova data. Domande: **[email di contatto]**.
+Le modifiche a questa informativa saranno pubblicate in questa pagina con una nuova data. Domande: lascia un commento in fondo a questa pagina.
