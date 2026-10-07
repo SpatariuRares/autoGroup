@@ -22,12 +22,13 @@ export interface RulesResult {
 const toProposedTab = ({ tabId, title, url, favIconUrl }: CandidateTab): ProposedTab => ({ tabId, title, url, favIconUrl });
 
 /**
- * Regole sui gruppi e colori, uguali per ogni livello AI.
+ * Regole sui gruppi e colori, uguali per ogni livello (AI e dominio).
  * - Un gruppo esistente accoglie anche una sola tab; nome e colore restano i suoi.
  * - Una categoria della lista o un gruppo nuovo richiedono almeno `minTabs` tab.
  * - Le categorie usano il loro colore fisso; i gruppi nuovi ruotano tra i colori liberi nella finestra.
+ * I gruppi che non corrispondono a nessuna opzione nota hanno la provenienza `newProvenance`.
  */
-export function applyGroupRules(valid: ValidGroup[], ctx: RulesContext): RulesResult {
+export function applyGroupRules(valid: ValidGroup[], ctx: RulesContext, newProvenance: 'ai' | 'domain' = 'ai'): RulesResult {
   const optionByKey = new Map(ctx.options.map((o) => [categoryKey(o.name), o]));
   const leftover: string[] = [];
   const kept: { group: ValidGroup; option?: OptionTarget }[] = [];
@@ -51,7 +52,7 @@ export function applyGroupRules(valid: ValidGroup[], ctx: RulesContext): RulesRe
       return { id, name: option.name, color: option.color, provenance: 'existing', existingGroupId: option.existingGroupId, tabs };
     }
     if (option?.kind === 'list') return { id, name: option.name, color: option.color, provenance: 'list', tabs };
-    return { id, name: group.name, color: colors.next(), provenance: 'ai', tabs };
+    return { id, name: group.name, color: colors.next(), provenance: newProvenance, tabs };
   });
 
   return { groups, leftover };
