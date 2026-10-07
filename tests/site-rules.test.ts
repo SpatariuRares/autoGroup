@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { loadSettings, normalizeSite, resetCategories, saveSettings, SettingsError } from '../src/settings';
+import { loadSettings, normalizeSite, resetCategories, saveSettings, SettingsError, type CategorySites } from '../src/settings';
 import type { Category } from '../src/shared/types';
+import { createSiteMatcher, siteToRemember } from '../src/organizer/site-rules';
 import { installFakeI18n } from './fake-i18n';
 
 const CATS: Category[] = [
@@ -70,5 +71,52 @@ describe('siti delle categorie nelle impostazioni', () => {
     await resetCategories();
 
     expect((await loadSettings()).categorySites).toEqual({});
+  });
+});
+
+describe('regole sui siti', () => {
+  const match = (url: string, sites: CategorySites) => createSiteMatcher(CATS, sites)(url);
+
+  it('un dominio prende anche i sottodomini, con o senza www', () => {
+    const sites = { work: ['atlassian.net'] };
+
+    expect(match('https://team.atlassian.net/browse/X-1', sites)?.category.name).toBe('Work');
+    expect(match('https://www.atlassian.net/', sites)?.site).toBe('atlassian.net');
+    expect(match('https://notatlassian.net/', sites)).toBeNull();
+  });
+
+  it('un percorso si confronta per segmenti interi, senza distinguere maiuscole e minuscole', () => {
+    const sites = { work: ['github.com/mia-org'] };
+
+    expect(match('https://github.com/Mia-Org/repo?tab=1', sites)?.site).toBe('github.com/mia-org');
+    expect(match('https://github.com/mia-org', sites)?.site).toBe('github.com/mia-org');
+    expect(match('https://github.com/mia-organization', sites)).toBeNull();
+    expect(match('https://github.com/', sites)).toBeNull();
+  });
+
+  it('vince la regola più specifica, qualunque sia l\'ordine delle categorie', () => {
+    const sites = { dev: ['github.com'], work: ['github.com/mia-org'] };
+
+    expect(match('https://github.com/mia-org/x', sites)?.category.name).toBe('Work');
+    expect(match('https://github.com/altro/x', sites)?.category.name).toBe('Dev');
+  });
+
+  it('a parità di componenti vince il percorso più lungo', () => {
+    const sites = { dev: ['a.google.com'], work: ['google.com/x'] };
+
+    expect(match('https://a.google.com/x', sites)?.category.name).toBe('Work');
+  });
+
+  it('ignora le pagine senza dominio e i siti di categorie che non esistono', () => {
+    expect(match('file:///Users/me/a.pdf', { dev: ['github.com'] })).toBeNull();
+    expect(match('https://github.com/', { ghost: ['github.com'] })).toBeNull();
+  });
+
+  it('il sito da ricordare è quello della regola che decide la tab, altrimenti il dominio', () => {
+    const sites = { work: ['github.com/mia-org'] };
+
+    expect(siteToRemember('https://github.com/mia-org/x', CATS, sites)).toBe('github.com/mia-org');
+    expect(siteToRemember('https://www.github.com/altro', CATS, sites)).toBe('github.com');
+    expect(siteToRemember('file:///a.pdf', CATS, sites)).toBeNull();
   });
 });
