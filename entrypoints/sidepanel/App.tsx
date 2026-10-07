@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { browser, type Browser } from 'wxt/browser';
 import { buildWindowView, type ExistingGroupView, type HeldReason } from '../../src/organizer/window-view';
-import { loadSettings, saveSettings, type GroupingMode, type Settings } from '../../src/settings';
+import { categoryKey, loadSettings, saveSettings, type GroupingMode, type Settings } from '../../src/settings';
+import { siteToRemember } from '../../src/organizer/site-rules';
 import { t, warningKey } from '../../src/shared/i18n';
 import { callOrganizer, onOrganizerState } from '../../src/shared/organizer-client';
 import { GROUP_COLORS, type OrganizerState, type ProposalEdit, type ProposedGroup, type ProposedTab } from '../../src/shared/types';
@@ -101,6 +102,30 @@ interface Target {
   to: Extract<ProposalEdit, { kind: 'add-tab' }>['to'];
 }
 
+/** "Metti sempre qui" proposto dopo uno spostamento: la tab, il sito che verrebbe salvato e la categoria. */
+interface RememberOffer {
+  tabId: number;
+  site: string;
+  category: string;
+}
+
+/**
+ * Dopo aver messo una tab in un gruppo che è una categoria (della lista o un gruppo aperto con lo
+ * stesso nome), il sito che "Metti sempre qui" salverebbe. Nessuna offerta se ci va già.
+ */
+function rememberOffer(state: OrganizerState, tabId: number, settings: Settings | null): RememberOffer | null {
+  const group = state.proposal?.groups.find((g) => g.tabs.some((t) => t.tabId === tabId));
+  if (!settings || !group || (group.provenance !== 'list' && group.provenance !== 'existing')) return null;
+  const category = settings.categories.find((c) => categoryKey(c.name) === categoryKey(group.name));
+  const tab = group.tabs.find((t) => t.tabId === tabId)!;
+  const site = siteToRemember(tab.url, settings.categories, settings.categorySites);
+  if (!category || !site || settings.categorySites[category.id]?.includes(site)) return null;
+  return { tabId, site, category: category.name };
+}
+
+/** Per quanto resta visibile l'offerta "Metti sempre qui". */
+const OFFER_MS = 8000;
+
 export function App() {
   const [state, setState] = useState<OrganizerState | null>(null);
   const [windowId, setWindowId] = useState<number | null>(null);
@@ -108,6 +133,12 @@ export function App() {
   const [notice, setNotice] = useState<'popupApplied' | 'popupUndone' | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
+  const [offer, setOffer] = useState<RememberOffer | null>(null);
+  useEffect(() => {
+    if (!offer) return;
+    const timer = setTimeout(() => setOffer(null), OFFER_MS);
+    return () => clearTimeout(timer);
+  }, [offer]);
   const settings = useSettings();
   // Letta dall'ascoltatore: l'annuncio dell'anteprima può arrivare prima che React aggiorni `windowId`.
   const currentWindow = useRef<number | null>(null);
@@ -164,19 +195,23 @@ export function App() {
     }
   }
 
-  async function edit(change: ProposalEdit) {
+  async function edit(change: ProposalEdit): Promise<OrganizerState | null> {
     setFailure(null);
     try {
-      setState(await callOrganizer({ type: 'organizer/edit', edit: change }));
+      const next = await callOrganizer({ type: 'organizer/edit', edit: change });
+      setState(next);
+      return next;
     } catch (err) {
       console.error('autoGroup:', err);
       setFailure('errorUnexpected');
+      return null;
     }
   }
 
   function recompute() {
     if (windowId === null) return;
     setNotice(null);
+    setOffer(null);
     setStale(false);
     run({ type: 'organizer/propose', windowId, force: true });
   }
@@ -208,9 +243,11 @@ export function App() {
       });
   }
 
-  const moveTab = (tab: ProposedTab, value: string) => {
+  const moveTab = async (tab: ProposedTab, value: string) => {
     const target = targets.find((x) => x.value === value);
-    if (target) edit({ kind: 'add-tab', tab, to: target.to });
+    if (!target) return;
+    const next = await edit({ kind: 'add-tab', tab, to: target.to });
+    setOffer(next ? rememberOffer(next, tab.tabId, settings) : null);
   };
 
   // Senza proposta (es. dopo "Applica") le tab libere vanno subito in un gruppo aperto. Non durante il calcolo.
@@ -403,15 +440,31 @@ export function App() {
         )}
       </div>
 
-      {proposal && state?.notice && (
+      {proposal && offer ? (
         <div className="snackbar" role="status">
-          <span>{t(state.notice.key, state.notice.arg)}</span>
-          {state.notice.key === 'saveToListNoDescription' && (
-            <button className="text small inverse" onClick={() => openSettings('categories')}>
-              {t('popupWarningSettings')}
-            </button>
-          )}
+          <span>{t('panelRememberSite', [offer.site, offer.category])}</span>
+          <button
+            className="text small inverse"
+            onClick={() => {
+              setOffer(null);
+              run({ type: 'organizer/remember-site', tabId: offer.tabId });
+            }}
+          >
+            {t('panelRememberSiteYes')}
+          </button>
         </div>
+      ) : (
+        proposal &&
+        state?.notice && (
+          <div className="snackbar" role="status">
+            <span>{t(state.notice.key, state.notice.arg)}</span>
+            {state.notice.key === 'saveToListNoDescription' && (
+              <button className="text small inverse" onClick={() => openSettings('categories')}>
+                {t('popupWarningSettings')}
+              </button>
+            )}
+          </div>
+        )
       )}
 
       <footer className="bottom-bar">
@@ -435,6 +488,7 @@ export function App() {
             onClick={() =>
               run({ type: 'organizer/apply' }, () => {
                 setStale(false);
+                setOffer(null);
                 setNotice('popupApplied');
               })
             }
@@ -505,6 +559,11 @@ function TabRow({
       {tab.favIconUrl ? <img src={tab.favIconUrl} alt="" /> : <span className="no-icon" />}
       <span className="tab-title">{tab.title}</span>
       {added && <span className="tab-chip">{t('panelNewTab')}</span>}
+      {tab.rule && (
+        <span className="tab-chip muted" title={t('panelRuleHint', tab.rule)}>
+          {t('panelRule')}
+        </span>
+      )}
       {reason && <span className="tab-chip muted">{t(REASON_KEY[reason])}</span>}
       {onMove && targets.length > 0 && (
         <label className="move" title={t('popupMoveTab')}>

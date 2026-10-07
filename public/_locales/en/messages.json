@@ -644,6 +644,31 @@
   "panelAddedCountOne": {
     "message": "+ 1 new"
   },
+  "panelRule": {
+    "message": "rule"
+  },
+  "panelRuleHint": {
+    "message": "Rule: $SITE$",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelRememberSite": {
+    "message": "Always put $SITE$ in $CATEGORY$?",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "category": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelRememberSiteYes": {
+    "message": "Yes"
+  },
   "panelCloseTab": {
     "message": "Close tab"
   },
