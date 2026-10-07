@@ -30,13 +30,15 @@ export function SitesRow({ category, categories, sites, onChange }: SitesRowProp
     if (!site) return setError({ key: 'optionsSiteInvalid' });
     const owner = categories.find((c) => sites[c.id]?.includes(site));
     if (owner) return setError({ key: 'optionsSiteDuplicate', arg: owner.name });
+    // Se il salvataggio è rifiutato (es. troppi siti) l'errore va sotto il campo, non solo nel banner.
     if (await onChange({ ...sites, [category.id]: [...own, site] })) close();
+    else setError({ key: 'optionsSitesTooMany' });
   }
 
   return (
     <div className="category-sites">
       {own.length > 0 && (
-        <ul className="domains" aria-label={t('optionsSites')}>
+        <ul className="domains" aria-label={`${t('optionsSites')}: ${category.name}`}>
           {own.map((site) => (
             <li key={site} className="chip">
               <span>{site}</span>
@@ -53,7 +55,11 @@ export function SitesRow({ category, categories, sites, onChange }: SitesRowProp
         </ul>
       )}
       {draft === null ? (
-        <button className="text small" title={t('optionsSitesHint')} onClick={() => setDraft('')}>
+        <button
+          className="text small"
+          title={t('optionsSitesHint')}
+          aria-label={`${t('optionsAddSite')}: ${category.name}`}
+          onClick={() => setDraft('')}>
           <Icon name="add" size={18} />
           {t('optionsAddSite')}
         </button>
@@ -70,7 +76,7 @@ export function SitesRow({ category, categories, sites, onChange }: SitesRowProp
             autoFocus
             value={draft}
             placeholder={t('optionsSitePlaceholder')}
-            aria-label={t('optionsSites')}
+            aria-label={`${t('optionsSites')}: ${category.name}`}
             aria-invalid={error !== null}
             onChange={(e) => {
               setDraft(e.target.value);
