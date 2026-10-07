@@ -230,7 +230,7 @@
     "message": "Categorie"
   },
   "optionsCategoriesHint": {
-    "message": "Le categorie sono le opzioni tra cui l'AI sceglie. La descrizione spiega cosa rientra in ciascuna; il colore è quello del gruppo creato."
+    "message": "Le categorie sono le opzioni tra cui sceglie l'AI. La descrizione spiega cosa ci rientra; il colore è quello del gruppo creato. Le tab dei siti di una categoria ci vanno sempre, anche nel raggruppamento per sito."
   },
   "optionsCategoryName": {
     "message": "Nome"
@@ -571,7 +571,7 @@
     "message": "L'AI sceglie tra le tue categorie o ne inventa di nuove. Se nessun provider risponde, si raggruppa per sito."
   },
   "optionsModeDomainNote": {
-    "message": "Raggruppamento per sito: categorie e provider AI non vengono usati. Scegli \"Per argomento, con l'AI\" per configurarli."
+    "message": "Raggruppamento per sito: i provider AI non vengono usati e le categorie servono solo per i loro siti. Scegli \"Per argomento, con l'AI\" per configurare l'AI."
   },
   "optionsPresetNano": {
     "message": "Gemini Nano (integrato in Chrome)"
@@ -761,5 +761,28 @@
   },
   "optionsReadDescriptionsProviderLost": {
     "message": "Descrizioni spente, ma un provider ha perso l'accesso al suo server: salvalo di nuovo nella sua sezione."
+  },
+  "optionsSites": {
+    "message": "Siti"
+  },
+  "optionsAddSite": {
+    "message": "Sito"
+  },
+  "optionsSitesHint": {
+    "message": "Le tab di questi siti vanno sempre in questa categoria, senza chiedere all'AI."
+  },
+  "optionsSitePlaceholder": {
+    "message": "es. github.com/mia-org"
+  },
+  "optionsSiteInvalid": {
+    "message": "Non sembra un sito valido."
+  },
+  "optionsSiteDuplicate": {
+    "message": "Questo sito è già in $CATEGORY$.",
+    "placeholders": {
+      "category": {
+        "content": "$1"
+      }
+    }
   }
 }

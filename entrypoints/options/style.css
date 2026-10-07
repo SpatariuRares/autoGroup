@@ -72,6 +72,10 @@ input[type='number'] { width: 112px; }
 .category-description:focus { color: var(--md-sys-color-on-surface); }
 .category-actions { display: flex; opacity: 0.4; transition: opacity var(--md-sys-motion-duration-short); }
 .category:hover .category-actions, .category:focus-within .category-actions { opacity: 1; }
+.category-sites { grid-column: 2 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.category-sites .domains { margin: 0; }
+.category-sites .inline-form { flex: 1 1 260px; }
+.category-sites .hint { flex-basis: 100%; margin: 0; }
 @media (max-width: 600px) { .category { grid-template-columns: auto minmax(0, 1fr) auto; } .category-description { grid-column: 2 / -1; } }
 .color-picker { position: relative; padding-top: 11px; }
 /* Tavolozza in un menu a comparsa: superficie di livello 2 (tonale), con ombra leggera per staccarla dall'elenco. */

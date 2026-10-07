@@ -16,6 +16,7 @@ import {
   saveSettings,
   SettingsError,
   validateCategories,
+  type CategorySites,
   type Settings,
 } from '../../src/settings';
 import { GROUP_COLORS, type Category, type GroupColor } from '../../src/shared/types';
@@ -24,6 +25,7 @@ import { Card } from './Card';
 import { ModeSection } from './ModeSection';
 import { NanoStatus } from './NanoStatus';
 import { ProviderSection } from './ProviderSection';
+import { SitesRow } from './SitesRow';
 import { ThresholdField } from './ThresholdField';
 
 /** Pagina Buy Me a Coffee dell'autore. */
@@ -50,7 +52,7 @@ function ExtraLinks() {
 /** Sezioni nell'ordine della pagina; quelle `ai` si vedono solo in modalità AI. */
 const SECTIONS: { id: string; title: string; ai?: boolean }[] = [
   { id: 'mode', title: 'optionsMode' },
-  { id: 'categories', title: 'optionsCategories', ai: true },
+  { id: 'categories', title: 'optionsCategories' },
   { id: 'classifier', title: 'optionsClassifier', ai: true },
   { id: 'generator', title: 'optionsGenerator', ai: true },
   { id: 'behavior', title: 'optionsBehavior' },
@@ -87,7 +89,7 @@ export function App() {
       setSaveError(err instanceof SettingsError ? err.messageKey : 'errorSaveSettings');
       return false;
     }
-    setSettings((current) => (current ? { ...current, ...patch } : current));
+    setSettings(await loadSettings());
     confirmSaved();
     return true;
   }
@@ -131,17 +133,20 @@ export function App() {
 
         <ModeSection mode={settings.mode} onChange={(mode) => update({ mode })} />
 
+        <CategoriesSection
+          categories={settings.categories}
+          sites={settings.categorySites}
+          onChange={(categories) => update({ categories })}
+          onSitesChange={(categorySites) => update({ categorySites })}
+          onReset={async () => {
+            const categories = await resetCategories();
+            setSettings((current) => (current ? { ...current, categories, categorySites: {} } : current));
+            confirmSaved();
+          }}
+        />
+
         {ai ? (
           <>
-            <CategoriesSection
-              categories={settings.categories}
-              onChange={(categories) => update({ categories })}
-              onReset={async () => {
-                const categories = await resetCategories();
-                setSettings((current) => (current ? { ...current, categories } : current));
-                confirmSaved();
-              }}
-            />
             <ProviderSection
               role="classifier"
               saved={settings.classifier}
@@ -186,10 +191,13 @@ interface CategoriesSectionProps {
   categories: Category[];
   /** Salva la lista; restituisce false se è stata rifiutata. */
   onChange: (categories: Category[]) => Promise<boolean>;
+  sites: CategorySites;
+  /** Salva i siti di tutte le categorie; restituisce false se sono stati rifiutati. */
+  onSitesChange: (sites: CategorySites) => Promise<boolean>;
   onReset: () => Promise<void>;
 }
 
-function CategoriesSection({ categories, onChange, onReset }: CategoriesSectionProps) {
+function CategoriesSection({ categories, sites, onChange, onSitesChange, onReset }: CategoriesSectionProps) {
   // Bozza locale: un nome duplicato resta visibile (con l'errore) finché l'utente non lo corregge.
   const [draft, setDraft] = useState(categories);
   const [invalid, setInvalid] = useState<string | null>(null);
@@ -280,6 +288,7 @@ function CategoriesSection({ categories, onChange, onReset }: CategoriesSectionP
                 <Icon name="close" size={18} />
               </button>
             </div>
+            <SitesRow category={category} categories={draft} sites={sites} onChange={onSitesChange} />
           </li>
         ))}
       </ol>

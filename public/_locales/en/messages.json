@@ -230,7 +230,7 @@
     "message": "Categories"
   },
   "optionsCategoriesHint": {
-    "message": "Categories are the options the AI chooses from. The description explains what belongs in each one; the color is the color of the created group."
+    "message": "Categories are the options the AI chooses from. The description explains what belongs in each one; the color is the color of the created group. Tabs from a category's sites always go there, also when grouping by site."
   },
   "optionsCategoryName": {
     "message": "Name"
@@ -571,7 +571,7 @@
     "message": "AI picks from your categories or invents new ones. If no provider answers, tabs are grouped by site."
   },
   "optionsModeDomainNote": {
-    "message": "Grouping by site: categories and AI providers are not used. Choose \"By topic, with AI\" to set them up."
+    "message": "Grouping by site: AI providers are not used and categories only count for their sites. Choose \"By topic, with AI\" to set up the AI."
   },
   "optionsPresetNano": {
     "message": "Gemini Nano (built into Chrome)"
@@ -761,5 +761,28 @@
   },
   "optionsReadDescriptionsProviderLost": {
     "message": "Descriptions are off, but a provider lost access to its server: save it again in its section."
+  },
+  "optionsSites": {
+    "message": "Sites"
+  },
+  "optionsAddSite": {
+    "message": "Site"
+  },
+  "optionsSitesHint": {
+    "message": "Tabs from these sites always go to this category, without asking the AI."
+  },
+  "optionsSitePlaceholder": {
+    "message": "e.g. github.com/my-org"
+  },
+  "optionsSiteInvalid": {
+    "message": "This does not look like a valid site."
+  },
+  "optionsSiteDuplicate": {
+    "message": "This site is already in $CATEGORY$.",
+    "placeholders": {
+      "category": {
+        "content": "$1"
+      }
+    }
   }
 }
