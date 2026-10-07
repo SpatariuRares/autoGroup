@@ -60,6 +60,8 @@ When you save a provider, Chrome asks for permission to contact **that server on
 
 **Categories**: the options the AI picks from. There are ten default categories (Work, Dev, News, Travel…) that you can edit, reorder or restore. Each one has a name, a description that tells the AI what belongs there, and a color. A group made up by the AI can be added to the list with **Save to list**.
 
+**Sites**: each category can also have sites, such as `github.com` or `github.com/my-org`. Tabs from those sites (subdomains included) always go to that category, before any AI, also when grouping *By site*: the AI only receives the other tabs. If two sites match, the more specific one wins. In the panel, after you move a tab into a category, autoGroup offers to **always put** that site there.
+
 **If the AI doesn't answer**: the next level takes over (Classifier → Generator → by site) and the panel shows a notice with the cause and a link to the settings. While the AI is working you already see the by-site proposal: **Use this** keeps it without waiting.
 
 ## Troubleshooting
