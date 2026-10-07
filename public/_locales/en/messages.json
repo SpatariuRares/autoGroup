@@ -151,6 +151,12 @@
   "optionsDomainDuplicate": {
     "message": "This domain is already in the list."
   },
+  "optionsSitesInvalid": {
+    "message": "Invalid sites: check that each site is written correctly and is in only one category."
+  },
+  "optionsSitesTooMany": {
+    "message": "Too many sites: Chrome can't save them. Remove a few."
+  },
   "optionsNoExcludedDomains": {
     "message": "No excluded domains."
   },
