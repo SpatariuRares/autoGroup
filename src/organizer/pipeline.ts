@@ -11,6 +11,7 @@ import { readDescriptions } from './description-reader';
 import { domainOf } from './domain-grouping';
 import { applyGroupRules, type RulesContext } from './group-rules';
 import type { ProposalInputs } from './proposal-builder';
+import { createSiteMatcher, type SiteMatch } from './site-rules';
 import type { Stopwatch } from './stopwatch';
 import { validateGroups, type ValidGroup } from './validator';
 
@@ -65,24 +66,52 @@ export function languageName(): string {
   return browser.i18n.getMessage('aiLanguageName' as never) || browser.i18n.getUILanguage();
 }
 
-/** Dati comuni a tutti i livelli: tab con ID brevi (e descrizioni, se lette), opzioni, contesto delle regole. */
-function groupingContext(inputs: ProposalInputs, descriptions: Map<number, string> = new Map()) {
+/** Le tab candidate prese da una regola sui siti: ID della tab in Chrome → regola. */
+function siteMatches(inputs: ProposalInputs): Map<number, SiteMatch> {
+  const match = createSiteMatcher(inputs.settings.categories, inputs.settings.categorySites);
+  const result = new Map<number, SiteMatch>();
+  for (const tab of inputs.candidates) {
+    const found = match(tab.url);
+    if (found) result.set(tab.tabId, found);
+  }
+  return result;
+}
+
+/**
+ * Dati comuni a tutti i livelli. Gli ID brevi valgono per tutte le candidate, così i gruppi delle
+ * regole sui siti (`siteGroups`, uno per categoria) e quelli dell'AI o del dominio si uniscono per nome.
+ * `tabs` contiene solo le tab che nessuna regola ha preso: sono le sole che vedono l'AI e il dominio.
+ */
+function groupingContext(inputs: ProposalInputs, matches = siteMatches(inputs), descriptions: Map<number, string> = new Map()) {
   const { tabs, byShortId } = prepareTabs(inputs.candidates, descriptions);
   const options = buildOptions(inputs.settings.categories, inputs.openGroups, (name) =>
     browser.i18n.getMessage('userGroupDescription' as never, name),
   );
+  const siteOf = new Map<string, string>();
+  const bySite = new Map<string, ValidGroup>();
+  for (const [id, tab] of byShortId) {
+    const match = matches.get(tab.tabId);
+    if (!match) continue;
+    siteOf.set(id, match.site);
+    const key = categoryKey(match.category.name);
+    const group = bySite.get(key) ?? { name: match.category.name, tabIds: [] };
+    group.tabIds.push(id);
+    bySite.set(key, group);
+  }
   const rules: RulesContext = {
     options,
     byShortId,
     minTabs: inputs.settings.minTabs,
     usedColors: inputs.openGroups.map((g) => g.color),
+    siteOf,
   };
   return {
-    tabs,
+    tabs: tabs.filter((t) => !siteOf.has(t.id)),
     options,
     aiOptions: options.map(({ name, description }): AiOption => ({ name, description })),
     knownNames: new Set(options.map((o) => categoryKey(o.name))),
     rules,
+    siteGroups: [...bySite.values()],
   };
 }
 
@@ -138,7 +167,7 @@ export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal, 
   const descriptions = inputs.readDescriptions && (classifier || generator) ? await readDescriptions(inputs.candidates) : new Map<number, string>();
   signal?.throwIfAborted();
   clock?.lap('descriptions');
-  const ctx = groupingContext(inputs, descriptions);
+  const ctx = groupingContext(inputs, siteMatches(inputs), descriptions);
 
   // Senza opzioni (nessuna categoria né gruppo aperto) il Classificatore potrebbe solo rispondere "nessuna".
   if (classifier && ctx.options.length > 0) {
@@ -228,7 +257,7 @@ function mergeByName(groups: ValidGroup[]): ValidGroup[] {
 }
 
 /**
- * Raggruppamento per dominio: modalità per sito, ultimo livello della pipeline e anteprima mostrata
+ * Regole sui siti, poi raggruppamento per dominio delle altre tab: modalità per sito, ultimo livello della pipeline e anteprima mostrata
  * mentre l'AI calcola. Minimo di tab, gruppi aperti con lo stesso nome (es. "github.com") e colori
  * seguono `applyGroupRules`, come per l'AI.
  */
@@ -242,5 +271,5 @@ export function domainGroups(inputs: ProposalInputs): ProposedGroup[] {
     group.tabIds.push(id);
     byDomain.set(domain, group);
   }
-  return applyGroupRules([...byDomain.values()], ctx.rules, 'domain').groups;
+  return applyGroupRules(mergeByName([...ctx.siteGroups, ...byDomain.values()]), ctx.rules, 'domain').groups;
 }

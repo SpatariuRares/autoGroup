@@ -1,4 +1,7 @@
-import type { Proposal, ProposalEdit } from '../shared/types';
+import type { Proposal, ProposalEdit, ProposedTab } from '../shared/types';
+
+/** Una tab spostata dall'utente non è più lì per una regola. */
+const moved = ({ rule: _rule, ...tab }: ProposedTab): ProposedTab => tab;
 
 /**
  * Applica una modifica dell'utente alla proposta e restituisce la nuova proposta.
@@ -25,13 +28,13 @@ export function editProposal(proposal: Proposal, edit: ProposalEdit): Proposal {
       if ('groupId' in edit.to) {
         const { groupId } = edit.to;
         if (!groups.some((g) => g.id === groupId)) return proposal;
-        groups = without.map((g) => (g.id === groupId ? { ...g, tabs: [...g.tabs, edit.tab] } : g));
+        groups = without.map((g) => (g.id === groupId ? { ...g, tabs: [...g.tabs, moved(edit.tab)] } : g));
       } else {
         const ref = edit.to.existingGroup;
         const target = without.find((g) => g.existingGroupId === ref.id);
         groups = target
-          ? without.map((g) => (g === target ? { ...g, tabs: [...g.tabs, edit.tab] } : g))
-          : [...without, { id: `e${ref.id}`, name: ref.name, color: ref.color, provenance: 'existing', existingGroupId: ref.id, tabs: [edit.tab] }];
+          ? without.map((g) => (g === target ? { ...g, tabs: [...g.tabs, moved(edit.tab)] } : g))
+          : [...without, { id: `e${ref.id}`, name: ref.name, color: ref.color, provenance: 'existing', existingGroupId: ref.id, tabs: [moved(edit.tab)] }];
       }
       break;
     }
@@ -41,7 +44,7 @@ export function editProposal(proposal: Proposal, edit: ProposalEdit): Proposal {
       if (!tab || !target || target.tabs.some((t) => t.tabId === edit.tabId)) return proposal;
       groups = groups.map((g) =>
         g.id === edit.toGroupId
-          ? { ...g, tabs: [...g.tabs, tab] }
+          ? { ...g, tabs: [...g.tabs, moved(tab)] }
           : { ...g, tabs: g.tabs.filter((t) => t.tabId !== edit.tabId) },
       );
       break;

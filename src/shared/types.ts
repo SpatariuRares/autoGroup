@@ -32,6 +32,8 @@ export interface ProposedTab {
   title: string;
   url: string;
   favIconUrl?: string;
+  /** Il sito della regola che ha messo la tab nel suo gruppo; sparisce se l'utente la sposta. */
+  rule?: string;
 }
 
 export interface ProposedGroup {

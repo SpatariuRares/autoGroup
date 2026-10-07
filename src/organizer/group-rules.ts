@@ -11,6 +11,8 @@ export interface RulesContext {
   minTabs: number;
   /** Colori dei gruppi già aperti nella finestra. */
   usedColors: string[];
+  /** ID brevi delle tab prese da una regola sui siti → sito della regola. */
+  siteOf?: Map<string, string>;
 }
 
 export interface RulesResult {
@@ -46,7 +48,11 @@ export function applyGroupRules(valid: ValidGroup[], ctx: RulesContext, newProve
   for (const { option } of kept) if (option?.kind === 'list') colors.reserve(option.color);
 
   const groups = kept.map(({ group, option }, i): ProposedGroup => {
-    const tabs = group.tabIds.map((id) => toProposedTab(ctx.byShortId.get(id)!));
+    const tabs = group.tabIds.map((id) => {
+      const tab = toProposedTab(ctx.byShortId.get(id)!);
+      const rule = ctx.siteOf?.get(id);
+      return rule ? { ...tab, rule } : tab;
+    });
     const id = `g${i + 1}`;
     if (option?.kind === 'existing') {
       return { id, name: option.name, color: option.color, provenance: 'existing', existingGroupId: option.existingGroupId, tabs };
