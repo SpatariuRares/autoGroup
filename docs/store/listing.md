@@ -12,7 +12,7 @@ Texts to paste into the developer dashboard ("Store listing" tab), per language.
 
 ## Italian
 
-**Nome**: autoGroup
+**Nome** (from the manifest): autoGroup – AI Tab Groups
 
 **Riepilogo** (from the manifest, 65 characters out of 132): Raggruppa le tab con l'AI che scegli tu, con anteprima e annulla.
 
@@ -49,7 +49,7 @@ Una guida al primo avvio ti aiuta a scegliere modalità e provider. Interfaccia 
 
 ## English
 
-**Name**: autoGroup
+**Name** (from the manifest): autoGroup – AI Tab Groups
 
 **Summary** (from the manifest, 66 characters out of 132): Group your tabs with the AI of your choice, with preview and undo.
 

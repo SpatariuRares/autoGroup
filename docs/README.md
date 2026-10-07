@@ -25,3 +25,12 @@ For the requirements see [PRD.md](../PRD.md); for usage see the [README](../READ
 | `node scripts/permissions-check.mjs` | After `npm run build`: checks that the optional permissions are requested inside the user gesture. |
 
 To load the extension by hand: `npm run build`, then `chrome://extensions` → "Developer mode" → "Load unpacked" → folder `.output/chrome-mv3`.
+
+### Releasing
+
+Pushing a `vX.Y.Z` tag runs [`.github/workflows/release.yml`](../.github/workflows/release.yml): it checks that the tag matches the `package.json` version, runs typecheck and tests, builds the zip and publishes a GitHub release with the zip attached and auto-generated notes. Tags with a suffix (`v1.0.0-beta.1`) become pre-releases.
+
+```sh
+npm version patch        # or minor / major: bumps package.json and creates the tag
+git push --follow-tags
+```
