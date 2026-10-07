@@ -5,6 +5,7 @@ stats.html
 *.log
 .DS_Store
 .claude/scheduled_tasks.lock
+.claude/settings.local.json
 scripts/smoke-*.png
 
 # Internal development notes: kept locally, not published
