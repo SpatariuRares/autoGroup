@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { createOrganizer, type Organizer } from '../src/organizer';
-import { saveSettings } from '../src/settings';
+import { saveApiKey, saveSettings } from '../src/settings';
 import type { Category, OrganizerState } from '../src/shared/types';
 import { installFakeI18n } from './fake-i18n';
-import { installFakePermissions } from './fake-network';
+import { HANG, httpError, installFakeFetch, installFakePermissions, openAiReply, systemOneReply, type RecordedRequest } from './fake-network';
+import { installFakeScripting } from './fake-scripting';
 import { installFakeTabStrip, type FakeTabStrip } from './fake-tab-strip';
 
 let strip: FakeTabStrip;
@@ -110,5 +111,142 @@ describe('regole sui siti, modalità per sito', () => {
     const second = await organizer.propose(W);
 
     expect(second.proposal!.signature).not.toBe(first.proposal!.signature);
+  });
+});
+
+const OPENROUTER = { preset: 'openrouter', baseUrl: 'https://openrouter.ai/api/v1', model: 'm' };
+const KEV = { preset: 'kev', baseUrl: 'http://127.0.0.1:8009', model: '' };
+
+async function aiMode(extra: Parameters<typeof saveSettings>[0] = {}) {
+  await saveSettings({ mode: 'ai', generator: OPENROUTER, ...extra });
+  await saveApiKey('generator', 'sk-test');
+}
+
+/** Titoli delle tab inviate al Generatore in una richiesta. */
+const sentTitles = (request: RecordedRequest) => JSON.parse(request.body.messages[1].content).tabs.map((t: { title: string }) => t.title);
+
+describe('regole sui siti, modalità AI', () => {
+  it('all\'AI arrivano solo le tab che nessuna regola ha preso; i gruppi con lo stesso nome si uniscono', async () => {
+    await aiMode();
+    strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
+    strip.addTab({ url: 'https://stackoverflow.com/q/1', title: 'Domanda' });
+    strip.addTab({ url: 'https://cucina.it/pasta', title: 'Pasta' });
+    strip.addTab({ url: 'https://cucina.it/pizza', title: 'Pizza' });
+    const { requests } = installFakeFetch(openAiReply({ groups: [{ name: 'Dev', tabs: ['t2'] }, { name: 'Cucina', tabs: ['t3', 't4'] }] }));
+
+    const state = await organizer.propose(W);
+
+    expect(sentTitles(requests[0]!)).toEqual(['Domanda', 'Pasta', 'Pizza']);
+    expect(summary(state)).toEqual([
+      { name: 'Dev', provenance: 'list', color: 'grey', tabs: ['Repo', 'Domanda'] },
+      { name: 'Cucina', provenance: 'ai', color: 'blue', tabs: ['Pasta', 'Pizza'] },
+    ]);
+  });
+
+  it('ignora l\'ID di una tab delle regole se l\'AI lo usa comunque', async () => {
+    await aiMode();
+    strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
+    strip.addTab({ url: 'https://cucina.it/pasta', title: 'Pasta' });
+    strip.addTab({ url: 'https://cucina.it/pizza', title: 'Pizza' });
+    installFakeFetch(openAiReply({ groups: [{ name: 'Cucina', tabs: ['t1', 't2', 't3'] }] }));
+
+    const state = await organizer.propose(W);
+
+    expect(summary(state)).toEqual([{ name: 'Cucina', provenance: 'ai', color: 'grey', tabs: ['Pasta', 'Pizza'] }]);
+  });
+
+  it('se tutte le tab sono prese dalle regole non interroga l\'AI e non mostra l\'anteprima', async () => {
+    await aiMode();
+    strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
+    strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
+    const { fetchMock } = installFakeFetch(new Error('nessuna richiesta attesa'));
+    const announced: OrganizerState[] = [];
+    organizer = createOrganizer({ onStateChange: (s) => announced.push(s) });
+
+    const state = await organizer.propose(W);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(announced.some((s) => s.preview)).toBe(false);
+    expect(state.proposal!.warnings).toEqual([]);
+    expect(summary(state)).toEqual([{ name: 'Dev', provenance: 'list', color: 'grey', tabs: ['Repo 1', 'Repo 2'] }]);
+  });
+
+  it('l\'anteprima per sito contiene già i gruppi delle regole, e "Usa questa" li tiene', async () => {
+    await aiMode();
+    strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
+    strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
+    strip.addTab({ url: 'https://cucina.it/pasta', title: 'Pasta' });
+    strip.addTab({ url: 'https://cucina.it/pizza', title: 'Pizza' });
+    const { requests } = installFakeFetch(HANG);
+    const announced: OrganizerState[] = [];
+    organizer = createOrganizer({ onStateChange: (s) => announced.push(s) });
+
+    const running = organizer.propose(W);
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    const names = announced.at(-1)!.preview!.groups.map((g) => g.name);
+    await organizer.acceptPreview();
+    const state = await running;
+
+    expect(names).toEqual(['Dev', 'cucina.it']);
+    expect(state.proposal!.groups.map((g) => g.name)).toEqual(['Dev', 'cucina.it']);
+  });
+
+  it('se l\'AI non risponde il ripiego è regole + dominio', async () => {
+    await aiMode();
+    strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
+    strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
+    strip.addTab({ url: 'https://cucina.it/pasta', title: 'Pasta' });
+    strip.addTab({ url: 'https://cucina.it/pizza', title: 'Pizza' });
+    installFakeFetch(httpError(401));
+
+    const state = await organizer.propose(W);
+
+    expect(state.proposal!.warnings).toMatchObject([{ level: 'generator', cause: 'invalid-key' }]);
+    expect(state.proposal!.groups.map((g) => [g.name, g.provenance])).toEqual([
+      ['Dev', 'list'],
+      ['cucina.it', 'domain'],
+    ]);
+  });
+
+  it('Classificatore: le tab delle regole contano per il minimo e non vanno mai al Generatore', async () => {
+    await aiMode({ classifier: KEV });
+    strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
+    strip.addTab({ url: 'https://stackoverflow.com/q/1', title: 'Domanda' });
+    strip.addTab({ url: 'https://github.com/mia-org/x', title: 'Org' });
+    strip.addTab({ url: 'https://cucina.it/pasta', title: 'Pasta' });
+    strip.addTab({ url: 'https://cucina.it/pizza', title: 'Pizza' });
+    const { requests } = installFakeFetch((request: RecordedRequest) => {
+      if (request.url.endsWith('/v1/systemone')) {
+        const choice = request.body.state.title === 'Domanda' ? 'Dev' : 'none_of_the_above';
+        return systemOneReply({ group: { choice, confidence: 0.9 } });
+      }
+      const tabs = JSON.parse(request.body.messages[1].content).tabs as { id: string }[];
+      return openAiReply({ groups: [{ name: 'Cucina', tabs: tabs.map((t) => t.id) }] });
+    });
+
+    const state = await organizer.propose(W);
+
+    const classified = requests.filter((r) => r.url.endsWith('/v1/systemone')).map((r) => r.body.state.title);
+    expect(classified.sort()).toEqual(['Domanda', 'Pasta', 'Pizza']);
+    const generated = requests.filter((r) => !r.url.endsWith('/v1/systemone')).flatMap(sentTitles);
+    expect(generated).toEqual(['Pasta', 'Pizza']);
+    // "Org" (Work) resta sotto il minimo: libera, non passata al Generatore.
+    expect(summary(state)).toEqual([
+      { name: 'Dev', provenance: 'list', color: 'grey', tabs: ['Repo', 'Domanda'] },
+      { name: 'Cucina', provenance: 'ai', color: 'blue', tabs: ['Pasta', 'Pizza'] },
+    ]);
+  });
+
+  it('non legge la descrizione delle pagine prese dalle regole', async () => {
+    installFakePermissions(['https://openrouter.ai/*', '<all_urls>']);
+    await aiMode({ readDescriptions: true });
+    const repo = strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
+    const pasta = strip.addTab({ url: 'https://cucina.it/pasta', title: 'Pasta' });
+    const { read } = installFakeScripting(new Map([[repo, { description: 'R' }], [pasta, { description: 'P' }]]));
+    installFakeFetch(openAiReply({ groups: [] }));
+
+    await organizer.propose(W);
+
+    expect(read).toEqual([pasta]);
   });
 });

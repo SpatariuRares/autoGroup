@@ -53,11 +53,14 @@ export function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarni
 }
 
 /**
- * Vero se il calcolo interrogherà almeno un livello AI: modalità AI, qualche tab candidata e un
- * Classificatore o un Generatore utilizzabile. Solo allora vale la pena mostrare l'anteprima per sito.
+ * Vero se il calcolo interrogherà almeno un livello AI: modalità AI, qualche tab candidata che
+ * nessuna regola sui siti ha preso e un Classificatore o un Generatore utilizzabile. Solo allora vale
+ * la pena mostrare l'anteprima per sito.
  */
 export function willAskAi(inputs: ProposalInputs): boolean {
-  if (inputs.settings.mode !== 'ai' || inputs.candidates.length === 0) return false;
+  if (inputs.settings.mode !== 'ai') return false;
+  const matches = siteMatches(inputs);
+  if (!inputs.candidates.some((t) => !matches.has(t.tabId))) return false;
   return inputs.classifier.usable || inputs.generator.usable || inputs.nano === 'available';
 }
 
@@ -148,6 +151,8 @@ function recordFailure(
  * | no             | no         | raggruppamento per dominio                                       |
  *
  * Se un provider va in errore si scende di un livello e si aggiunge un avviso.
+ *
+ * Prima di tutto le regole sui siti: le tab che prendono non arrivano all'AI e i loro gruppi si uniscono per nome a quelli dell'AI (o del dominio, nel ripiego).
  */
 export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal, clock?: Stopwatch): Promise<PipelineResult> {
   const byDomain = (warnings: ProposalWarning[]): PipelineResult => {
@@ -161,13 +166,18 @@ export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal, 
   const classifier = resolveClassifier(inputs, warnings);
   const generator = resolveGenerator(inputs, warnings);
   if (inputs.candidates.length === 0) return { groups: [], warnings };
+  const matches = siteMatches(inputs);
+  const rest = inputs.candidates.filter((t) => !matches.has(t.tabId));
+  // Tutte le tab sono già decise dalle regole sui siti: nessuna richiesta all'AI.
+  if (rest.length === 0) return byDomain(warnings);
   // Gemini Nano prepara la sessione mentre si leggono le pagine e lavora il Classificatore.
   generator?.prepare?.(classifier ? 'new-only' : 'full', languageName());
-  // Le descrizioni servono solo all'AI: senza Classificatore né Generatore non si legge nessuna pagina.
-  const descriptions = inputs.readDescriptions && (classifier || generator) ? await readDescriptions(inputs.candidates) : new Map<number, string>();
+  // Le descrizioni servono solo all'AI: senza Classificatore né Generatore non si legge nessuna pagina,
+  // e le pagine prese dalle regole non si leggono mai.
+  const descriptions = inputs.readDescriptions && (classifier || generator) ? await readDescriptions(rest) : new Map<number, string>();
   signal?.throwIfAborted();
   clock?.lap('descriptions');
-  const ctx = groupingContext(inputs, siteMatches(inputs), descriptions);
+  const ctx = groupingContext(inputs, matches, descriptions);
 
   // Senza opzioni (nessuna categoria né gruppo aperto) il Classificatore potrebbe solo rispondere "nessuna".
   if (classifier && ctx.options.length > 0) {
@@ -181,8 +191,9 @@ export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal, 
   if (generator) {
     try {
       const raw = await generator.generate({ mode: 'full', tabs: ctx.tabs, options: ctx.aiOptions, language: languageName() }, signal);
-      const valid = validateGroups(raw, new Set(ctx.rules.byShortId.keys()), ctx.knownNames);
-      const groups = applyGroupRules(valid, ctx.rules).groups;
+      // Solo gli ID delle tab inviate: un ID delle regole nella risposta viene ignorato.
+      const valid = validateGroups(raw, new Set(ctx.tabs.map((t) => t.id)), ctx.knownNames);
+      const groups = applyGroupRules(mergeByName([...ctx.siteGroups, ...valid]), ctx.rules).groups;
       clock?.lap('generator');
       return { groups, warnings };
     } catch (err) {
@@ -224,9 +235,12 @@ async function classifyThenGenerate(
     byOption.set(key, group);
   }
 
-  const step1 = applyGroupRules([...byOption.values()], ctx.rules);
-  const kept = [...byOption.values()].filter((g) => !g.tabIds.some((id) => step1.leftover.includes(id)));
-  const leftover = [...uncertain, ...step1.leftover];
+  // Le tab delle regole contano per il minimo della loro categoria insieme a quelle del Classificatore.
+  const step1Groups = mergeByName([...ctx.siteGroups, ...byOption.values()]);
+  const step1 = applyGroupRules(step1Groups, ctx.rules);
+  const kept = step1Groups.filter((g) => !g.tabIds.some((id) => step1.leftover.includes(id)));
+  // Le tab delle regole rimaste sotto il minimo restano libere: il Generatore non deve metterle altrove.
+  const leftover = [...uncertain, ...step1.leftover.filter((id) => !ctx.rules.siteOf?.has(id))];
 
   let step2: ValidGroup[] = [];
   // Con meno rimaste del minimo il passo 2 non potrebbe creare nessun gruppo nuovo valido.
