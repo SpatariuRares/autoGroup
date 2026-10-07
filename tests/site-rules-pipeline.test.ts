@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { createOrganizer, type Organizer } from '../src/organizer';
-import { saveApiKey, saveSettings } from '../src/settings';
+import { loadSettings, saveApiKey, saveSettings } from '../src/settings';
 import type { Category, OrganizerState } from '../src/shared/types';
 import { installFakeI18n } from './fake-i18n';
 import { HANG, httpError, installFakeFetch, installFakePermissions, openAiReply, systemOneReply, type RecordedRequest } from './fake-network';
@@ -248,5 +248,50 @@ describe('regole sui siti, modalità AI', () => {
     await organizer.propose(W);
 
     expect(read).toEqual([pasta]);
+  });
+});
+
+describe('Metti sempre qui', () => {
+  it('ricorda il dominio della tab nella categoria del suo gruppo, e la proposta resta attuale', async () => {
+    strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
+    strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
+    const gitlab = strip.addTab({ url: 'https://www.gitlab.com/x', title: 'GitLab' });
+    const { proposal } = await organizer.propose(W);
+    const dev = proposal!.groups.find((g) => g.name === 'Dev')!;
+    await organizer.edit({ kind: 'add-tab', tab: { tabId: gitlab, title: 'GitLab', url: 'https://www.gitlab.com/x' }, to: { groupId: dev.id } });
+
+    const state = await organizer.rememberSite(gitlab);
+
+    expect((await loadSettings()).categorySites).toEqual({ ...SITES, dev: ['github.com', 'gitlab.com'] });
+    expect(state.notice).toEqual({ key: 'panelSiteRemembered', arg: ['gitlab.com', 'Dev'] });
+    expect(state.proposal!.groups.find((g) => g.id === dev.id)!.tabs.find((t) => t.tabId === gitlab)!.rule).toBe('gitlab.com');
+    // Riaprendo il pannello la proposta modificata resta.
+    expect((await organizer.propose(W)).proposal).toEqual(state.proposal);
+  });
+
+  it('sposta dalla sua categoria il sito che oggi decide la tab', async () => {
+    const orgA = strip.addTab({ url: 'https://github.com/mia-org/a', title: 'Org A' });
+    strip.addTab({ url: 'https://github.com/mia-org/b', title: 'Org B' });
+    strip.addTab({ url: 'https://github.com/x', title: 'Repo 1' });
+    strip.addTab({ url: 'https://github.com/y', title: 'Repo 2' });
+    const { proposal } = await organizer.propose(W);
+    const dev = proposal!.groups.find((g) => g.name === 'Dev')!;
+    await organizer.edit({ kind: 'move-tab', tabId: orgA, toGroupId: dev.id });
+
+    const state = await organizer.rememberSite(orgA);
+
+    expect((await loadSettings()).categorySites).toEqual({ dev: ['github.com', 'github.com/mia-org'], google: SITES.google });
+    expect(state.notice).toEqual({ key: 'panelSiteMoved', arg: ['github.com/mia-org', 'Work', 'Dev'] });
+  });
+
+  it('non fa nulla per i gruppi che non sono una categoria', async () => {
+    const hn = strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
+    strip.addTab({ url: 'https://news.ycombinator.com/2', title: 'HN 2' });
+    const before = await organizer.propose(W);
+
+    const state = await organizer.rememberSite(hn);
+
+    expect(state).toEqual(before);
+    expect((await loadSettings()).categorySites).toEqual(SITES);
   });
 });

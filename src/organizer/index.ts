@@ -6,6 +6,7 @@ import { willAskAi } from './pipeline';
 import { buildPreview, buildProposal, collectInputs, signatureOf } from './proposal-builder';
 import { TAB_GROUP_ID_NONE } from './tab-selection';
 import { editProposal } from './proposal-edits';
+import { rememberTabSite } from './remember-site';
 import { saveGroupToList } from './save-to-list';
 import { loadState, saveState } from './session-state';
 import { createStopwatch } from './stopwatch';
@@ -54,6 +55,11 @@ export interface Organizer {
   edit(edit: ProposalEdit): Promise<OrganizerState>;
   /** "Salva nella lista": aggiunge un gruppo inventato dall'AI alla lista delle categorie. */
   saveToList(groupId: string): Promise<OrganizerState>;
+  /**
+   * "Metti sempre qui": la tab andrà sempre nella categoria del suo gruppo nella proposta (vedi
+   * `rememberTabSite`). Non fa nulla per i gruppi che non sono una categoria.
+   */
+  rememberSite(tabId: number): Promise<OrganizerState>;
   /** Crea in Chrome i gruppi della proposta corrente, dopo aver salvato la foto per "Annulla". */
   apply(): Promise<OrganizerState>;
   /** Annulla l'ultima organizzazione applicata. */
@@ -169,6 +175,16 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         const current = await loadState();
         if (current.phase !== 'ready' || !current.proposal) return current;
         const result = await saveGroupToList(current.proposal, groupId);
+        if (!result) return current;
+        return setState({ ...current, proposal: result.proposal, notice: result.notice });
+      });
+    },
+
+    rememberSite(tabId) {
+      return exclusive(async () => {
+        const current = await loadState();
+        if (current.phase !== 'ready' || !current.proposal) return current;
+        const result = await rememberTabSite(current.proposal, tabId);
         if (!result) return current;
         return setState({ ...current, proposal: result.proposal, notice: result.notice });
       });

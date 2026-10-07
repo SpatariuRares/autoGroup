@@ -485,6 +485,31 @@
   "popupSaveToListHint": {
     "message": "Aggiunge questo gruppo alle categorie, con una descrizione generata dall'AI"
   },
+  "panelSiteRemembered": {
+    "message": "Le tab di $SITE$ andranno sempre in $CATEGORY$.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "category": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelSiteMoved": {
+    "message": "$SITE$ spostato da $FROM$ a $TO$.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "from": {
+        "content": "$2"
+      },
+      "to": {
+        "content": "$3"
+      }
+    }
+  },
   "saveToListSaved": {
     "message": "«$NAME$» è stato aggiunto alle categorie.",
     "placeholders": {

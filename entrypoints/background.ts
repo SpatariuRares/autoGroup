@@ -31,6 +31,8 @@ export default defineBackground(() => {
         return organizer.edit(request.edit);
       case 'organizer/save-to-list':
         return organizer.saveToList(request.groupId);
+      case 'organizer/remember-site':
+        return organizer.rememberSite(request.tabId);
       case 'organizer/apply':
         return organizer.apply();
       case 'organizer/abort':

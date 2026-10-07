@@ -6,6 +6,7 @@ export type OrganizerRequest =
   | { type: 'organizer/propose'; windowId: number; force?: boolean }
   | { type: 'organizer/edit'; edit: ProposalEdit }
   | { type: 'organizer/save-to-list'; groupId: string }
+  | { type: 'organizer/remember-site'; tabId: number }
   | { type: 'organizer/apply' }
   | { type: 'organizer/abort' }
   | { type: 'organizer/accept-preview' }
@@ -26,6 +27,7 @@ const REQUEST_TYPES = new Set<string>([
   'organizer/propose',
   'organizer/edit',
   'organizer/save-to-list',
+  'organizer/remember-site',
   'organizer/apply',
   'organizer/abort',
   'organizer/accept-preview',
