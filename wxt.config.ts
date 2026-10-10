@@ -18,7 +18,7 @@ export default defineConfig({
     action: {
       default_title: '__MSG_actionTitle__',
     },
-    // Apre il popup. È solo suggerita: l'utente può cambiarla da chrome://extensions/shortcuts,
+    // Apre il pannello laterale. È solo suggerita: l'utente può cambiarla da chrome://extensions/shortcuts,
     // e Chrome non la assegna se un'altra estensione la usa già. Senza descrizione: per
     // _execute_action Chrome la ignora e mostra il titolo dell'azione.
     commands: {

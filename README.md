@@ -127,4 +127,4 @@ Then open `chrome://extensions`, turn on **Developer mode**, choose **Load unpac
 | `npm run store-assets` | Screenshots and images for the Chrome Web Store |
 | `npm run zip` | Zip to upload to the store |
 
-Built with [WXT](https://wxt.dev), TypeScript and React, with a Material Design 3 interface. Technical documentation (architecture, tests, performance, publishing) is in [`docs/`](docs/README.md), in Italian.
+Built with [WXT](https://wxt.dev), TypeScript and React, with a Material Design 3 interface. Technical documentation (architecture, tests, performance, publishing) is in [`docs/`](docs/README.md).

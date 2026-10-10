@@ -32,6 +32,7 @@ src/
     stopwatch.ts         stopwatch for the phases of a computation (proposal.timings)
     session-cache.ts     key → value cache in chrome.storage.session, with a maximum number of entries
     classification-cache.ts  per-tab cache of the Classifier's results
+    window-view.ts       the panel's view of the whole window: proposal overlaid on tabs and open groups
   settings/              preferences in chrome.storage.sync
     index.ts             loading and saving, validation, excluded domains, category sites
     categories.ts        default categories (from chrome.i18n), list validation
@@ -57,10 +58,15 @@ public/
   _locales/{it,en}/      interface texts
   icon/                  icons 16/32/48/128
 tests/
-  organizer.test.ts      tests on the Organizer's interface
+  *.test.ts              tests on the Organizer's interface, one file per area (see docs/test.md)
   fake-tab-strip.ts      tabs/tabGroups simulator plugged into WXT's fake browser
+  fake-network.ts, fake-nano.ts, fake-scripting.ts, fake-i18n.ts  fakes of providers, Prompt API, scripting and i18n
 scripts/
   smoke.mjs              test in Chrome for Testing
+  permissions-check.mjs  checks that the optional permission requests open Chrome's prompt
+  measure-classifier.mjs measures the Classifier's request strategies on a real server
+  store-assets.mjs       store screenshots
+  generate-theme.mjs     generates src/ui/md3-tokens.css
 ```
 
 ## The Organizer
@@ -110,7 +116,7 @@ A `propose` that arrives while another one is in progress or queued shares its r
 
 ### Stop
 
-Each `propose` creates an `AbortController` at request time, before entering the queue, and passes its signal to `buildProposal` → `runPipeline` → adapters → `fetch` (or Prompt API). `abort()` aborts it: the requests in progress fail immediately, even while waiting before a retry, and the computation ends in `phase: 'idle'`, with no proposal, with the `popupAborted` notice. The undo snapshot stays. In the popup the "Stop" button appears next to "Computing the proposal…". `abort()` stops all computations in progress and queued: a computation stopped while still in the queue ends the same way without making any request.
+Each `propose` creates an `AbortController` at request time, before entering the queue, and passes its signal to `buildProposal` → `runPipeline` → adapters → `fetch` (or Prompt API). `abort()` aborts it: the requests in progress fail immediately, even while waiting before a retry, and the computation ends in `phase: 'idle'`, with no proposal, with the `popupAborted` notice. The undo snapshot stays. In the panel the "Stop" button appears next to "Computing the proposal…". `abort()` stops all computations in progress and queued: a computation stopped while still in the queue ends the same way without making any request.
 
 ### By-site preview and "Use this"
 
@@ -327,13 +333,15 @@ Module `src/settings`, used by the Organizer (reading) and by the options page (
 
 | Key | Type | Default | Notes |
 |---|---|---|---|
+| `mode` | `'ai' \| 'domain'` | `'ai'` | *With AI* or *By site*; any other value is read as `'ai'`. |
 | `minTabs` | integer ≥ 1 | 2 | `saveSettings` rejects invalid values; `loadSettings` ignores corrupted values and uses the default. |
 | `excludedDomains` | `string[]` | `[]` | Normalized domains: lowercase, without scheme, path, port or `www.`. |
 | `classifier` | `{ preset, baseUrl, model }` | preset `none` | URL normalized without trailing `/`. |
 | `threshold` | number between 0 and 1 | 0.7 | Confidence threshold of the Classifier. |
 | `readDescriptions` | boolean | `false` | "Read page descriptions"; applies only with the `<all_urls>` permission. |
-| `generator` | `{ preset, baseUrl, model }` | preset `none` | URL normalized without trailing `/`. |
+| `generator` | `{ preset, baseUrl, model }` | preset `nano` | URL normalized without trailing `/`. |
 | `categories` | `Category[]` | the 10 defaults | Absent until the user edits the list: in that case `loadSettings` returns the defaults in the browser's language. A saved but invalid list is ignored. |
+| `categorySites` | `Record<categoryId, string[]>` | `{}` | Site rules (`domain[/path]`) of each category, in a separate key so they don't take space from the categories. |
 
 `saveSettings` rejects invalid values with a `SettingsError`, which carries the i18n key of the message to show.
 
@@ -357,7 +365,8 @@ Generator presets:
 
 | Preset | Base URL | Default model |
 |---|---|---|
-| Gemini Nano (built into Chrome) | — | — (value `none`: no Generator configured, so Nano if available) |
+| None | — | — (no Generator; Nano is not queried) |
+| Gemini Nano (built into Chrome) | — | — (value `nano`, the default) |
 | OpenRouter | `https://openrouter.ai/api/v1` | `openai/gpt-4o-mini` |
 | Ollama | `http://localhost:11434/v1` | `llama3.2` |
 | LM Studio | `http://localhost:1234/v1` | (to choose) |
