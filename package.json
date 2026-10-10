@@ -2,7 +2,7 @@
   "name": "autogroup",
   "description": "__MSG_extDescription__",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
