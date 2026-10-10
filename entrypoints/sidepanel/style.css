@@ -37,6 +37,7 @@ body { background: var(--md-sys-color-surface-container-low); }
   flex: 1; min-width: 0; min-height: 36px; padding: 4px 8px; font: var(--md-sys-typescale-title-medium);
   border-color: transparent; border-radius: var(--md-sys-shape-corner-small); background: transparent;
 }
+.group-name:not(:read-only):hover { border-color: var(--md-sys-color-outline-variant); cursor: text; }
 .group-name:read-only { cursor: default; }
 .group-name:read-only:hover { border-color: transparent; }
 .group-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 2px 8px 4px 26px; }
@@ -53,7 +54,9 @@ body { background: var(--md-sys-color-surface-container-low); }
 .tab img, .tab .no-icon { width: 16px; height: 16px; flex: none; border-radius: 2px; }
 .tab .no-icon { background: var(--md-sys-color-surface-container-highest); }
 .tab-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tab .move, .tab > .icon { opacity: 0; transition: opacity var(--md-sys-motion-duration-short); }
+/* "Sposta in…" si vede sempre, attenuato, così si capisce che le tab si possono spostare; ✕ e − solo al passaggio. */
+.tab .move { opacity: 0.55; transition: opacity var(--md-sys-motion-duration-short); }
+.tab > .icon { opacity: 0; transition: opacity var(--md-sys-motion-duration-short); }
 .tab:hover .move, .tab:hover > .icon, .tab:focus-within .move, .tab:focus-within > .icon { opacity: 1; }
 /* "Sposta in…": icona cliccabile con il menu nativo sopra, trasparente. */
 .move { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; color: var(--md-sys-color-on-surface-variant); }
@@ -94,11 +97,12 @@ body { background: var(--md-sys-color-surface-container-low); }
 /* Gruppi già aperti: intestazione cliccabile, nome e colore di Chrome non modificabili. */
 .group.existing { padding: 4px 4px 4px 12px; }
 .group.existing.extended { border-color: var(--md-sys-color-primary); }
-.group.existing summary { cursor: pointer; list-style: none; min-height: 40px; color: var(--md-sys-color-on-surface-variant); border-radius: var(--md-sys-shape-corner-small); }
+/* Margine a zero: non è il titolo di una sezione, anche se sta dentro una (.section summary). */
+.group.existing summary { margin: 0; cursor: pointer; list-style: none; min-height: 40px; color: var(--md-sys-color-on-surface-variant); border-radius: var(--md-sys-shape-corner-small); }
 .group.existing summary:hover .group-name.static { text-decoration: underline; text-underline-offset: 3px; }
 .group.existing summary::-webkit-details-marker { display: none; }
 .swatch.static { cursor: default; }
-.group-name.static { flex: 1; min-width: 0; padding: 0 8px; font: var(--md-sys-typescale-title-medium); color: var(--md-sys-color-on-surface); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-name.static { flex: 1; min-width: 0; min-height: 0; padding: 0 8px; font: var(--md-sys-typescale-title-medium); color: var(--md-sys-color-on-surface); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .group.existing .count strong { color: var(--md-sys-color-primary); font-weight: 600; }
 
 /* Tab aggiunte dalla proposta ed etichette delle tab. */

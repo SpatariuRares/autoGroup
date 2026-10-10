@@ -490,7 +490,7 @@ Each group is an outlined card:
 - "Save to list" for "new AI" groups;
 - ✕ to discard the group.
 
-Each tab has favicon and title, with the URL in the tooltip. On hover "Move to…" (icon with the transparent native menu on top) and ✕ appear.
+Each tab has favicon and title, with the URL in the tooltip. "Move to…" (icon with the transparent native menu on top) is always visible, dimmed, so it is clear that tabs can be moved; − and ✕ appear on hover or keyboard focus. The name of a new group shows a border on hover, to show it can be renamed.
 
 **Stale proposal** (`useTabChanges`): the panel stays open, so it listens to the tab and group events of its own window. What counts: tabs created, closed, moved between windows and changes of URL, pinning or group; title and favicon do not count, as they change by themselves. If they arrive while there is a proposal, it shows "Your tabs changed after this proposal." with "Recompute". It does not recompute by itself: each computation can cost AI calls. Events caused by "Apply" and "Undo" do not count.
 
