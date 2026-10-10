@@ -679,8 +679,19 @@
       }
     }
   },
-  "panelCloseDuplicates": {
-    "message": "Chiudi doppioni"
+  "panelReviewDuplicates": {
+    "message": "Rivedi"
+  },
+  "panelCloseSelected": {
+    "message": "Chiudi ($COUNT$)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCancel": {
+    "message": "Annulla"
   },
   "panelModeSite": {
     "message": "Per sito"

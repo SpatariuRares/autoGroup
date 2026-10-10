@@ -104,7 +104,7 @@ The only thing autoGroup does without a click. The service worker listens to `ta
 
 ### Duplicate tabs (`duplicates.ts`)
 
-`findDuplicates(tabs, excludedDomains)` groups the window's tabs by page: the URL without the fragment (`#section`); the query counts, because `?q=` changes the page. For each page open more than once one copy stays: the pinned one, then the one in a group, then the active one, then the leftmost. Of the others only the free ones are closed: never pinned, grouped or active tabs. Browser pages and excluded domains are never considered. The panel shows the count from `buildWindowView` (`view.duplicates`) with "Close duplicates"; `closeDuplicates` recomputes the list in the service worker instead of trusting the message.
+`findDuplicates(tabs, excludedDomains)` groups the window's tabs by page: the URL without the fragment (`#section`); the query counts, because `?q=` changes the page. For each page open more than once one copy stays: the pinned one, then the one in a group, then the active one, then the leftmost. Of the others only the free ones are closed: never pinned, grouped or active tabs. Browser pages and excluded domains are never considered. The panel shows the count from `buildWindowView` (`view.duplicates`) with "Review", which opens a preview inside the banner: the copies that would be closed, with favicon, title and site, all checked. Unchecking a copy keeps it; "Close (N)" closes only the checked ones, "Cancel" closes the preview. `closeDuplicates(windowId, tabIds)` closes only the chosen tabs that are still duplicates, recomputed in the service worker instead of trusting the message.
 
 ### Proposal edits
 

@@ -679,8 +679,19 @@
       }
     }
   },
-  "panelCloseDuplicates": {
-    "message": "Close duplicates"
+  "panelReviewDuplicates": {
+    "message": "Review"
+  },
+  "panelCloseSelected": {
+    "message": "Close ($COUNT$)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCancel": {
+    "message": "Cancel"
   },
   "panelModeSite": {
     "message": "By site"

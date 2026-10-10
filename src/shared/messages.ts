@@ -12,7 +12,7 @@ export type OrganizerRequest =
   | { type: 'organizer/accept-preview' }
   | { type: 'organizer/undo' }
   | { type: 'organizer/close-tab'; tabId: number }
-  | { type: 'organizer/close-duplicates'; windowId: number }
+  | { type: 'organizer/close-duplicates'; windowId: number; tabIds: number[] }
   | { type: 'organizer/group-tab'; tabId: number; groupId: number };
 
 /** Notifica dal service worker al pannello quando lo stato cambia. */

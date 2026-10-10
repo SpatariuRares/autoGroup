@@ -72,11 +72,11 @@ export interface Organizer {
    */
   closeTab(tabId: number): Promise<OrganizerState>;
   /**
-   * "Chiudi duplicati": chiude le copie libere delle pagine aperte più volte nella finestra (vedi
-   * `findDuplicates`), ricalcolate qui e non prese dal pannello. Come `closeTab`, una proposta ancora
-   * attuale resta attuale, senza le tab chiuse.
+   * "Chiudi doppioni": chiude le tab scelte nell'anteprima del pannello, ma solo quelle che sono ancora
+   * doppioni (vedi `findDuplicates`, ricalcolato qui): una tab che non lo è più resta aperta. Come
+   * `closeTab`, una proposta ancora attuale resta attuale, senza le tab chiuse.
    */
-  closeDuplicates(windowId: number): Promise<OrganizerState>;
+  closeDuplicates(windowId: number, tabIds: number[]): Promise<OrganizerState>;
   /**
    * "Sposta in…" senza proposta: mette subito una tab libera in un gruppo aperto della sua finestra.
    * Si accetta solo una tab che la selezione prenderebbe (non fissata, non interna, non esclusa).
@@ -253,11 +253,11 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
       });
     },
 
-    closeDuplicates(windowId) {
+    closeDuplicates(windowId, chosen) {
       return exclusive(async () => {
         const current = await loadState();
         const { excludedDomains } = await loadSettings();
-        const tabIds = findDuplicates(await browser.tabs.query({ windowId }), excludedDomains);
+        const tabIds = findDuplicates(await browser.tabs.query({ windowId }), excludedDomains).filter((id) => chosen.includes(id));
         if (tabIds.length === 0) return current;
         const proposal = current.phase === 'ready' && current.proposal?.windowId === windowId ? current.proposal : undefined;
         // Le tab chiuse sono tutte libere: cambiano le candidate, quindi l'impronta va ricalcolata se era attuale.

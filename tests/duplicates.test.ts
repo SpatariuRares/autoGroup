@@ -26,6 +26,12 @@ async function duplicatesInView() {
   return view.duplicates.map((id) => tabs.find((t) => t.id === id)!.title);
 }
 
+/** Le tab che il pannello mostra come doppioni, tutte scelte: come premere "Chiudi" senza togliere spunte. */
+async function duplicateIds() {
+  const tabs = await browser.tabs.query({ windowId: W });
+  return buildWindowView(tabs, [], undefined, ['banca.it']).duplicates;
+}
+
 describe('tab duplicate', () => {
   it('chiude le copie libere della stessa pagina e tiene la prima; il frammento non conta, i parametri sì', async () => {
     strip.addTab({ url: 'https://a.com/doc', title: 'Doc' });
@@ -35,7 +41,7 @@ describe('tab duplicate', () => {
     strip.addTab({ url: 'https://a.com/doc', title: 'Doc copia 2' });
 
     expect(await duplicatesInView()).toEqual(['Doc copia', 'Doc copia 2']);
-    await organizer.closeDuplicates(W);
+    await organizer.closeDuplicates(W, await duplicateIds());
 
     expect(strip.layout()).toEqual(['Doc', 'B', 'Doc v2']);
   });
@@ -49,7 +55,7 @@ describe('tab duplicate', () => {
     const g2 = strip.addTab({ url: 'https://b.com/', title: 'B in un altro gruppo' });
     await strip.addGroup('Altro', 'red', [g2]);
 
-    await organizer.closeDuplicates(W);
+    await organizer.closeDuplicates(W, await duplicateIds());
 
     const titles = (await browser.tabs.query({ windowId: W })).map((t) => t.title).sort();
     expect(titles).toEqual(['A fissata', 'B in un altro gruppo', 'B nel gruppo']);
@@ -64,7 +70,7 @@ describe('tab duplicate', () => {
     strip.addTab({ url: 'https://a.com/', title: 'A altra finestra', windowId: 2 });
 
     expect(await duplicatesInView()).toEqual([]);
-    await organizer.closeDuplicates(W);
+    await organizer.closeDuplicates(W, await duplicateIds());
 
     expect(strip.layout()).toEqual(['Banca', 'Banca copia', 'Impostazioni', 'Impostazioni copia', 'A']);
     expect(strip.layout(2)).toEqual(['A altra finestra']);
@@ -77,10 +83,22 @@ describe('tab duplicate', () => {
     const before = await organizer.propose(W);
     expect(before.proposal!.groups[0]!.tabs.map((t) => t.title)).toEqual(['A1', 'A2', 'A1 copia']);
 
-    const after = await organizer.closeDuplicates(W);
+    const after = await organizer.closeDuplicates(W, await duplicateIds());
 
     expect(after.proposal!.groups[0]!.tabs.map((t) => t.title)).toEqual(['A1', 'A2']);
     // Riaprire il pannello riusa la proposta (stessa data), senza un nuovo calcolo.
     expect((await organizer.propose(W)).proposal!.createdAt).toBe(after.proposal!.createdAt);
+  });
+
+  it('chiude solo i doppioni scelti nell\'anteprima e ignora le tab che non sono doppioni', async () => {
+    const original = strip.addTab({ url: 'https://a.com/', title: 'A' });
+    const keep = strip.addTab({ url: 'https://a.com/', title: 'A copia tenuta' });
+    const close = strip.addTab({ url: 'https://a.com/', title: 'A copia chiusa' });
+    const other = strip.addTab({ url: 'https://b.com/', title: 'B' });
+    expect(await duplicateIds()).toEqual([keep, close]);
+
+    await organizer.closeDuplicates(W, [close, other, original]);
+
+    expect(strip.layout()).toEqual(['A', 'A copia tenuta', 'B']);
   });
 });

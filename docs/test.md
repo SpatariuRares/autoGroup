@@ -254,6 +254,7 @@ The smoke test goes through the pages from the menu: the four entries visible at
 - The pinned or grouped copy stays; pinned and grouped tabs are never closed.
 - Excluded domains, browser pages and other windows are not touched.
 - A current proposal stays current without the closed tabs.
+- Only the duplicates chosen in the preview are closed; chosen tabs that are not duplicates stay open.
 
 ## Backup, in `tests/backup.test.ts`
 

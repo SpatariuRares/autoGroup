@@ -101,7 +101,79 @@ body {
 }
 
 .banner.duplicates {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.duplicates-row {
+  display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.duplicates-row>span:not(.md-icon) {
+  flex: 1;
+}
+
+/* Anteprima dei doppioni: una riga per tab, con la casella per tenerla. */
+.duplicates-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface);
+}
+
+.duplicates-list label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.duplicates-list input {
+  flex: none;
+  margin: 0;
+  accent-color: var(--md-sys-color-primary);
+}
+
+.duplicates-list img,
+.duplicates-list .no-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.duplicates-list .no-icon {
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+.duplicate-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.duplicate-host {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: var(--md-sys-typescale-body-small);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.duplicates-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .warnings {

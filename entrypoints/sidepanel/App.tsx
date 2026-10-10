@@ -70,12 +70,18 @@ export function App() {
     if (!(await send({ type: 'organizer/close-tab', tabId }))) closing.current.delete(tabId);
   }
 
-  async function closeDuplicates() {
+  async function closeDuplicates(tabIds: number[]) {
     if (windowId === null) return;
     // Come per "Chiudi la tab": l'Organizzatore le toglie dalla proposta, quindi non la rendono vecchia.
-    for (const tabId of view.duplicates) closing.current.add(tabId);
-    if (!(await send({ type: 'organizer/close-duplicates', windowId }))) closing.current.clear();
+    for (const tabId of tabIds) closing.current.add(tabId);
+    if (!(await send({ type: 'organizer/close-duplicates', windowId, tabIds }))) closing.current.clear();
   }
+
+  // I doppioni con titolo, icona e URL letti dal vivo, per l'anteprima.
+  const duplicateTabs = view.duplicates
+    .map((id) => snapshot.tabs.find((tab) => tab.id === id))
+    .filter((tab) => tab !== undefined)
+    .map((tab) => ({ tabId: tab.id!, title: tab.title?.trim() || tab.url || '', url: tab.url ?? '', favIconUrl: tab.favIconUrl }));
 
   const moveTab = async (tab: ProposedTab, value: string) => {
     const target = targets.find((x) => x.value === value);
@@ -125,8 +131,8 @@ export function App() {
 
         {proposal && proposal.warnings.length > 0 && <WarningsBanner warnings={proposal.warnings} />}
 
-        {view.duplicates.length > 0 && !computing && (
-          <DuplicatesBanner count={view.duplicates.length} disabled={busy} onClose={closeDuplicates} />
+        {duplicateTabs.length > 0 && !computing && (
+          <DuplicatesBanner tabs={duplicateTabs} disabled={busy} onClose={closeDuplicates} />
         )}
 
         {!proposal && !computing && (state?.notice || notice) && (

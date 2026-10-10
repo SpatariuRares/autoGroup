@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { t, warningKey } from '../../src/shared/i18n';
-import type { Proposal } from '../../src/shared/types';
+import type { Proposal, ProposedTab } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
 import { openSettings } from './open-settings';
 
@@ -74,15 +75,80 @@ export function StaleBanner({ onRecompute }: { onRecompute: () => void }) {
   );
 }
 
-/** Pagine aperte più volte nella finestra: si offre di chiudere le copie libere. */
-export function DuplicatesBanner({ count, disabled, onClose }: { count: number; disabled: boolean; onClose: () => void }) {
+/** Host di un URL per distinguere due tab con lo stesso titolo; l'URL intero se non ne ha. */
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).host || url;
+  } catch {
+    return url;
+  }
+};
+
+/**
+ * Pagine aperte più volte nella finestra. "Rivedi" apre l'anteprima: le copie che verrebbero chiuse,
+ * tutte spuntate; si tolgono le spunte a quelle da tenere, poi "Chiudi" chiude solo le altre.
+ */
+export function DuplicatesBanner({ tabs, disabled, onClose }: { tabs: ProposedTab[]; disabled: boolean; onClose: (tabIds: number[]) => void }) {
+  const [open, setOpen] = useState(false);
+  // Le tab da tenere, non quelle da chiudere: un doppione nuovo comparso mentre l'anteprima è aperta parte spuntato.
+  const [kept, setKept] = useState<Set<number>>(new Set());
+  const chosen = tabs.filter((tab) => !kept.has(tab.tabId)).map((tab) => tab.tabId);
+  const toggle = (tabId: number) =>
+    setKept((current) => {
+      const next = new Set(current);
+      if (!next.delete(tabId)) next.add(tabId);
+      return next;
+    });
+
   return (
     <div className="banner duplicates" role="status">
-      <Icon name="tab" />
-      <span>{count === 1 ? t('panelDuplicatesOne') : t('panelDuplicates', String(count))}</span>
-      <button className="text small" disabled={disabled} onClick={onClose}>
-        {t('panelCloseDuplicates')}
-      </button>
+      <div className="duplicates-row">
+        <Icon name="tab" />
+        <span>{tabs.length === 1 ? t('panelDuplicatesOne') : t('panelDuplicates', String(tabs.length))}</span>
+        {!open && (
+          <button className="text small" onClick={() => setOpen(true)}>
+            {t('panelReviewDuplicates')}
+          </button>
+        )}
+      </div>
+      {open && (
+        <>
+          <ul className="duplicates-list">
+            {tabs.map((tab) => (
+              <li key={tab.tabId}>
+                <label title={tab.url}>
+                  <input type="checkbox" checked={!kept.has(tab.tabId)} onChange={() => toggle(tab.tabId)} />
+                  {tab.favIconUrl ? <img src={tab.favIconUrl} alt="" /> : <span className="no-icon" />}
+                  <span className="duplicate-title">{tab.title}</span>
+                  <span className="duplicate-host">{hostOf(tab.url)}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <div className="duplicates-actions">
+            <button
+              className="text small"
+              onClick={() => {
+                setOpen(false);
+                setKept(new Set());
+              }}
+            >
+              {t('panelCancel')}
+            </button>
+            <button
+              className="tonal small"
+              disabled={disabled || chosen.length === 0}
+              onClick={() => {
+                onClose(chosen);
+                setOpen(false);
+                setKept(new Set());
+              }}
+            >
+              {t('panelCloseSelected', String(chosen.length))}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

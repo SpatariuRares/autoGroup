@@ -50,7 +50,7 @@ export default defineBackground(() => {
       case 'organizer/close-tab':
         return organizer.closeTab(request.tabId);
       case 'organizer/close-duplicates':
-        return organizer.closeDuplicates(request.windowId);
+        return organizer.closeDuplicates(request.windowId, request.tabIds);
       case 'organizer/group-tab':
         return organizer.groupTab(request.tabId, request.groupId);
     }
