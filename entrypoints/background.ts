@@ -49,6 +49,8 @@ export default defineBackground(() => {
         return organizer.undo();
       case 'organizer/close-tab':
         return organizer.closeTab(request.tabId);
+      case 'organizer/close-duplicates':
+        return organizer.closeDuplicates(request.windowId);
       case 'organizer/group-tab':
         return organizer.groupTab(request.tabId, request.groupId);
     }

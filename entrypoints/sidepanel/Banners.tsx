@@ -74,6 +74,19 @@ export function StaleBanner({ onRecompute }: { onRecompute: () => void }) {
   );
 }
 
+/** Pagine aperte più volte nella finestra: si offre di chiudere le copie libere. */
+export function DuplicatesBanner({ count, disabled, onClose }: { count: number; disabled: boolean; onClose: () => void }) {
+  return (
+    <div className="banner duplicates" role="status">
+      <Icon name="tab" />
+      <span>{count === 1 ? t('panelDuplicatesOne') : t('panelDuplicates', String(count))}</span>
+      <button className="text small" disabled={disabled} onClick={onClose}>
+        {t('panelCloseDuplicates')}
+      </button>
+    </div>
+  );
+}
+
 /** Livelli dell'AI saltati, con la causa e il collegamento alla sezione giusta delle impostazioni. */
 export function WarningsBanner({ warnings }: { warnings: Proposal['warnings'] }) {
   return (

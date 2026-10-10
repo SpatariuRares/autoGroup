@@ -6,7 +6,7 @@ import { t } from '../../src/shared/i18n';
 import { callOrganizer } from '../../src/shared/organizer-client';
 import type { ProposedTab } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
-import { ComputingStatus, ErrorBanner, InfoBanner, StaleBanner, WarningsBanner } from './Banners';
+import { ComputingStatus, DuplicatesBanner, ErrorBanner, InfoBanner, StaleBanner, WarningsBanner } from './Banners';
 import { ExistingCard, GroupCard } from './GroupCards';
 import { useExpiring, useOrganizer, useSettings, useWindowSnapshot } from './hooks';
 import { ModePicker } from './ModePicker';
@@ -70,6 +70,13 @@ export function App() {
     if (!(await send({ type: 'organizer/close-tab', tabId }))) closing.current.delete(tabId);
   }
 
+  async function closeDuplicates() {
+    if (windowId === null) return;
+    // Come per "Chiudi la tab": l'Organizzatore le toglie dalla proposta, quindi non la rendono vecchia.
+    for (const tabId of view.duplicates) closing.current.add(tabId);
+    if (!(await send({ type: 'organizer/close-duplicates', windowId }))) closing.current.clear();
+  }
+
   const moveTab = async (tab: ProposedTab, value: string) => {
     const target = targets.find((x) => x.value === value);
     if (!target) return;
@@ -117,6 +124,10 @@ export function App() {
         {proposal && stale && !computing && <StaleBanner onRecompute={recompute} />}
 
         {proposal && proposal.warnings.length > 0 && <WarningsBanner warnings={proposal.warnings} />}
+
+        {view.duplicates.length > 0 && !computing && (
+          <DuplicatesBanner count={view.duplicates.length} disabled={busy} onClose={closeDuplicates} />
+        )}
 
         {!proposal && !computing && (state?.notice || notice) && (
           <InfoBanner text={state?.notice ? t(state.notice.key, state.notice.arg) : t(notice!)} />

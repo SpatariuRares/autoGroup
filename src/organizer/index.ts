@@ -3,6 +3,7 @@ import { loadSettings } from '../settings';
 import type { OrganizerState, Proposal, ProposalEdit } from '../shared/types';
 import { applyProposal } from './applier';
 import { autoGroupTab } from './auto-group';
+import { findDuplicates } from './duplicates';
 import { willAskAi } from './pipeline';
 import { buildPreview, buildProposal, collectInputs, signatureOf } from './proposal-builder';
 import { TAB_GROUP_ID_NONE } from './tab-selection';
@@ -70,6 +71,12 @@ export interface Organizer {
    * attuale (nuova impronta), così chiudere una tab non costa un nuovo calcolo.
    */
   closeTab(tabId: number): Promise<OrganizerState>;
+  /**
+   * "Chiudi duplicati": chiude le copie libere delle pagine aperte più volte nella finestra (vedi
+   * `findDuplicates`), ricalcolate qui e non prese dal pannello. Come `closeTab`, una proposta ancora
+   * attuale resta attuale, senza le tab chiuse.
+   */
+  closeDuplicates(windowId: number): Promise<OrganizerState>;
   /**
    * "Sposta in…" senza proposta: mette subito una tab libera in un gruppo aperto della sua finestra.
    * Si accetta solo una tab che la selezione prenderebbe (non fissata, non interna, non esclusa).
@@ -242,6 +249,23 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         if (!proposal) return current;
         let next = editProposal(proposal, { kind: 'remove-tab', tabId });
         if (refresh) next = { ...next, signature: signatureOf(await collectInputs(proposal.windowId)) };
+        return setState({ ...current, proposal: next });
+      });
+    },
+
+    closeDuplicates(windowId) {
+      return exclusive(async () => {
+        const current = await loadState();
+        const { excludedDomains } = await loadSettings();
+        const tabIds = findDuplicates(await browser.tabs.query({ windowId }), excludedDomains);
+        if (tabIds.length === 0) return current;
+        const proposal = current.phase === 'ready' && current.proposal?.windowId === windowId ? current.proposal : undefined;
+        // Le tab chiuse sono tutte libere: cambiano le candidate, quindi l'impronta va ricalcolata se era attuale.
+        const wasCurrent = proposal !== undefined && proposal.signature === signatureOf(await collectInputs(windowId));
+        await browser.tabs.remove(tabIds);
+        if (!proposal) return current;
+        let next = tabIds.reduce((p, tabId) => editProposal(p, { kind: 'remove-tab', tabId }), proposal);
+        if (wasCurrent) next = { ...next, signature: signatureOf(await collectInputs(windowId)) };
         return setState({ ...current, proposal: next });
       });
     },

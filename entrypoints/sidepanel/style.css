@@ -100,6 +100,10 @@ body {
   color: inherit;
 }
 
+.banner.duplicates {
+  align-items: center;
+}
+
 .warnings {
   list-style: none;
   display: block;

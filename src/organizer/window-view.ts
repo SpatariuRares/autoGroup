@@ -1,5 +1,6 @@
 import type { Browser } from 'wxt/browser';
 import type { ExistingGroupRef, GroupColor, Proposal, ProposedGroup, ProposedTab } from '../shared/types';
+import { findDuplicates } from './duplicates';
 import { hasRealTitle, isExcluded, isInternalUrl, TAB_GROUP_ID_NONE } from './tab-selection';
 
 /** Perché una tab non può entrare in un gruppo: l'estensione non la tocca mai. */
@@ -23,6 +24,8 @@ export interface WindowView {
   free: ProposedTab[];
   /** Tab che l'estensione non tocca mai, con il motivo. */
   held: { tab: ProposedTab; reason: HeldReason }[];
+  /** Tab che "Chiudi duplicati" chiuderebbe (vedi `findDuplicates`). */
+  duplicates: number[];
 }
 
 const toTab = (tab: Browser.tabs.Tab): ProposedTab => ({ tabId: tab.id!, title: tab.title?.trim() || tab.url || '', url: tab.url ?? '', favIconUrl: tab.favIconUrl });
@@ -83,5 +86,6 @@ export function buildWindowView(
     created: (proposal?.groups ?? []).filter((g) => g.existingGroupId === undefined),
     free,
     held,
+    duplicates: findDuplicates(tabs, excludedDomains),
   };
 }
