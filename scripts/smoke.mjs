@@ -424,6 +424,16 @@ try {
   console.log('Selettore del pannello:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('mode'))), '| richieste AI', ai.requests.length,
     '| riepilogo:', await popup.$eval('.mode-summary', (el) => el.textContent));
 
+  // Frecce tra le righe delle tab: dal ✕ della prima riga al ✕ della seconda.
+  await popup.focus('.group:not(.existing) .tab .close-tab');
+  await popup.keyboard.press('ArrowDown');
+  const arrowTarget = await popup.evaluate(() => {
+    const rows = [...document.querySelectorAll('.tab')].filter((r) => r.checkVisibility());
+    return document.activeElement.classList.contains('close-tab') && rows.indexOf(document.activeElement.closest('.tab'));
+  });
+  console.log('Freccia giù: focus sul ✕ della riga', arrowTarget);
+  if (arrowTarget !== 1) throw new Error('Le frecce non spostano il focus alla riga successiva');
+
   // "Chiudi la tab" dal pannello: la tab sparisce dalla finestra e dalla proposta, senza avviso di proposta superata.
   const tabsBefore = await sw.evaluate(async () => (await chrome.tabs.query({})).length);
   const proposedBefore = await popup.$$eval('.group:not(.existing) .tab', (els) => els.length);

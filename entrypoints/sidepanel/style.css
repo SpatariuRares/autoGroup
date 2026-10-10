@@ -181,12 +181,12 @@ body {
   border-color: transparent;
 }
 
+/* Provenienza e numero di tab nella riga del titolo: non si restringono, il nome sì. */
 .group-meta {
+  flex: none;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 2px 8px 4px 26px;
+  gap: 6px;
 }
 
 .badge {
@@ -216,9 +216,6 @@ body {
   color: var(--md-sys-color-on-surface-variant);
 }
 
-.group .save {
-  margin-left: auto;
-}
 
 .palette {
   display: flex;
@@ -240,6 +237,11 @@ body {
   min-height: 36px;
   padding: 0 0 0 26px;
   border-radius: var(--md-sys-shape-corner-small);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--md-sys-color-secondary);
+  outline-offset: -2px;
 }
 
 .tab:hover {

@@ -12,6 +12,7 @@ import { useExpiring, useOrganizer, useSettings, useWindowSnapshot } from './hoo
 import { ModePicker } from './ModePicker';
 import { openSettings } from './open-settings';
 import { OFFER_MS, rememberOffer, type RememberOffer } from './remember-offer';
+import { moveBetweenRows } from './row-navigation';
 import { TabRow, type Target } from './TabRow';
 
 export function App() {
@@ -110,7 +111,7 @@ export function App() {
         />
       )}
 
-      <div className="content">
+      <div className="content" onKeyDown={moveBetweenRows}>
         {message && <ErrorBanner messageKey={message} />}
 
         {proposal && stale && !computing && <StaleBanner onRecompute={recompute} />}

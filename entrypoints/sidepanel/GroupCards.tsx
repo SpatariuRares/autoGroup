@@ -33,10 +33,7 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
         <div className="group-header">
           <span className={`swatch static color-${group.color}`} aria-label={t(`color_${group.color}`)} />
           <span className="group-name static">{group.name}</span>
-        </div>
-        <div className="group-meta">
-          <span className={`badge provenance-${group.provenance}`}>{t(`provenance_${group.provenance}`)}</span>
-          <span className="count">{tabCount(group.tabs.length)}</span>
+          <GroupMeta group={group} />
         </div>
         <ul className="tabs">
           {group.tabs.map((tab) => (
@@ -68,6 +65,12 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
             if (e.key === 'Escape') setName(group.name);
           }}
         />
+        <GroupMeta group={group} />
+        {group.provenance === 'ai' && (
+          <button className="icon small save" disabled={saving} title={t('popupSaveToListHint')} aria-label={t('popupSaveToList')} onClick={onSave}>
+            <Icon name="bookmarkAdd" size={18} />
+          </button>
+        )}
         <button
           className="icon small danger"
           title={t('popupDiscardGroup')}
@@ -76,16 +79,6 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
         >
           <Icon name="close" size={18} />
         </button>
-      </div>
-      <div className="group-meta">
-        <span className={`badge provenance-${group.provenance}`}>{t(`provenance_${group.provenance}`)}</span>
-        <span className="count">{tabCount(group.tabs.length)}</span>
-        {group.provenance === 'ai' && (
-          <button className="text small save" disabled={saving} title={t('popupSaveToListHint')} onClick={onSave}>
-            <Icon name="bookmarkAdd" size={18} />
-            {t('popupSaveToList')}
-          </button>
-        )}
       </div>
       {paletteOpen && (
         <div className="palette" role="radiogroup" aria-label={t('popupChangeColor')}>
@@ -118,6 +111,16 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
         ))}
       </ul>
     </li>
+  );
+}
+
+/** Provenienza e numero di tab, nella riga del titolo per tenere le schede basse. */
+function GroupMeta({ group }: { group: ProposedGroup }) {
+  return (
+    <span className="group-meta">
+      <span className={`badge provenance-${group.provenance}`}>{t(`provenance_${group.provenance}`)}</span>
+      <span className="count">{tabCount(group.tabs.length)}</span>
+    </span>
   );
 }
 

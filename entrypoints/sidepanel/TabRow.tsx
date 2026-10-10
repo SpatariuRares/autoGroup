@@ -40,7 +40,8 @@ export function TabRow({
   added?: boolean;
 }) {
   return (
-    <li className={`tab${added ? ' added' : ''}${reason ? ' held' : ''}`} title={tab.url}>
+    // tabIndex -1: la riga riceve il focus dalle frecce (row-navigation.ts) anche se non ha controlli.
+    <li className={`tab${added ? ' added' : ''}${reason ? ' held' : ''}`} title={tab.url} tabIndex={-1}>
       {tab.favIconUrl ? <img src={tab.favIconUrl} alt="" /> : <span className="no-icon" />}
       <span className="tab-title">{tab.title}</span>
       {added && <span className="tab-chip">{t('panelNewTab')}</span>}

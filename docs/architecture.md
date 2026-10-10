@@ -482,15 +482,14 @@ Material 3 structure:
 
 The outcomes ("Groups created.", "Save to list") appear in a *snackbar*. Without a proposal there is an empty state with the message of the last operation.
 
-Each group is an outlined card:
+Each group is an outlined card, with everything but the tabs on the title row to keep cards short:
 - color dot, which opens the palette of the 9 colors;
 - editable name: confirmed with Enter or by leaving the field, Esc cancels; existing groups are locked and have the lock icon;
-- provenance label, colored for "list" and "new AI";
-- number of tabs;
-- "Save to list" for "new AI" groups;
+- provenance label, colored for "list" and "new AI", and number of tabs;
+- "Save to list" (bookmark icon) for "new AI" groups;
 - ✕ to discard the group.
 
-Each tab has favicon and title, with the URL in the tooltip. "Move to…" (icon with the transparent native menu on top) is always visible, dimmed, so it is clear that tabs can be moved; − and ✕ appear on hover or keyboard focus. The name of a new group shows a border on hover, to show it can be renamed.
+Each tab has favicon and title, with the URL in the tooltip. Up and down arrows move between tab rows across the panel, onto the same control of the next row (e.g. from ✕ to ✕), Home and End to the first and last row (`row-navigation.ts`); in the "Move to…" menus the arrows stay the native ones. "Move to…" (icon with the transparent native menu on top) is always visible, dimmed, so it is clear that tabs can be moved; − and ✕ appear on hover or keyboard focus. The name of a new group shows a border on hover, to show it can be renamed.
 
 **Stale proposal** (`useTabChanges`): the panel stays open, so it listens to the tab and group events of its own window. What counts: tabs created, closed, moved between windows and changes of URL, pinning or group; title and favicon do not count, as they change by themselves. If they arrive while there is a proposal, it shows "Your tabs changed after this proposal." with "Recompute". It does not recompute by itself: each computation can cost AI calls. Events caused by "Apply" and "Undo" do not count.
 
