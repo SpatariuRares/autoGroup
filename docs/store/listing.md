@@ -30,6 +30,7 @@ Nessuna tab si muove senza la tua conferma, tranne quelle dei siti che metti tu 
 DUE MODALITÀ
 • Per sito: le tab dello stesso sito nello stesso gruppo. Immediato, nessuna configurazione, nessun dato esce dal computer.
 • Con l'AI: le tab divise per argomento, tra le tue categorie o in gruppi nuovi proposti dall'AI. I gruppi già aperti vengono estesi con le tab che c'entrano.
+• In entrambe: metti un sito in una categoria e le sue tab ci finiscono sempre, anche da sole mentre navighi (si può spegnere).
 
 L'AI LA SCEGLI TU
 • Il modello integrato in Chrome, se il tuo computer lo supporta: gratis, senza chiavi, nessun dato esce dal computer.
@@ -67,6 +68,7 @@ No tab moves without your confirmation, except tabs from sites you add to a cate
 TWO MODES
 • By site: tabs from the same site go in the same group. Instant, no setup, no data leaves your computer.
 • With AI: tabs sorted by topic, into your categories or new groups suggested by the AI. Groups you already have open are extended with the tabs that belong there.
+• In both: add a site to a category and its tabs always go there, even on their own while you browse (you can turn this off).
 
 YOU CHOOSE THE AI
 • The model built into Chrome, if your computer supports it: free, no keys, no data leaves your computer.

@@ -49,7 +49,7 @@ const COPY = {
       ['Le tab in ordine, per argomento', 'Controlli e modifichi i gruppi proposti. Niente si muove finché non premi «Applica».'],
       ['Subito una proposta, mentre l\'AI pensa', 'I gruppi per sito arrivano all\'istante. «Usa questa» per non aspettare.'],
       ['L\'AI la scegli tu', 'Gemini Nano nel browser, un server locale o un servizio online.'],
-      ['Le tue categorie', 'Nomi, colori e descrizioni che l\'AI usa per ordinare le tab.'],
+      ['Le tue categorie e i tuoi siti', 'Le tab dei siti che scegli entrano da sole nel loro gruppo, senza AI.'],
     ],
     tagline: 'Le tab in gruppi, con l\'AI che scegli tu',
     group: 'Progetto X',
@@ -59,7 +59,7 @@ const COPY = {
       ['Your tabs, sorted by topic', 'Review and edit the suggested groups. Nothing moves until you press “Apply”.'],
       ['A proposal right away, while the AI thinks', 'Groups by site arrive instantly. “Use this” if you don\'t want to wait.'],
       ['You choose the AI', 'Gemini Nano in the browser, a local server or an online service.'],
-      ['Your categories', 'Names, colors and descriptions the AI uses to sort your tabs.'],
+      ['Your categories and sites', 'Tabs from the sites you pick go straight into their group, no AI needed.'],
     ],
     tagline: 'Group your tabs with the AI you choose',
     group: 'Project X',
@@ -215,7 +215,9 @@ for (const locale of ['it', 'en']) {
     const options = await browser.newPage();
     await light(options);
     await options.setViewport({ width: 1100, height: 900, deviceScaleFactor: 2 });
-    await options.goto(`chrome-extension://${extId}/options.html`);
+    // Qualche sito nelle categorie predefinite: nelle righe compatte si vedono come chip.
+    await sw.evaluate(() => chrome.storage.sync.set({ categorySites: { 'default-work': ['acme.atlassian.net', 'docs.google.com'], 'default-dev': ['github.com', 'stackoverflow.com', 'developer.mozilla.org'], 'default-shopping': ['amazon.it'] } }));
+    await options.goto(`chrome-extension://${extId}/options.html#categories`);
     await options.waitForSelector('#categories .category');
     const card = await options.$('#categories');
     const box = await card.boundingBox();
