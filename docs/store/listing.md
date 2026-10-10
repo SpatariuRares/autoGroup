@@ -19,13 +19,13 @@ Texts to paste into the developer dashboard ("Store listing" tab), per language.
 **Descrizione dettagliata**:
 
 ```text
-Troppe tab aperte? autoGroup le divide in gruppi di Chrome, per sito o per argomento, e ti mostra la proposta prima di toccare qualunque cosa.
+Troppe tab aperte? autoGroup le divide in gruppi di Chrome, per sito o per argomento, e ti mostra la proposta prima di spostare le tab (tranne quelle dei siti che metti in una categoria, che puoi far raggruppare in automatico).
 
 COME FUNZIONA
 • Clicchi l'icona (o premi Alt+Shift+G) e si apre il pannello laterale con la proposta per la finestra.
 • Controlli e modifichi i gruppi: rinomina, colore, sposta o togli una tab, scarta un gruppo.
 • Premi «Applica» e i gruppi vengono creati. «Annulla» rimette tutto com'era.
-Nessuna tab si muove senza la tua conferma.
+Nessuna tab si muove senza la tua conferma, tranne quelle dei siti che metti tu in una categoria: vanno subito nel loro gruppo (si può spegnere).
 
 DUE MODALITÀ
 • Per sito: le tab dello stesso sito nello stesso gruppo. Immediato, nessuna configurazione, nessun dato esce dal computer.
@@ -56,13 +56,13 @@ Una guida al primo avvio ti aiuta a scegliere modalità e provider. Interfaccia 
 **Detailed description**:
 
 ```text
-Too many open tabs? autoGroup sorts them into Chrome tab groups, by site or by topic, and shows you the proposal before touching anything.
+Too many open tabs? autoGroup sorts them into Chrome tab groups, by site or by topic, and shows you the proposal before moving your tabs (except tabs from sites you add to a category, which you can have grouped automatically).
 
 HOW IT WORKS
 • Click the icon (or press Alt+Shift+G) and the side panel opens with a proposal for your window.
 • Review and edit the groups: rename, recolor, move or remove a tab, discard a group.
 • Press "Apply" and the groups are created. "Undo" puts everything back.
-No tab moves without your confirmation.
+No tab moves without your confirmation, except tabs from sites you add to a category: they go straight into their group (you can turn this off).
 
 TWO MODES
 • By site: tabs from the same site go in the same group. Instant, no setup, no data leaves your computer.

@@ -80,10 +80,12 @@ export async function collectInputs(windowId: number): Promise<ProposalInputs> {
  * fuori perché cambia spesso da solo (contatori come "(3) Posta"); le chiavi API non ci sono mai.
  */
 export function signatureOf(inputs: ProposalInputs): string {
+  // Il raggruppamento automatico non cambia la proposta: accenderlo o spegnerlo non la rende superata.
+  const { autoGroupSites: _, ...settings } = inputs.settings;
   return JSON.stringify([
     inputs.candidates.map((t) => [t.tabId, t.url]),
     inputs.openGroups.map((g) => [g.id, g.title, g.color]),
-    inputs.settings,
+    settings,
     inputs.classifier.usable,
     inputs.generator.usable,
     inputs.nano,

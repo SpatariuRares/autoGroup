@@ -21,6 +21,12 @@ export default defineBackground(() => {
     },
   });
 
+  // Raggruppamento automatico con le regole sui siti: solo quando l'URL cambia, non a ogni ricarica,
+  // così una tab tolta a mano dal gruppo non ci rientra finché non cambia pagina.
+  browser.tabs.onUpdated.addListener((tabId, change) => {
+    if (change.url !== undefined) organizer.autoGroupTab(tabId);
+  });
+
   function handle(request: OrganizerRequest): Promise<OrganizerState> {
     switch (request.type) {
       case 'organizer/state':

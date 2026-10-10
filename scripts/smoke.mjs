@@ -395,6 +395,27 @@ try {
   const staleShown = (await popup.$('.banner.stale')) !== null;
   console.log('Chiudi tab: tab nel browser', tabsBefore, '→', tabsAfter, '| tab nella proposta', proposedBefore, '→', proposedBefore - 1, '| avviso di proposta superata:', staleShown);
   if (tabsAfter !== tabsBefore - 1 || staleShown) throw new Error('"Chiudi la tab" non ha funzionato come previsto');
+  // Raggruppamento automatico: una pagina di un sito delle regole entra nel gruppo della sua categoria
+  // appena apre; con l'interruttore spento resta libera.
+  const category = (await sw.evaluate(() => chrome.storage.sync.get('categories'))).categories?.[0]
+    ?? { id: 'work', name: 'Lavoro' };
+  await sw.evaluate((id) => chrome.storage.sync.set({ minTabs: 1, categorySites: { [id]: ['127.0.0.1/auto'] } }), category.id);
+  const groupOf = (path) => sw.evaluate(async (url) => {
+    const [tab] = await chrome.tabs.query({ url });
+    return tab && tab.groupId > -1 ? (await chrome.tabGroups.get(tab.groupId)).title : null;
+  }, `http://127.0.0.1:${port}${path}`);
+  const waitGroup = async (path) => {
+    for (let i = 0; i < 20 && (await groupOf(path)) === null; i++) await new Promise((r) => setTimeout(r, 100));
+    return groupOf(path);
+  };
+  await (await browser.newPage()).goto(`http://127.0.0.1:${port}/auto/1`);
+  const autoOn = await waitGroup('/auto/1');
+  await sw.evaluate(() => chrome.storage.sync.set({ autoGroupSites: false }));
+  await (await browser.newPage()).goto(`http://127.0.0.1:${port}/auto/2`);
+  await new Promise((r) => setTimeout(r, 500));
+  const autoOff = await groupOf('/auto/2');
+  console.log('Raggruppamento automatico: acceso →', autoOn, '| spento →', autoOff);
+  if (autoOn !== category.name || autoOff !== null) throw new Error('Il raggruppamento automatico non ha funzionato come previsto');
 } finally {
   await browser.close();
   // Chiude anche le connessioni lasciate appese apposta (prova di "Interrompi").

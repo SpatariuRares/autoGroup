@@ -46,9 +46,11 @@ export interface Settings {
   threshold: number;
   /** "Leggi la descrizione delle pagine": vale solo se il permesso opzionale <all_urls> è concesso. */
   readDescriptions: boolean;
+  /** Raggruppamento automatico: una tab che apre un sito delle regole va subito nel gruppo della sua categoria. */
+  autoGroupSites: boolean;
 }
 
-const KEYS: (keyof Settings)[] = ['mode', 'minTabs', 'excludedDomains', 'categories', 'categorySites', 'generator', 'classifier', 'threshold', 'readDescriptions'];
+const KEYS: (keyof Settings)[] = ['mode', 'minTabs', 'excludedDomains', 'categories', 'categorySites', 'generator', 'classifier', 'threshold', 'readDescriptions', 'autoGroupSites'];
 
 export const DEFAULT_SETTINGS: Omit<Settings, 'categories'> = {
   mode: 'ai',
@@ -59,6 +61,7 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'categories'> = {
   classifier: NO_PROVIDER,
   threshold: DEFAULT_THRESHOLD,
   readDescriptions: false,
+  autoGroupSites: true,
 };
 
 export async function loadSettings(): Promise<Settings> {
@@ -73,6 +76,7 @@ export async function loadSettings(): Promise<Settings> {
     classifier: isProviderSettings('classifier', stored.classifier) ? stored.classifier : NO_PROVIDER,
     threshold: isValidThreshold(stored.threshold) ? stored.threshold : DEFAULT_THRESHOLD,
     readDescriptions: stored.readDescriptions === true,
+    autoGroupSites: stored.autoGroupSites !== false,
   };
 }
 

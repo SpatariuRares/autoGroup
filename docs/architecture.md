@@ -22,6 +22,7 @@ src/
     domain-grouping.ts   domain of a URL ("no AI" level)
     site-rules.ts        site rules of the categories: matching, most specific rule, site to remember
     remember-site.ts     "Always put here": saves a tab's site in the category of its group
+    auto-group.ts        automatic grouping: a tab that opens a category site goes into that category's group
     colors.ts            color assigner
     applier.ts           creates the groups in Chrome, after saving the undo snapshot
     undo.ts              state snapshot and restore
@@ -83,7 +84,20 @@ It is the main module and **the only entry point called by the panel**. Interfac
 | `abort()` | "Stop": cancels the requests of the computation in progress; the computation ends without a proposal. |
 | `acceptPreview()` | "Use this": like `abort()`, but the computation showing the by-site preview ends with that preview as the current proposal. |
 | `rememberSite(tabId)` | "Always put here": saves the site of the tab in the category of its group (list, or open group with the same name). The site is the one of the rule that decides the tab today, moved from its category, or the bare domain. The proposal stays current. |
+| `autoGroupTab(tabId)` | Automatic grouping of a tab whose URL just changed, with the site rules only (see "Automatic grouping"). Does not change the state. |
 | `state()` | Returns the current state. |
+
+### Automatic grouping (`auto-group.ts`)
+
+The only thing autoGroup does without a click. The service worker listens to `tabs.onUpdated` and, when `changeInfo.url` is present, calls `organizer.autoGroupTab(tabId)`, which goes through the `exclusive` queue like the other operations. Only URL changes count, not reloads: a tab the user takes out of a group by hand stays out until it opens another page.
+
+- Off with `settings.autoGroupSites === false` (*Settings > Behavior*; on by default). It applies in both modes and never queries an AI.
+- The tab must be free (`isFreeWebTab`: not pinned, not in a group, a web page, not of an excluded domain). The title does not count, because at the moment the URL changes the page is usually still loading.
+- The category comes from `createSiteMatcher`, so the most specific site wins, as in the proposal.
+- If the tab's window has an open group named like the category (case-insensitive) the tab joins it, even alone, without changing its name and color.
+- Otherwise the free tabs of the window with the same category (in strip order) form a new group with the category's name and color, only if they reach `minTabs`.
+- No undo snapshot. Errors (e.g. a window that does not accept groups) are logged and the tab stays where it is.
+- The state does not change: a proposal containing the tab becomes stale and the panel shows "Your tabs changed". `autoGroupSites` is left out of the signature, so toggling it does not make a proposal stale.
 
 ### Proposal edits
 
@@ -338,6 +352,7 @@ Module `src/settings`, used by the Organizer (reading) and by the options page (
 | `excludedDomains` | `string[]` | `[]` | Normalized domains: lowercase, without scheme, path, port or `www.`. |
 | `classifier` | `{ preset, baseUrl, model }` | preset `none` | URL normalized without trailing `/`. |
 | `threshold` | number between 0 and 1 | 0.7 | Confidence threshold of the Classifier. |
+| `autoGroupSites` | boolean | `true` | Automatic grouping with the site rules; only `false` turns it off. Not part of the proposal's signature. |
 | `readDescriptions` | boolean | `false` | "Read page descriptions"; applies only with the `<all_urls>` permission. |
 | `generator` | `{ preset, baseUrl, model }` | preset `nano` | URL normalized without trailing `/`. |
 | `categories` | `Category[]` | the 10 defaults | Absent until the user edits the list: in that case `loadSettings` returns the defaults in the browser's language. A saved but invalid list is ignored. |

@@ -40,20 +40,26 @@ export function isExcluded(url: string, excludedDomains: string[]): boolean {
 }
 
 /**
- * Estrae le tab libere: esclude fissate, già in un gruppo, pagine interne, tab senza titolo
- * e tab dei domini esclusi (compresi i sottodomini). Le tab vanno passate già filtrate per finestra.
+ * Una tab libera con una pagina web: non fissata, non in un gruppo, non interna e non di un dominio
+ * escluso (compresi i sottodomini). Il titolo non conta: vedi `selectCandidateTabs`.
+ */
+export function isFreeWebTab(tab: Browser.tabs.Tab, excludedDomains: string[]): boolean {
+  return (
+    tab.id !== undefined &&
+    !tab.pinned &&
+    (tab.groupId ?? TAB_GROUP_ID_NONE) === TAB_GROUP_ID_NONE &&
+    !isInternalUrl(tab.url) &&
+    !isExcluded(tab.url!, excludedDomains)
+  );
+}
+
+/**
+ * Estrae le tab libere (`isFreeWebTab`) che hanno già un titolo vero, ordinate come nella barra.
+ * Le tab vanno passate già filtrate per finestra.
  */
 export function selectCandidateTabs(tabs: Browser.tabs.Tab[], excludedDomains: string[] = []): CandidateTab[] {
   return tabs
-    .filter(
-      (tab) =>
-        tab.id !== undefined &&
-        !tab.pinned &&
-        (tab.groupId ?? TAB_GROUP_ID_NONE) === TAB_GROUP_ID_NONE &&
-        !isInternalUrl(tab.url) &&
-        hasRealTitle(tab) &&
-        !isExcluded(tab.url!, excludedDomains),
-    )
+    .filter((tab) => isFreeWebTab(tab, excludedDomains) && hasRealTitle(tab))
     .sort((a, b) => a.index - b.index)
     .map((tab) => ({
       tabId: tab.id!,

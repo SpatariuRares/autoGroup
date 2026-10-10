@@ -1,16 +1,17 @@
 # autoGroup privacy policy (Informativa privacy)
 
-*The Italian version follows the English one. Last updated: 5 October 2026.*
+*The Italian version follows the English one. Last updated: 10 October 2026.*
 
 ## English
 
-autoGroup is a Chrome extension that suggests groups for the tabs in your window. This policy explains which data it handles, where it goes and what it never does.
+autoGroup is a Chrome extension that suggests groups for the tabs in your window and, unless you turn it off, puts tabs from the sites of your categories into their group automatically. This policy explains which data it handles, where it goes and what it never does.
 
 ### Summary
 
 - autoGroup has **no servers of its own**. The developer receives no data, no statistics and no crash reports.
 - In **"By site"** mode no data leaves your computer.
 - In **"With AI"** mode, the title and a cleaned address of your tabs go **only to the AI provider you choose** in the settings, directly from your browser. With **Gemini Nano**, the model built into Chrome, nothing leaves your computer.
+- **Automatic grouping** of the sites you add to a category runs inside your browser, uses no AI and sends nothing anywhere. You can turn it off in the settings.
 - No data is sold, shared for advertising or used for anything other than grouping your tabs.
 
 ### Data sent to the AI provider you choose
@@ -30,7 +31,7 @@ What the provider does with this data is governed by **its own** privacy policy.
 
 ### Data stored on your device
 
-- **Settings** (mode, categories, excluded domains, provider address and model, threshold, minimum tabs): in `chrome.storage.sync`, synced by Chrome across your browsers if you use Chrome sync.
+- **Settings** (mode, categories and their sites, excluded domains, provider address and model, threshold, minimum tabs, and the switches for page descriptions and automatic grouping): in `chrome.storage.sync`, synced by Chrome across your browsers if you use Chrome sync.
 - **API keys** of the providers: in `chrome.storage.local`, only on this computer, never synced. They are sent only to the provider they belong to, as an `Authorization` header.
 - **Current proposal, "Undo" snapshot and caches** (classifier answers and page descriptions already read, to avoid asking again): in `chrome.storage.session`, deleted when Chrome is closed.
 
@@ -46,7 +47,7 @@ Only if you turn the option on, autoGroup asks Chrome for permission to read the
 
 ### Permissions
 
-- `tabs`, `tabGroups`: read titles and addresses of the tabs in the window, create groups, move and close tabs when you ask.
+- `tabs`, `tabGroups`: read titles and addresses of the tabs in the window, create groups, move and close tabs when you ask, and put a tab that opens one of your category sites into its group (automatic grouping, which you can turn off).
 - `storage`: save settings, keys and the current proposal as described above.
 - `scripting`: read the page description, only with the optional permission below.
 - `sidePanel`: show autoGroup in Chrome's side panel.
@@ -60,13 +61,14 @@ Changes to this policy will be published on this page with a new date. Questions
 
 ## Italiano
 
-autoGroup è un'estensione di Chrome che propone dei gruppi per le tab della finestra. Questa informativa spiega quali dati tratta, dove vanno e cosa non fa mai.
+autoGroup è un'estensione di Chrome che propone dei gruppi per le tab della finestra e, se non lo spegni, mette in automatico nel loro gruppo le tab dei siti delle tue categorie. Questa informativa spiega quali dati tratta, dove vanno e cosa non fa mai.
 
 ### In breve
 
 - autoGroup **non ha server propri**. Lo sviluppatore non riceve dati, statistiche o segnalazioni di errore.
 - In modalità **"Per sito"** nessun dato esce dal computer.
 - In modalità **"Con l'AI"** il titolo e l'indirizzo ripulito delle tab vanno **solo al provider AI che scegli** nelle impostazioni, direttamente dal browser. Con **Gemini Nano**, il modello integrato in Chrome, nulla esce dal computer.
+- Il **raggruppamento automatico** dei siti che metti in una categoria avviene nel browser, senza AI, e non invia nulla. Puoi spegnerlo nelle impostazioni.
 - Nessun dato viene venduto, condiviso per pubblicità o usato per altro che raggruppare le tab.
 
 ### Dati inviati al provider AI che scegli
@@ -86,7 +88,7 @@ Cosa fa il provider con questi dati dipende dalla **sua** informativa privacy. I
 
 ### Dati salvati sul dispositivo
 
-- **Impostazioni** (modalità, categorie, domini esclusi, indirizzo e modello dei provider, soglia, numero minimo di tab): in `chrome.storage.sync`, sincronizzate da Chrome tra i tuoi browser se usi la sincronizzazione di Chrome.
+- **Impostazioni** (modalità, categorie e relativi siti, domini esclusi, indirizzo e modello dei provider, soglia, numero minimo di tab, interruttori per la descrizione delle pagine e il raggruppamento automatico): in `chrome.storage.sync`, sincronizzate da Chrome tra i tuoi browser se usi la sincronizzazione di Chrome.
 - **Chiavi API** dei provider: in `chrome.storage.local`, solo su questo computer, mai sincronizzate. Vengono inviate solo al provider a cui appartengono, nell'intestazione `Authorization`.
 - **Proposta corrente, foto per "Annulla" e cache** (risposte del classificatore e descrizioni già lette, per non chiederle di nuovo): in `chrome.storage.session`, cancellate alla chiusura di Chrome.
 
@@ -102,7 +104,7 @@ Solo se accendi l'opzione, autoGroup chiede a Chrome il permesso di leggere i si
 
 ### Permessi
 
-- `tabs`, `tabGroups`: leggere titoli e indirizzi delle tab della finestra, creare gruppi, spostare e chiudere tab quando lo chiedi.
+- `tabs`, `tabGroups`: leggere titoli e indirizzi delle tab della finestra, creare gruppi, spostare e chiudere tab quando lo chiedi, e mettere nel suo gruppo una tab che apre uno dei siti delle tue categorie (raggruppamento automatico, che puoi spegnere).
 - `storage`: salvare impostazioni, chiavi e proposta corrente come descritto sopra.
 - `scripting`: leggere la descrizione delle pagine, solo con il permesso facoltativo qui sotto.
 - `sidePanel`: mostrare autoGroup nel pannello laterale di Chrome.

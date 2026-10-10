@@ -228,3 +228,17 @@ At startup the script also checks with `chrome.commands.getAll()` that the short
 `npm run smoke` builds with `AUTOGROUP_SMOKE=1`, which adds `<all_urls>` to the host permissions: in headless mode Chrome's permission dialog cannot be accepted. At the end it rebuilds the normal build.
 
 Stable Chrome ignores `--load-extension` since version 137, so the script uses Chrome for Testing downloaded by Puppeteer.
+
+## Scenarios covered (automatic grouping), in `tests/auto-group.test.ts`
+
+`organizer.autoGroupTab(tabId)` is called directly, as the service worker does on `tabs.onUpdated` with a new URL.
+
+- On by default.
+- A tab of a category site joins the open group with the category's name (case-insensitive), even alone, keeping its name and color; also a tab still loading, without a title.
+- Without an open group: below the minimum the tab stays free; at the minimum the free tabs of the same category form the group (name and color of the category, strip order), following the most specific rule; the configured minimum applies.
+- Not touched: pinned tabs, grouped tabs, excluded domains, tabs without a rule; a group of the same name in another window is not used.
+- Switch off: nothing happens. AI mode: same behavior, no provider queried. A closed tab is ignored without errors.
+- Toggling the switch does not make the proposal stale.
+
+The smoke test checks the real listener: with a rule on `127.0.0.1/auto`, a new page goes into the category's group; with the switch off it stays free.
+

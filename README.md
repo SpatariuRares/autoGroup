@@ -1,6 +1,6 @@
 # autoGroup
 
-A Chrome extension that sorts your tabs into groups, by site or by topic, with the AI you choose. It shows you the proposal first and doesn't move a single tab until you press **Apply**.
+A Chrome extension that sorts your tabs into groups, by site or by topic, with the AI you choose. It shows you the proposal first and doesn't move a single tab until you press **Apply**, except tabs from sites you put in a category yourself (see *Sites* in [Choosing the AI](#choosing-the-ai)).
 
 <p align="center"><img src="docs/store/en/screenshot-1.png" alt="The autoGroup panel with tabs grouped by topic" width="720"></p>
 
@@ -62,6 +62,8 @@ When you save a provider, Chrome asks for permission to contact **that server on
 
 **Sites**: each category can also have sites, such as `github.com` or `github.com/my-org`. Tabs from those sites (subdomains included) always go to that category, before any AI, also when grouping *By site*: the AI only receives the other tabs. If two sites match, the more specific one wins. In the panel, after you move a tab into a category, autoGroup offers to **always put** that site there.
 
+**Automatic grouping**: when you open a page from one of those sites, the tab goes straight into the category's group, without AI and without opening the panel. If the group isn't open yet, it's created once the category has the minimum number of tabs. It only happens when a tab changes address, so a tab you take out of a group by hand stays out until it opens another page. You can turn it off in *Settings > Behavior*.
+
 **If the AI doesn't answer**: the next level takes over (Classifier → Generator → by site) and the panel shows a notice with the cause and a link to the settings. While the AI is working you already see the by-site proposal: **Use this** keeps it without waiting.
 
 ## Troubleshooting
@@ -95,7 +97,7 @@ Full policy: [docs/store/privacy.md](docs/store/privacy.md).
 
 | Permission | Why |
 |---|---|
-| `tabs`, `tabGroups` | Read the titles and addresses of your tabs, create groups, move and close tabs when you ask |
+| `tabs`, `tabGroups` | Read the titles and addresses of your tabs, create groups, move and close tabs when you ask, and put a tab into its category's group when it opens one of your category sites (automatic grouping, can be turned off) |
 | `storage` | Save settings, keys and the current proposal |
 | `scripting` | Read page descriptions, only if you turn the option on |
 | `sidePanel` | Show autoGroup in the side panel |
@@ -103,7 +105,7 @@ Full policy: [docs/store/privacy.md](docs/store/privacy.md).
 
 ## What it doesn't do (yet)
 
-- Group new tabs on its own while you browse: it always starts from your click.
+- Group new tabs on its own by topic while you browse: automatic grouping only covers the sites of your categories.
 - Reorganize tabs that are already grouped.
 - Work across several windows at once.
 - Drag and drop tabs in the preview.

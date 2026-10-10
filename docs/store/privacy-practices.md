@@ -4,13 +4,13 @@ Answers to paste into the **"Privacy practices"** tab of the developer dashboard
 
 ## Single purpose
 
-> autoGroup organizes the tabs of the current window into Chrome tab groups. It suggests groups by site or by topic (optionally with an AI provider chosen by the user), shows an editable preview, and applies the groups only when the user confirms, with an undo.
+> autoGroup organizes the tabs of the current window into Chrome tab groups. It suggests groups by site or by topic (optionally with an AI provider chosen by the user), shows an editable preview, and applies the groups when the user confirms, with an undo. Optionally (on by default, can be turned off) it also puts a tab into the group of a category when the tab opens a site the user added to that category.
 
 ## Permission justification
 
 | Permission | Justification (to paste) |
 |---|---|
-| `tabs` | Reads the title and URL of the tabs in the current window to build the grouping proposal, and moves or closes tabs when the user asks (Apply, Undo, close a tab from the panel). |
+| `tabs` | Reads the title and URL of the tabs in the current window to build the grouping proposal, and moves or closes tabs when the user asks (Apply, Undo, close a tab from the panel). As an optional feature on by default, when a tab's URL changes, checks it against the sites the user added to a category and, if it matches, adds the tab to that category's group (automatic grouping, on by default, can be turned off; nothing is sent anywhere). |
 | `tabGroups` | Creates the proposed tab groups with their name and color, adds tabs to groups the user already has, and reads open groups so they can be extended instead of duplicated. |
 | `storage` | Saves the user's settings (categories, excluded domains, provider address and model), the provider API keys (local only, never synced) and the current proposal with its undo snapshot (session storage, cleared when Chrome closes). |
 | `scripting` | Only when the user turns on the optional "Read page descriptions" setting and grants access to sites: reads the meta description of the tabs being organized, to classify them more accurately. It never reads page content and never runs on excluded domains. |

@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import { loadSettings } from '../settings';
 import type { OrganizerState, Proposal, ProposalEdit } from '../shared/types';
 import { applyProposal } from './applier';
+import { autoGroupTab } from './auto-group';
 import { willAskAi } from './pipeline';
 import { buildPreview, buildProposal, collectInputs, signatureOf } from './proposal-builder';
 import { TAB_GROUP_ID_NONE } from './tab-selection';
@@ -74,6 +75,11 @@ export interface Organizer {
    * Si accetta solo una tab che la selezione prenderebbe (non fissata, non interna, non esclusa).
    */
   groupTab(tabId: number, groupId: number): Promise<OrganizerState>;
+  /**
+   * Raggruppamento automatico di una tab che ha appena cambiato URL, con le sole regole sui siti
+   * (vedi `autoGroupTab`). Non cambia lo stato: una proposta che conteneva la tab diventa superata.
+   */
+  autoGroupTab(tabId: number): Promise<void>;
   /** "Interrompi": annulla le richieste in corso e i calcoli in coda; nessuno produce una proposta. */
   abort(): Promise<OrganizerState>;
   /**
@@ -250,6 +256,17 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         if (!selectCandidateTabs(tabs, excludedDomains).some((t) => t.tabId === tabId)) return current;
         await browser.tabs.group({ tabIds: [tabId], groupId });
         return current;
+      });
+    },
+
+    autoGroupTab(tabId) {
+      return exclusive(async () => {
+        try {
+          await autoGroupTab(tabId);
+        } catch (err) {
+          // Es. una finestra che non accetta gruppi, o una tab chiusa a metà: la tab resta dov'è.
+          console.error('autoGroup: raggruppamento automatico fallito', err);
+        }
       });
     },
 
