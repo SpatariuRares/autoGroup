@@ -1,0 +1,910 @@
+{
+  "extName": {
+    "message": "autoGroup – Grupos de pestañas con IA"
+  },
+  "extDescription": {
+    "message": "Agrupa tus pestañas con la IA que elijas, con vista previa y opción de deshacer."
+  },
+  "actionTitle": {
+    "message": "Organizar pestañas"
+  },
+  "popupTitle": {
+    "message": "Organizar pestañas"
+  },
+  "popupComputing": {
+    "message": "Calculando la propuesta…"
+  },
+  "popupNoGroups": {
+    "message": "No hay grupos que proponer."
+  },
+  "popupRecompute": {
+    "message": "Recalcular"
+  },
+  "popupApply": {
+    "message": "Aplicar"
+  },
+  "popupApplied": {
+    "message": "Grupos creados."
+  },
+  "popupTabCount": {
+    "message": "$COUNT$ pestañas",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "provenance_list": {
+    "message": "lista"
+  },
+  "provenance_existing": {
+    "message": "existente"
+  },
+  "provenance_ai": {
+    "message": "nuevo IA"
+  },
+  "provenance_domain": {
+    "message": "sitio"
+  },
+  "color_grey": {
+    "message": "gris"
+  },
+  "color_blue": {
+    "message": "azul"
+  },
+  "color_red": {
+    "message": "rojo"
+  },
+  "color_yellow": {
+    "message": "amarillo"
+  },
+  "color_green": {
+    "message": "verde"
+  },
+  "color_pink": {
+    "message": "rosa"
+  },
+  "color_purple": {
+    "message": "morado"
+  },
+  "color_cyan": {
+    "message": "cian"
+  },
+  "color_orange": {
+    "message": "naranja"
+  },
+  "errorPropose": {
+    "message": "No se ha podido calcular la propuesta."
+  },
+  "errorApply": {
+    "message": "No se han podido crear los grupos."
+  },
+  "popupUndo": {
+    "message": "Deshacer última organización"
+  },
+  "popupUndone": {
+    "message": "Organización deshecha."
+  },
+  "errorUndo": {
+    "message": "No se ha podido deshacer la organización."
+  },
+  "popupChangeColor": {
+    "message": "Cambiar color"
+  },
+  "popupGroupName": {
+    "message": "Nombre del grupo"
+  },
+  "popupDiscardGroup": {
+    "message": "Descartar grupo (las pestañas quedan libres)"
+  },
+  "popupMoveTab": {
+    "message": "Mover la pestaña a otro grupo"
+  },
+  "popupMoveTo": {
+    "message": "Mover a…"
+  },
+  "popupRemoveTab": {
+    "message": "Quitar del grupo (la pestaña sigue abierta y sin grupo)"
+  },
+  "popupUnnamed": {
+    "message": "(sin nombre)"
+  },
+  "optionsTitle": {
+    "message": "Configuración de autoGroup"
+  },
+  "optionsNavGeneral": {
+    "message": "General"
+  },
+  "optionsNavCategories": {
+    "message": "Categorías y sitios"
+  },
+  "optionsNavAi": {
+    "message": "IA"
+  },
+  "optionsNavAiOff": {
+    "message": "desactivada"
+  },
+  "optionsNavAbout": {
+    "message": "Información"
+  },
+  "optionsTabs": {
+    "message": "Pestañas que organizar"
+  },
+  "optionsAutoGroup": {
+    "message": "Agrupación automática"
+  },
+  "optionsDescriptions": {
+    "message": "Descripciones de las páginas"
+  },
+  "optionsUseAi": {
+    "message": "Usar IA"
+  },
+  "optionsVersion": {
+    "message": "Versión $VERSION$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsMoreSites": {
+    "message": "+$COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsSaved": {
+    "message": "Guardado"
+  },
+  "optionsMinTabs": {
+    "message": "Número mínimo de pestañas para crear un grupo nuevo"
+  },
+  "optionsMinTabsHint": {
+    "message": "Una sola pestaña puede unirse igualmente a un grupo que ya existe."
+  },
+  "optionsMinTabsInvalid": {
+    "message": "Introduce un número entero mayor o igual que 1."
+  },
+  "optionsAutoGroupSites": {
+    "message": "Agrupar automáticamente las pestañas de los sitios de las categorías"
+  },
+  "optionsAutoGroupSitesHint": {
+    "message": "Cuando abres un sitio que añadiste a una categoría, la pestaña va directamente a su grupo, sin IA. Si el grupo aún no existe, se crea cuando esa categoría alcanza el número mínimo de pestañas. Las pestañas que saques de un grupo a mano se quedan fuera hasta que cambien de página."
+  },
+  "optionsExcludedDomains": {
+    "message": "Dominios excluidos"
+  },
+  "optionsExcludedDomainsHint": {
+    "message": "Las pestañas de estos dominios, y de sus subdominios, nunca se proponen ni se envían a la IA, y quedan libres."
+  },
+  "optionsDomainPlaceholder": {
+    "message": "p. ej., mibanco.es"
+  },
+  "optionsAdd": {
+    "message": "Añadir"
+  },
+  "optionsRemove": {
+    "message": "Quitar"
+  },
+  "optionsDomainInvalid": {
+    "message": "No parece un dominio válido."
+  },
+  "optionsDomainDuplicate": {
+    "message": "Este dominio ya está en la lista."
+  },
+  "optionsSitesInvalid": {
+    "message": "Sitios no válidos: comprueba que cada sitio esté bien escrito y en una sola categoría."
+  },
+  "optionsSitesTooMany": {
+    "message": "Demasiados sitios: Chrome no puede guardarlos. Quita algunos."
+  },
+  "optionsNoExcludedDomains": {
+    "message": "No hay dominios excluidos."
+  },
+  "optionsBackup": {
+    "message": "Copia de seguridad"
+  },
+  "optionsBackupHint": {
+    "message": "Guarda en un archivo el modo, las categorías, los sitios, los dominios excluidos y el comportamiento, para restaurarlos aquí o en otro ordenador. No incluye proveedores ni claves de API."
+  },
+  "optionsExport": {
+    "message": "Exportar"
+  },
+  "optionsImport": {
+    "message": "Importar"
+  },
+  "optionsImported": {
+    "message": "Configuración importada"
+  },
+  "optionsImportInvalid": {
+    "message": "El archivo no es una copia de seguridad válida de autoGroup."
+  },
+  "popupOpenSettings": {
+    "message": "Configuración"
+  },
+  "errorUnexpected": {
+    "message": "Se ha producido un error inesperado. Inténtalo de nuevo."
+  },
+  "category_work_name": {
+    "message": "Trabajo"
+  },
+  "category_work_description": {
+    "message": "Herramientas y páginas de trabajo: correo de empresa, calendario, documentos compartidos, gestión de proyectos, CRM, reuniones."
+  },
+  "category_dev_name": {
+    "message": "Desarrollo"
+  },
+  "category_dev_description": {
+    "message": "Programación y herramientas para desarrolladores: repositorios de código, documentación técnica, issues, CI, Stack Overflow, consolas cloud."
+  },
+  "category_ai_name": {
+    "message": "IA"
+  },
+  "category_ai_description": {
+    "message": "Asistentes y servicios de inteligencia artificial: chats con modelos de lenguaje, generadores de imágenes, plataformas y noticias sobre IA."
+  },
+  "category_social_name": {
+    "message": "Social"
+  },
+  "category_social_description": {
+    "message": "Redes sociales y comunidades: perfiles, feeds, mensajes, foros y debates."
+  },
+  "category_news_name": {
+    "message": "Noticias"
+  },
+  "category_news_description": {
+    "message": "Periódicos, sitios de noticias, blogs de actualidad y newsletters."
+  },
+  "category_video_name": {
+    "message": "Vídeo"
+  },
+  "category_video_description": {
+    "message": "Vídeos, streaming, películas, series, música y pódcasts."
+  },
+  "category_shopping_name": {
+    "message": "Compras"
+  },
+  "category_shopping_description": {
+    "message": "Tiendas online, fichas de producto, carritos, comparadores de precios y opiniones de productos."
+  },
+  "category_travel_name": {
+    "message": "Viajes"
+  },
+  "category_travel_description": {
+    "message": "Vuelos, trenes, hoteles, alojamientos, mapas, guías y reservas de viaje."
+  },
+  "category_finance_name": {
+    "message": "Finanzas"
+  },
+  "category_finance_description": {
+    "message": "Banca, pagos, inversiones, criptomonedas, impuestos y facturas."
+  },
+  "category_study_name": {
+    "message": "Estudio"
+  },
+  "category_study_description": {
+    "message": "Cursos, clases, artículos científicos, enciclopedias, diccionarios y material de estudio."
+  },
+  "optionsCategories": {
+    "message": "Categorías"
+  },
+  "optionsCategoriesHint": {
+    "message": "Las categorías son las opciones entre las que elige la IA. La descripción explica qué entra en cada una; el color es el del grupo creado. Las pestañas de los sitios de una categoría siempre van a ella, también al agrupar por sitio."
+  },
+  "optionsCategoryName": {
+    "message": "Nombre"
+  },
+  "optionsCategoryDescription": {
+    "message": "Descripción"
+  },
+  "optionsCategoryColor": {
+    "message": "Color"
+  },
+  "optionsAddCategory": {
+    "message": "Añadir categoría"
+  },
+  "optionsResetCategories": {
+    "message": "Restablecer predeterminadas"
+  },
+  "optionsCategoryDeleted": {
+    "message": "Categoría «$NAME$» eliminada",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsCategoriesReset": {
+    "message": "Categorías predeterminadas restablecidas"
+  },
+  "optionsUndo": {
+    "message": "Deshacer"
+  },
+  "optionsMoveUp": {
+    "message": "Subir"
+  },
+  "optionsMoveDown": {
+    "message": "Bajar"
+  },
+  "optionsDeleteCategory": {
+    "message": "Eliminar categoría"
+  },
+  "optionsNewCategoryName": {
+    "message": "Nueva categoría"
+  },
+  "optionsNoCategories": {
+    "message": "Sin categorías: la IA solo podrá inventar grupos nuevos."
+  },
+  "categoryNameEmpty": {
+    "message": "El nombre de la categoría no puede estar vacío."
+  },
+  "categoryNameDuplicate": {
+    "message": "Ya existe una categoría con este nombre."
+  },
+  "categoryNameTooLong": {
+    "message": "El nombre de la categoría es demasiado largo (máximo 40 caracteres)."
+  },
+  "categoryDescriptionTooLong": {
+    "message": "La descripción es demasiado larga (máximo 300 caracteres)."
+  },
+  "categoryInvalid": {
+    "message": "La lista de categorías no es válida."
+  },
+  "errorSaveSettings": {
+    "message": "No se ha podido guardar la configuración."
+  },
+  "aiLanguageName": {
+    "message": "español"
+  },
+  "userGroupDescription": {
+    "message": "Grupo creado por el usuario: «$NAME$»",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsGenerator": {
+    "message": "Generador"
+  },
+  "optionsGeneratorHint": {
+    "message": "El Generador elige entre las categorías o inventa grupos nuevos. Gemini Nano se ejecuta en el navegador, sin claves y sin enviar datos; también puedes usar un modelo compatible con OpenAI."
+  },
+  "optionsPreset": {
+    "message": "Proveedor"
+  },
+  "optionsPresetCustom": {
+    "message": "Personalizado"
+  },
+  "optionsBaseUrl": {
+    "message": "URL base"
+  },
+  "optionsModel": {
+    "message": "Modelo"
+  },
+  "optionsModelPlaceholder": {
+    "message": "p. ej., openai/gpt-4o-mini"
+  },
+  "optionsApiKey": {
+    "message": "Clave de API"
+  },
+  "optionsApiKeyPlaceholder": {
+    "message": "opcional para servidores locales"
+  },
+  "optionsApiKeyHint": {
+    "message": "La clave solo se guarda en este ordenador (no se sincroniza)."
+  },
+  "optionsSaveProvider": {
+    "message": "Guardar"
+  },
+  "optionsTestConnection": {
+    "message": "Probar conexión"
+  },
+  "optionsTesting": {
+    "message": "Probando…"
+  },
+  "optionsTestOk": {
+    "message": "Conexión correcta."
+  },
+  "optionsUnsaved": {
+    "message": "Cambios sin guardar."
+  },
+  "optionsGeneratorDisabled": {
+    "message": "Generador desactivado: solo decide el Clasificador, o las pestañas se agrupan por sitio."
+  },
+  "optionsGeneratorIncomplete": {
+    "message": "Introduce la URL base y el modelo para usar el Generador."
+  },
+  "optionsGeneratorBadUrl": {
+    "message": "La URL base debe empezar por http:// o https://."
+  },
+  "warning_unreachable": {
+    "message": "No se puede acceder a $PROVIDER$.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_key": {
+    "message": "$PROVIDER$: clave de API no válida.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_rate_limit": {
+    "message": "$PROVIDER$: demasiadas solicitudes, inténtalo de nuevo en breve.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_timeout": {
+    "message": "$PROVIDER$ no ha respondido a tiempo.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_response": {
+    "message": "$PROVIDER$ ha devuelto una respuesta no válida.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_request": {
+    "message": "$PROVIDER$ ha rechazado la solicitud (modelo o parámetros no válidos).",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_unavailable": {
+    "message": "$PROVIDER$ no está disponible.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_no_permission": {
+    "message": "$PROVIDER$: falta el permiso de red. Vuelve a guardar el proveedor en la configuración y concede el permiso.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupWarningFallback": {
+    "message": "Propuesta menos precisa:"
+  },
+  "popupWarningSettings": {
+    "message": "Configuración"
+  },
+  "warning_needs_download": {
+    "message": "Hay que descargar $PROVIDER$: inicia la descarga desde la configuración.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_downloading": {
+    "message": "$PROVIDER$ se está descargando y se usará cuando esté listo.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_not_supported": {
+    "message": "$PROVIDER$ no es compatible con este navegador u ordenador. Elige otro proveedor o agrupa «Por sitio».",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "nanoStatus_available": {
+    "message": "Gemini Nano está disponible y se usará."
+  },
+  "nanoStatus_downloadable": {
+    "message": "Gemini Nano es compatible, pero hay que descargarlo (unos 2-4 GB)."
+  },
+  "nanoStatus_downloading": {
+    "message": "Descargando Gemini Nano…"
+  },
+  "nanoStatus_unavailable": {
+    "message": "Gemini Nano no es compatible con este navegador u ordenador: las pestañas se agruparán por sitio."
+  },
+  "nanoDownload": {
+    "message": "Descargar Gemini Nano"
+  },
+  "nanoDownloadFailed": {
+    "message": "No se ha podido descargar Gemini Nano."
+  },
+  "optionsClassifier": {
+    "message": "Clasificador"
+  },
+  "optionsClassifierHint": {
+    "message": "Un clasificador System One (Jev, Kev, Rizzo Flow) asigna cada pestaña a una categoría o a un grupo abierto, con una confianza calibrada. Es rápido y barato; las pestañas dudosas pasan al Generador."
+  },
+  "optionsClassifierNone": {
+    "message": "Ninguno"
+  },
+  "optionsClassifierDisabled": {
+    "message": "Clasificador desactivado: decide el Generador (o la agrupación por dominio)."
+  },
+  "optionsClassifierModelPlaceholder": {
+    "message": "p. ej., jev-latest (opcional para Kev y Rizzo Flow)"
+  },
+  "optionsSavedProvider": {
+    "message": "Proveedor guardado y permiso concedido."
+  },
+  "optionsThreshold": {
+    "message": "Umbral de confianza"
+  },
+  "optionsThresholdHint": {
+    "message": "Las pestañas con menos confianza no las asigna el Clasificador y pasan al Generador."
+  },
+  "optionsThresholdInvalid": {
+    "message": "El umbral debe ser un número entre 0 y 1."
+  },
+  "optionsProviderInvalid": {
+    "message": "La configuración del proveedor no es válida."
+  },
+  "popupSaveToList": {
+    "message": "Guardar en la lista"
+  },
+  "popupSaveToListHint": {
+    "message": "Añade este grupo a las categorías, con una descripción generada por la IA"
+  },
+  "panelSiteRemembered": {
+    "message": "Las pestañas de $SITE$ irán siempre a $CATEGORY$.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "category": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelSiteMoved": {
+    "message": "$SITE$ se ha movido de $FROM$ a $TO$.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "from": {
+        "content": "$2"
+      },
+      "to": {
+        "content": "$3"
+      }
+    }
+  },
+  "saveToListSaved": {
+    "message": "«$NAME$» se ha añadido a las categorías.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "saveToListNoDescription": {
+    "message": "«$NAME$» se ha añadido a las categorías sin descripción: complétala en la configuración.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "saveToListDuplicate": {
+    "message": "Ya existe una categoría «$NAME$»: no se ha duplicado.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupAbort": {
+    "message": "Detener"
+  },
+  "panelPreviewComputing": {
+    "message": "Mientras tanto, la propuesta por sitio: la IA está calculando…"
+  },
+  "panelUsePreview": {
+    "message": "Usar esta"
+  },
+  "popupAborted": {
+    "message": "Cálculo detenido: no hay propuesta. Pulsa «Recalcular» para volver a intentarlo."
+  },
+  "optionsReadDescriptions": {
+    "message": "Leer la descripción de las páginas para mayor precisión"
+  },
+  "optionsReadDescriptionsHint": {
+    "message": "Pide permiso para leer los sitios que visitas. Solo se lee la descripción de la página (meta description), nunca el contenido; las pestañas en suspensión, los dominios excluidos, las páginas de Chrome, la Web Store y los PDF nunca se leen. Al desactivar el interruptor se retira el permiso."
+  },
+  "optionsReadDescriptionsDenied": {
+    "message": "Permiso no concedido: solo se usarán el título y la URL."
+  },
+  "optionsMode": {
+    "message": "Cómo agrupar"
+  },
+  "optionsModeDomain": {
+    "message": "Por sitio"
+  },
+  "optionsModeDomainHint": {
+    "message": "Las pestañas del mismo sitio van al mismo grupo. Al instante, sin configuración, ningún dato sale de tu ordenador."
+  },
+  "optionsModeAi": {
+    "message": "Por tema, con IA"
+  },
+  "optionsModeAiHint": {
+    "message": "La IA elige entre tus categorías o inventa otras nuevas. Si ningún proveedor responde, las pestañas se agrupan por sitio."
+  },
+  "optionsModeDomainNote": {
+    "message": "Estás agrupando por sitio: no se usan proveedores de IA. Cambia a IA para elegirlos y configurarlos."
+  },
+  "optionsPresetNano": {
+    "message": "Gemini Nano (integrado en Chrome)"
+  },
+  "optionsGeneratorNone": {
+    "message": "Ninguno"
+  },
+  "optionsStatusOff": {
+    "message": "Desactivado"
+  },
+  "panelStale": {
+    "message": "Tus pestañas han cambiado después de esta propuesta."
+  },
+  "panelDuplicatesOne": {
+    "message": "Una pestaña duplica otra que ya está abierta."
+  },
+  "panelDuplicates": {
+    "message": "$COUNT$ pestañas duplican otras ya abiertas.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseDuplicates": {
+    "message": "Cerrar duplicadas"
+  },
+  "panelModeSite": {
+    "message": "Por sitio"
+  },
+  "panelModeAi": {
+    "message": "Con IA"
+  },
+  "panelModeSiteSummary": {
+    "message": "Las pestañas del mismo sitio van juntas. No se envía ningún dato."
+  },
+  "panelNoProvider": {
+    "message": "No hay ningún proveedor de IA configurado: las pestañas se agrupan por sitio."
+  },
+  "panelChangeProviders": {
+    "message": "Cambiar"
+  },
+  "panelSectionNew": {
+    "message": "Grupos nuevos"
+  },
+  "panelSectionExisting": {
+    "message": "Grupos abiertos"
+  },
+  "panelSectionFree": {
+    "message": "Sin grupo"
+  },
+  "panelFreeHint": {
+    "message": "Se quedan fuera de los grupos. Puedes añadirlas a un grupo."
+  },
+  "panelSectionHeld": {
+    "message": "Sin organizar"
+  },
+  "panelHeldPinned": {
+    "message": "fijada"
+  },
+  "panelHeldInternal": {
+    "message": "página del navegador"
+  },
+  "panelHeldExcluded": {
+    "message": "dominio excluido"
+  },
+  "panelHeldLoading": {
+    "message": "cargando"
+  },
+  "panelNewTab": {
+    "message": "nueva"
+  },
+  "panelAddedCount": {
+    "message": "+ $COUNT$ nuevas",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupTabCountOne": {
+    "message": "1 pestaña"
+  },
+  "panelAddedCountOne": {
+    "message": "+ 1 nueva"
+  },
+  "panelRule": {
+    "message": "regla"
+  },
+  "panelRuleHint": {
+    "message": "Regla: $SITE$",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelRememberSite": {
+    "message": "¿Poner siempre $SITE$ en $CATEGORY$?",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "category": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelRememberSiteYes": {
+    "message": "Sí"
+  },
+  "panelCloseTab": {
+    "message": "Cerrar pestaña"
+  },
+  "onboardingTitle": {
+    "message": "Te damos la bienvenida a autoGroup"
+  },
+  "onboardingStepCount": {
+    "message": "Paso $CURRENT$ de $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "onboardingWelcomeTitle": {
+    "message": "Pestañas en orden, sin sorpresas"
+  },
+  "onboardingWelcomeText": {
+    "message": "autoGroup propone grupos para las pestañas sin grupo de tu ventana. Primero ves una vista previa y puedes cambiarla: ninguna pestaña se mueve hasta que pulses «Aplicar», y «Deshacer» lo deja todo como estaba."
+  },
+  "onboardingWelcomeShortcut": {
+    "message": "Para abrirlo, haz clic en el icono de la extensión o pulsa $SHORTCUT$.",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "onboardingWelcomeNoShortcut": {
+    "message": "Para abrirlo, haz clic en el icono de la extensión. Puedes asignarle un atajo en chrome://extensions/shortcuts."
+  },
+  "onboardingWelcomeSetup": {
+    "message": "En un par de minutos eliges cómo agrupar. Podrás cambiarlo todo más tarde en la configuración."
+  },
+  "onboardingStart": {
+    "message": "Empezar"
+  },
+  "onboardingNext": {
+    "message": "Siguiente"
+  },
+  "onboardingBack": {
+    "message": "Atrás"
+  },
+  "onboardingSkip": {
+    "message": "Saltar la guía"
+  },
+  "onboardingModeTitle": {
+    "message": "¿Cómo quieres agrupar?"
+  },
+  "onboardingModeText": {
+    "message": "«Por sitio» funciona al momento. «Con IA» divide las pestañas por tema: en los siguientes pasos eliges quién hace el trabajo. Puedes cambiar cuando quieras, también desde el panel."
+  },
+  "onboardingGeneratorTitle": {
+    "message": "Elige el Generador"
+  },
+  "onboardingGeneratorText": {
+    "message": "El Generador lee el título y la dirección de tus pestañas, las coloca en tus categorías y crea grupos nuevos cuando hace falta. Tienes tres opciones:"
+  },
+  "onboardingGeneratorNanoText": {
+    "message": "Integrado en Chrome: gratis, sin claves y ningún dato sale de tu ordenador. Se descarga una vez, si tu ordenador es compatible."
+  },
+  "onboardingGeneratorLocal": {
+    "message": "Servidor local"
+  },
+  "onboardingGeneratorLocalText": {
+    "message": "Ollama, LM Studio o Unsloth Studio en tu ordenador: privado, pero necesitas un modelo instalado."
+  },
+  "onboardingGeneratorCloud": {
+    "message": "Servicio online"
+  },
+  "onboardingGeneratorCloudText": {
+    "message": "OpenRouter u otro servicio compatible con OpenAI: el más potente, pero necesita una clave de API y los títulos y direcciones se envían al servicio."
+  },
+  "onboardingGeneratorDefault": {
+    "message": "Gemini Nano ya está seleccionado: si te parece bien, pulsa «Siguiente». Si no, elige abajo y pulsa «Guardar»."
+  },
+  "onboardingClassifierTitle": {
+    "message": "Clasificador (opcional)"
+  },
+  "onboardingClassifierText": {
+    "message": "Un clasificador System One (Jev, Kev, Rizzo Flow) coloca cada pestaña en una de tus categorías en unas décimas de segundo; las pestañas dudosas pasan al Generador. Si no tienes uno, pulsa «Siguiente»: puedes añadirlo más tarde en la configuración."
+  },
+  "onboardingDoneTitle": {
+    "message": "Todo listo"
+  },
+  "onboardingDoneDomain": {
+    "message": "Las pestañas del mismo sitio irán al mismo grupo. Ningún dato sale de tu ordenador."
+  },
+  "onboardingDonePlan": {
+    "message": "Así se hará la propuesta:"
+  },
+  "onboardingDoneDomainLevel": {
+    "message": "siempre disponible"
+  },
+  "onboardingDoneFallback": {
+    "message": "Si un nivel está desactivado o no responde, toma el relevo el siguiente, con un aviso en el panel: siempre obtienes una propuesta."
+  },
+  "onboardingDonePrivacy": {
+    "message": "La IA solo recibe el título y la dirección de tus pestañas (sin parámetros), nunca pestañas de dominios excluidos. Las categorías, los dominios excluidos y las descripciones de páginas se pueden cambiar en la configuración."
+  },
+  "onboardingOpenPanel": {
+    "message": "Abrir el panel"
+  },
+  "onboardingOpenSettings": {
+    "message": "Abrir configuración"
+  },
+  "optionsOnboarding": {
+    "message": "Ver la guía de nuevo"
+  },
+  "optionsCoffee": {
+    "message": "Invítame a un café"
+  },
+  "optionsReadDescriptionsProviderLost": {
+    "message": "Las descripciones están desactivadas, pero un proveedor ha perdido el acceso a su servidor: vuelve a guardarlo en su sección."
+  },
+  "optionsSites": {
+    "message": "Sitios"
+  },
+  "optionsAddSite": {
+    "message": "Sitio"
+  },
+  "optionsSitesHint": {
+    "message": "Las pestañas de estos sitios siempre van a esta categoría, sin preguntar a la IA."
+  },
+  "optionsSitePlaceholder": {
+    "message": "p. ej., github.com/mi-org"
+  },
+  "optionsSiteInvalid": {
+    "message": "No parece un sitio válido."
+  },
+  "optionsSiteDuplicate": {
+    "message": "Este sitio ya está en $CATEGORY$.",
+    "placeholders": {
+      "category": {
+        "content": "$1"
+      }
+    }
+  }
+}

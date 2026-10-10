@@ -203,6 +203,24 @@
   "optionsNoExcludedDomains": {
     "message": "No excluded domains."
   },
+  "optionsBackup": {
+    "message": "Backup"
+  },
+  "optionsBackupHint": {
+    "message": "Save mode, categories, sites, excluded domains and behavior to a file, to restore them here or on another computer. Providers and API keys aren't included."
+  },
+  "optionsExport": {
+    "message": "Export"
+  },
+  "optionsImport": {
+    "message": "Import"
+  },
+  "optionsImported": {
+    "message": "Settings imported"
+  },
+  "optionsImportInvalid": {
+    "message": "This file isn't a valid autoGroup backup."
+  },
   "popupOpenSettings": {
     "message": "Settings"
   },
@@ -649,6 +667,20 @@
   },
   "panelStale": {
     "message": "Your tabs changed after this proposal."
+  },
+  "panelDuplicatesOne": {
+    "message": "One tab duplicates another open tab."
+  },
+  "panelDuplicates": {
+    "message": "$COUNT$ tabs duplicate other open tabs.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseDuplicates": {
+    "message": "Close duplicates"
   },
   "panelModeSite": {
     "message": "By site"

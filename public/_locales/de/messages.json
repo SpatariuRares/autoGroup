@@ -1,0 +1,910 @@
+{
+  "extName": {
+    "message": "autoGroup – KI-Tabgruppen"
+  },
+  "extDescription": {
+    "message": "Gruppiere deine Tabs mit der KI deiner Wahl – mit Vorschau und Rückgängig-Funktion."
+  },
+  "actionTitle": {
+    "message": "Tabs ordnen"
+  },
+  "popupTitle": {
+    "message": "Tabs ordnen"
+  },
+  "popupComputing": {
+    "message": "Vorschlag wird berechnet…"
+  },
+  "popupNoGroups": {
+    "message": "Keine Gruppen vorzuschlagen."
+  },
+  "popupRecompute": {
+    "message": "Neu berechnen"
+  },
+  "popupApply": {
+    "message": "Anwenden"
+  },
+  "popupApplied": {
+    "message": "Gruppen erstellt."
+  },
+  "popupTabCount": {
+    "message": "$COUNT$ Tabs",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "provenance_list": {
+    "message": "Liste"
+  },
+  "provenance_existing": {
+    "message": "vorhanden"
+  },
+  "provenance_ai": {
+    "message": "neu (KI)"
+  },
+  "provenance_domain": {
+    "message": "Website"
+  },
+  "color_grey": {
+    "message": "grau"
+  },
+  "color_blue": {
+    "message": "blau"
+  },
+  "color_red": {
+    "message": "rot"
+  },
+  "color_yellow": {
+    "message": "gelb"
+  },
+  "color_green": {
+    "message": "grün"
+  },
+  "color_pink": {
+    "message": "pink"
+  },
+  "color_purple": {
+    "message": "lila"
+  },
+  "color_cyan": {
+    "message": "cyan"
+  },
+  "color_orange": {
+    "message": "orange"
+  },
+  "errorPropose": {
+    "message": "Der Vorschlag konnte nicht berechnet werden."
+  },
+  "errorApply": {
+    "message": "Die Gruppen konnten nicht erstellt werden."
+  },
+  "popupUndo": {
+    "message": "Letzte Ordnung rückgängig machen"
+  },
+  "popupUndone": {
+    "message": "Ordnung rückgängig gemacht."
+  },
+  "errorUndo": {
+    "message": "Die Ordnung konnte nicht rückgängig gemacht werden."
+  },
+  "popupChangeColor": {
+    "message": "Farbe ändern"
+  },
+  "popupGroupName": {
+    "message": "Gruppenname"
+  },
+  "popupDiscardGroup": {
+    "message": "Gruppe verwerfen (Tabs bleiben frei)"
+  },
+  "popupMoveTab": {
+    "message": "Tab in eine andere Gruppe verschieben"
+  },
+  "popupMoveTo": {
+    "message": "Verschieben nach…"
+  },
+  "popupRemoveTab": {
+    "message": "Aus der Gruppe entfernen (der Tab bleibt offen und ohne Gruppe)"
+  },
+  "popupUnnamed": {
+    "message": "(ohne Namen)"
+  },
+  "optionsTitle": {
+    "message": "autoGroup-Einstellungen"
+  },
+  "optionsNavGeneral": {
+    "message": "Allgemein"
+  },
+  "optionsNavCategories": {
+    "message": "Kategorien und Websites"
+  },
+  "optionsNavAi": {
+    "message": "KI"
+  },
+  "optionsNavAiOff": {
+    "message": "aus"
+  },
+  "optionsNavAbout": {
+    "message": "Über"
+  },
+  "optionsTabs": {
+    "message": "Zu ordnende Tabs"
+  },
+  "optionsAutoGroup": {
+    "message": "Automatisch gruppieren"
+  },
+  "optionsDescriptions": {
+    "message": "Seitenbeschreibungen"
+  },
+  "optionsUseAi": {
+    "message": "KI verwenden"
+  },
+  "optionsVersion": {
+    "message": "Version $VERSION$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsMoreSites": {
+    "message": "+$COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsSaved": {
+    "message": "Gespeichert"
+  },
+  "optionsMinTabs": {
+    "message": "Mindestanzahl an Tabs für eine neue Gruppe"
+  },
+  "optionsMinTabsHint": {
+    "message": "Ein einzelner Tab kann trotzdem einer bestehenden Gruppe beitreten."
+  },
+  "optionsMinTabsInvalid": {
+    "message": "Gib eine ganze Zahl ab 1 ein."
+  },
+  "optionsAutoGroupSites": {
+    "message": "Tabs von Kategorie-Websites automatisch gruppieren"
+  },
+  "optionsAutoGroupSitesHint": {
+    "message": "Wenn du eine Website öffnest, die du einer Kategorie zugeordnet hast, kommt der Tab direkt in ihre Gruppe, ohne KI. Gibt es die Gruppe noch nicht, wird sie erstellt, sobald die Kategorie die Mindestanzahl an Tabs erreicht. Tabs, die du von Hand aus einer Gruppe nimmst, bleiben draußen, bis sie die Seite wechseln."
+  },
+  "optionsExcludedDomains": {
+    "message": "Ausgeschlossene Domains"
+  },
+  "optionsExcludedDomainsHint": {
+    "message": "Tabs dieser Domains und ihrer Subdomains werden nie vorgeschlagen oder an die KI gesendet und bleiben frei."
+  },
+  "optionsDomainPlaceholder": {
+    "message": "z. B. meinebank.de"
+  },
+  "optionsAdd": {
+    "message": "Hinzufügen"
+  },
+  "optionsRemove": {
+    "message": "Entfernen"
+  },
+  "optionsDomainInvalid": {
+    "message": "Das sieht nicht nach einer gültigen Domain aus."
+  },
+  "optionsDomainDuplicate": {
+    "message": "Diese Domain ist bereits in der Liste."
+  },
+  "optionsSitesInvalid": {
+    "message": "Ungültige Websites: Prüfe, ob jede Website richtig geschrieben ist und nur in einer Kategorie steht."
+  },
+  "optionsSitesTooMany": {
+    "message": "Zu viele Websites: Chrome kann sie nicht speichern. Entferne einige."
+  },
+  "optionsNoExcludedDomains": {
+    "message": "Keine ausgeschlossenen Domains."
+  },
+  "optionsBackup": {
+    "message": "Sicherung"
+  },
+  "optionsBackupHint": {
+    "message": "Speichere Modus, Kategorien, Websites, ausgeschlossene Domains und Verhalten in einer Datei, um sie hier oder auf einem anderen Computer wiederherzustellen. Anbieter und API-Schlüssel sind nicht enthalten."
+  },
+  "optionsExport": {
+    "message": "Exportieren"
+  },
+  "optionsImport": {
+    "message": "Importieren"
+  },
+  "optionsImported": {
+    "message": "Einstellungen importiert"
+  },
+  "optionsImportInvalid": {
+    "message": "Die Datei ist keine gültige autoGroup-Sicherung."
+  },
+  "popupOpenSettings": {
+    "message": "Einstellungen"
+  },
+  "errorUnexpected": {
+    "message": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
+  },
+  "category_work_name": {
+    "message": "Arbeit"
+  },
+  "category_work_description": {
+    "message": "Arbeitstools und -seiten: geschäftliche E-Mail, Kalender, geteilte Dokumente, Projektmanagement, CRM, Meetings."
+  },
+  "category_dev_name": {
+    "message": "Entwicklung"
+  },
+  "category_dev_description": {
+    "message": "Programmierung und Entwicklertools: Code-Repositorys, technische Dokumentation, Issues, CI, Stack Overflow, Cloud-Konsolen."
+  },
+  "category_ai_name": {
+    "message": "KI"
+  },
+  "category_ai_description": {
+    "message": "Assistenten und Dienste der künstlichen Intelligenz: Chats mit Sprachmodellen, Bildgeneratoren, KI-Plattformen und -News."
+  },
+  "category_social_name": {
+    "message": "Social Media"
+  },
+  "category_social_description": {
+    "message": "Soziale Netzwerke und Communitys: Profile, Feeds, Nachrichten, Foren und Diskussionen."
+  },
+  "category_news_name": {
+    "message": "Nachrichten"
+  },
+  "category_news_description": {
+    "message": "Zeitungen, Nachrichtenseiten, Blogs zum Zeitgeschehen und Newsletter."
+  },
+  "category_video_name": {
+    "message": "Video"
+  },
+  "category_video_description": {
+    "message": "Videos, Streaming, Filme, Serien, Musik und Podcasts."
+  },
+  "category_shopping_name": {
+    "message": "Shopping"
+  },
+  "category_shopping_description": {
+    "message": "Onlineshops, Produktseiten, Warenkörbe, Preisvergleiche und Produktbewertungen."
+  },
+  "category_travel_name": {
+    "message": "Reisen"
+  },
+  "category_travel_description": {
+    "message": "Flüge, Züge, Hotels, Unterkünfte, Karten, Reiseführer und Reisebuchungen."
+  },
+  "category_finance_name": {
+    "message": "Finanzen"
+  },
+  "category_finance_description": {
+    "message": "Banking, Zahlungen, Geldanlagen, Krypto, Steuern und Rechnungen."
+  },
+  "category_study_name": {
+    "message": "Lernen"
+  },
+  "category_study_description": {
+    "message": "Kurse, Lektionen, wissenschaftliche Artikel, Enzyklopädien, Wörterbücher und Lernmaterial."
+  },
+  "optionsCategories": {
+    "message": "Kategorien"
+  },
+  "optionsCategoriesHint": {
+    "message": "Aus den Kategorien wählt die KI aus. Die Beschreibung erklärt, was jeweils dazugehört; die Farbe ist die der erstellten Gruppe. Tabs von Websites einer Kategorie landen immer dort, auch beim Gruppieren nach Website."
+  },
+  "optionsCategoryName": {
+    "message": "Name"
+  },
+  "optionsCategoryDescription": {
+    "message": "Beschreibung"
+  },
+  "optionsCategoryColor": {
+    "message": "Farbe"
+  },
+  "optionsAddCategory": {
+    "message": "Kategorie hinzufügen"
+  },
+  "optionsResetCategories": {
+    "message": "Standard wiederherstellen"
+  },
+  "optionsCategoryDeleted": {
+    "message": "Kategorie „$NAME$“ gelöscht",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsCategoriesReset": {
+    "message": "Standardkategorien wiederhergestellt"
+  },
+  "optionsUndo": {
+    "message": "Rückgängig"
+  },
+  "optionsMoveUp": {
+    "message": "Nach oben"
+  },
+  "optionsMoveDown": {
+    "message": "Nach unten"
+  },
+  "optionsDeleteCategory": {
+    "message": "Kategorie löschen"
+  },
+  "optionsNewCategoryName": {
+    "message": "Neue Kategorie"
+  },
+  "optionsNoCategories": {
+    "message": "Keine Kategorien: Die KI kann nur neue Gruppen erfinden."
+  },
+  "categoryNameEmpty": {
+    "message": "Der Kategoriename darf nicht leer sein."
+  },
+  "categoryNameDuplicate": {
+    "message": "Eine Kategorie mit diesem Namen gibt es bereits."
+  },
+  "categoryNameTooLong": {
+    "message": "Der Kategoriename ist zu lang (maximal 40 Zeichen)."
+  },
+  "categoryDescriptionTooLong": {
+    "message": "Die Beschreibung ist zu lang (maximal 300 Zeichen)."
+  },
+  "categoryInvalid": {
+    "message": "Die Kategorienliste ist ungültig."
+  },
+  "errorSaveSettings": {
+    "message": "Die Einstellungen konnten nicht gespeichert werden."
+  },
+  "aiLanguageName": {
+    "message": "Deutsch"
+  },
+  "userGroupDescription": {
+    "message": "Vom Nutzer erstellte Gruppe: „$NAME$“",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsGenerator": {
+    "message": "Generator"
+  },
+  "optionsGeneratorHint": {
+    "message": "Der Generator wählt aus den Kategorien oder erfindet neue Gruppen. Gemini Nano läuft im Browser, ohne Schlüssel und ohne Daten zu senden; alternativ kannst du ein OpenAI-kompatibles Modell nutzen."
+  },
+  "optionsPreset": {
+    "message": "Anbieter"
+  },
+  "optionsPresetCustom": {
+    "message": "Benutzerdefiniert"
+  },
+  "optionsBaseUrl": {
+    "message": "Basis-URL"
+  },
+  "optionsModel": {
+    "message": "Modell"
+  },
+  "optionsModelPlaceholder": {
+    "message": "z. B. openai/gpt-4o-mini"
+  },
+  "optionsApiKey": {
+    "message": "API-Schlüssel"
+  },
+  "optionsApiKeyPlaceholder": {
+    "message": "optional bei lokalen Servern"
+  },
+  "optionsApiKeyHint": {
+    "message": "Der Schlüssel bleibt nur auf diesem Computer (er wird nicht synchronisiert)."
+  },
+  "optionsSaveProvider": {
+    "message": "Speichern"
+  },
+  "optionsTestConnection": {
+    "message": "Verbindung testen"
+  },
+  "optionsTesting": {
+    "message": "Wird getestet…"
+  },
+  "optionsTestOk": {
+    "message": "Verbindung erfolgreich."
+  },
+  "optionsUnsaved": {
+    "message": "Ungespeicherte Änderungen."
+  },
+  "optionsGeneratorDisabled": {
+    "message": "Generator aus: Nur der Klassifikator entscheidet, oder Tabs werden nach Website gruppiert."
+  },
+  "optionsGeneratorIncomplete": {
+    "message": "Gib Basis-URL und Modell ein, um den Generator zu nutzen."
+  },
+  "optionsGeneratorBadUrl": {
+    "message": "Die Basis-URL muss mit http:// oder https:// beginnen."
+  },
+  "warning_unreachable": {
+    "message": "$PROVIDER$ ist nicht erreichbar.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_key": {
+    "message": "$PROVIDER$: ungültiger API-Schlüssel.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_rate_limit": {
+    "message": "$PROVIDER$: zu viele Anfragen, versuche es gleich noch einmal.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_timeout": {
+    "message": "$PROVIDER$ hat nicht rechtzeitig geantwortet.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_response": {
+    "message": "$PROVIDER$ hat eine ungültige Antwort geliefert.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_request": {
+    "message": "$PROVIDER$ hat die Anfrage abgelehnt (ungültiges Modell oder ungültige Parameter).",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_unavailable": {
+    "message": "$PROVIDER$ ist nicht verfügbar.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_no_permission": {
+    "message": "$PROVIDER$: Netzwerkberechtigung fehlt. Speichere den Anbieter in den Einstellungen erneut und erteile die Berechtigung.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupWarningFallback": {
+    "message": "Weniger genauer Vorschlag:"
+  },
+  "popupWarningSettings": {
+    "message": "Einstellungen"
+  },
+  "warning_needs_download": {
+    "message": "$PROVIDER$ muss heruntergeladen werden: Starte den Download in den Einstellungen.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_downloading": {
+    "message": "$PROVIDER$ wird heruntergeladen und verwendet, sobald es bereit ist.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_not_supported": {
+    "message": "$PROVIDER$ wird von diesem Browser oder Computer nicht unterstützt. Wähle einen anderen Anbieter oder gruppiere „Nach Website“.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "nanoStatus_available": {
+    "message": "Gemini Nano ist verfügbar und wird verwendet."
+  },
+  "nanoStatus_downloadable": {
+    "message": "Gemini Nano wird unterstützt, muss aber heruntergeladen werden (ca. 2–4 GB)."
+  },
+  "nanoStatus_downloading": {
+    "message": "Gemini Nano wird heruntergeladen…"
+  },
+  "nanoStatus_unavailable": {
+    "message": "Gemini Nano wird von diesem Browser oder Computer nicht unterstützt: Tabs werden nach Website gruppiert."
+  },
+  "nanoDownload": {
+    "message": "Gemini Nano herunterladen"
+  },
+  "nanoDownloadFailed": {
+    "message": "Der Download von Gemini Nano ist fehlgeschlagen."
+  },
+  "optionsClassifier": {
+    "message": "Klassifikator"
+  },
+  "optionsClassifierHint": {
+    "message": "Ein System-One-Klassifikator (Jev, Kev, Rizzo Flow) ordnet jeden Tab einer Kategorie oder offenen Gruppe zu, mit kalibrierter Konfidenz. Er ist schnell und günstig; unsichere Tabs gehen an den Generator."
+  },
+  "optionsClassifierNone": {
+    "message": "Keiner"
+  },
+  "optionsClassifierDisabled": {
+    "message": "Klassifikator deaktiviert: Der Generator entscheidet (oder die Gruppierung nach Domain)."
+  },
+  "optionsClassifierModelPlaceholder": {
+    "message": "z. B. jev-latest (optional bei Kev und Rizzo Flow)"
+  },
+  "optionsSavedProvider": {
+    "message": "Anbieter gespeichert und Berechtigung erteilt."
+  },
+  "optionsThreshold": {
+    "message": "Konfidenzschwelle"
+  },
+  "optionsThresholdHint": {
+    "message": "Tabs mit geringerer Konfidenz ordnet der Klassifikator nicht zu; sie gehen an den Generator."
+  },
+  "optionsThresholdInvalid": {
+    "message": "Die Schwelle muss eine Zahl zwischen 0 und 1 sein."
+  },
+  "optionsProviderInvalid": {
+    "message": "Die Anbieterkonfiguration ist ungültig."
+  },
+  "popupSaveToList": {
+    "message": "In Liste speichern"
+  },
+  "popupSaveToListHint": {
+    "message": "Fügt diese Gruppe den Kategorien hinzu, mit einer von der KI erstellten Beschreibung"
+  },
+  "panelSiteRemembered": {
+    "message": "Tabs von $SITE$ kommen immer in $CATEGORY$.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "category": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelSiteMoved": {
+    "message": "$SITE$ von $FROM$ nach $TO$ verschoben.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "from": {
+        "content": "$2"
+      },
+      "to": {
+        "content": "$3"
+      }
+    }
+  },
+  "saveToListSaved": {
+    "message": "„$NAME$“ wurde zu den Kategorien hinzugefügt.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "saveToListNoDescription": {
+    "message": "„$NAME$“ wurde ohne Beschreibung zu den Kategorien hinzugefügt: Ergänze sie in den Einstellungen.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "saveToListDuplicate": {
+    "message": "Eine Kategorie „$NAME$“ gibt es bereits: Sie wurde nicht dupliziert.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupAbort": {
+    "message": "Stopp"
+  },
+  "panelPreviewComputing": {
+    "message": "Solange die KI rechnet, der Vorschlag nach Website:"
+  },
+  "panelUsePreview": {
+    "message": "Diesen nutzen"
+  },
+  "popupAborted": {
+    "message": "Berechnung gestoppt: kein Vorschlag. Klicke auf „Neu berechnen“, um es erneut zu versuchen."
+  },
+  "optionsReadDescriptions": {
+    "message": "Seitenbeschreibungen für mehr Genauigkeit lesen"
+  },
+  "optionsReadDescriptionsHint": {
+    "message": "Fragt nach der Berechtigung, die von dir besuchten Websites zu lesen. Gelesen wird nur die Seitenbeschreibung (Meta-Description), nie der Inhalt; inaktive Tabs, ausgeschlossene Domains, Chrome-Seiten, der Web Store und PDFs werden nie gelesen. Ausschalten entzieht die Berechtigung."
+  },
+  "optionsReadDescriptionsDenied": {
+    "message": "Berechtigung nicht erteilt: Es werden nur Titel und URL verwendet."
+  },
+  "optionsMode": {
+    "message": "Gruppierungsart"
+  },
+  "optionsModeDomain": {
+    "message": "Nach Website"
+  },
+  "optionsModeDomainHint": {
+    "message": "Tabs derselben Website kommen in dieselbe Gruppe. Sofort, ohne Einrichtung, keine Daten verlassen deinen Computer."
+  },
+  "optionsModeAi": {
+    "message": "Nach Thema, mit KI"
+  },
+  "optionsModeAiHint": {
+    "message": "Die KI wählt aus deinen Kategorien oder erfindet neue. Antwortet kein Anbieter, wird nach Website gruppiert."
+  },
+  "optionsModeDomainNote": {
+    "message": "Du gruppierst nach Website: KI-Anbieter werden nicht verwendet. Wechsle zu KI, um sie auszuwählen und einzurichten."
+  },
+  "optionsPresetNano": {
+    "message": "Gemini Nano (in Chrome integriert)"
+  },
+  "optionsGeneratorNone": {
+    "message": "Keiner"
+  },
+  "optionsStatusOff": {
+    "message": "Aus"
+  },
+  "panelStale": {
+    "message": "Deine Tabs haben sich seit diesem Vorschlag geändert."
+  },
+  "panelDuplicatesOne": {
+    "message": "Ein Tab ist ein Duplikat eines anderen offenen Tabs."
+  },
+  "panelDuplicates": {
+    "message": "$COUNT$ Tabs sind Duplikate anderer offener Tabs.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseDuplicates": {
+    "message": "Duplikate schließen"
+  },
+  "panelModeSite": {
+    "message": "Nach Website"
+  },
+  "panelModeAi": {
+    "message": "Mit KI"
+  },
+  "panelModeSiteSummary": {
+    "message": "Tabs derselben Website kommen zusammen. Keine Daten werden gesendet."
+  },
+  "panelNoProvider": {
+    "message": "Kein KI-Anbieter eingerichtet: Tabs werden nach Website gruppiert."
+  },
+  "panelChangeProviders": {
+    "message": "Ändern"
+  },
+  "panelSectionNew": {
+    "message": "Neue Gruppen"
+  },
+  "panelSectionExisting": {
+    "message": "Offene Gruppen"
+  },
+  "panelSectionFree": {
+    "message": "Ohne Gruppe"
+  },
+  "panelFreeHint": {
+    "message": "Diese bleiben außerhalb von Gruppen. Du kannst sie einer Gruppe hinzufügen."
+  },
+  "panelSectionHeld": {
+    "message": "Nicht geordnet"
+  },
+  "panelHeldPinned": {
+    "message": "angepinnt"
+  },
+  "panelHeldInternal": {
+    "message": "Browserseite"
+  },
+  "panelHeldExcluded": {
+    "message": "ausgeschl. Domain"
+  },
+  "panelHeldLoading": {
+    "message": "lädt"
+  },
+  "panelNewTab": {
+    "message": "neu"
+  },
+  "panelAddedCount": {
+    "message": "+ $COUNT$ neue",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupTabCountOne": {
+    "message": "1 Tab"
+  },
+  "panelAddedCountOne": {
+    "message": "+ 1 neuer"
+  },
+  "panelRule": {
+    "message": "Regel"
+  },
+  "panelRuleHint": {
+    "message": "Regel: $SITE$",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelRememberSite": {
+    "message": "$SITE$ immer in $CATEGORY$ einordnen?",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "category": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelRememberSiteYes": {
+    "message": "Ja"
+  },
+  "panelCloseTab": {
+    "message": "Tab schließen"
+  },
+  "onboardingTitle": {
+    "message": "Willkommen bei autoGroup"
+  },
+  "onboardingStepCount": {
+    "message": "Schritt $CURRENT$ von $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "onboardingWelcomeTitle": {
+    "message": "Ordentliche Tabs, ohne Überraschungen"
+  },
+  "onboardingWelcomeText": {
+    "message": "autoGroup schlägt Gruppen für die Tabs ohne Gruppe in deinem Fenster vor. Du siehst zuerst eine Vorschau und kannst sie ändern: Kein Tab bewegt sich, bis du auf „Anwenden“ klickst, und „Rückgängig“ stellt alles wieder her."
+  },
+  "onboardingWelcomeShortcut": {
+    "message": "Zum Öffnen klicke auf das Erweiterungssymbol oder drücke $SHORTCUT$.",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "onboardingWelcomeNoShortcut": {
+    "message": "Zum Öffnen klicke auf das Erweiterungssymbol. Unter chrome://extensions/shortcuts kannst du ein Tastenkürzel festlegen."
+  },
+  "onboardingWelcomeSetup": {
+    "message": "In wenigen Minuten wählst du, wie gruppiert wird. Alles lässt sich später in den Einstellungen ändern."
+  },
+  "onboardingStart": {
+    "message": "Los geht’s"
+  },
+  "onboardingNext": {
+    "message": "Weiter"
+  },
+  "onboardingBack": {
+    "message": "Zurück"
+  },
+  "onboardingSkip": {
+    "message": "Anleitung überspringen"
+  },
+  "onboardingModeTitle": {
+    "message": "Wie möchtest du gruppieren?"
+  },
+  "onboardingModeText": {
+    "message": "„Nach Website“ funktioniert sofort. „Mit KI“ teilt Tabs nach Thema auf: In den nächsten Schritten wählst du, wer die Arbeit macht. Du kannst jederzeit wechseln, auch im Panel."
+  },
+  "onboardingGeneratorTitle": {
+    "message": "Generator wählen"
+  },
+  "onboardingGeneratorText": {
+    "message": "Der Generator liest Titel und Adresse deiner Tabs, ordnet sie deinen Kategorien zu und erfindet bei Bedarf neue Gruppen. Du hast drei Optionen:"
+  },
+  "onboardingGeneratorNanoText": {
+    "message": "In Chrome integriert: kostenlos, ohne Schlüssel, keine Daten verlassen deinen Computer. Wird einmalig heruntergeladen, wenn dein Computer es unterstützt."
+  },
+  "onboardingGeneratorLocal": {
+    "message": "Lokaler Server"
+  },
+  "onboardingGeneratorLocalText": {
+    "message": "Ollama, LM Studio oder Unsloth Studio auf deinem Computer: privat, aber du brauchst ein installiertes Modell."
+  },
+  "onboardingGeneratorCloud": {
+    "message": "Onlinedienst"
+  },
+  "onboardingGeneratorCloudText": {
+    "message": "OpenRouter oder ein anderer OpenAI-kompatibler Dienst: am leistungsfähigsten, braucht aber einen API-Schlüssel, und Titel und Adressen werden an den Dienst gesendet."
+  },
+  "onboardingGeneratorDefault": {
+    "message": "Gemini Nano ist bereits ausgewählt: Wenn das passt, klicke auf „Weiter“. Sonst wähle unten und klicke auf „Speichern“."
+  },
+  "onboardingClassifierTitle": {
+    "message": "Klassifikator (optional)"
+  },
+  "onboardingClassifierText": {
+    "message": "Ein System-One-Klassifikator (Jev, Kev, Rizzo Flow) ordnet jeden Tab in Sekundenbruchteilen einer deiner Kategorien zu; unsichere Tabs gehen an den Generator. Hast du keinen, klicke auf „Weiter“: Du kannst ihn später in den Einstellungen hinzufügen."
+  },
+  "onboardingDoneTitle": {
+    "message": "Alles bereit"
+  },
+  "onboardingDoneDomain": {
+    "message": "Tabs derselben Website kommen in dieselbe Gruppe. Keine Daten verlassen deinen Computer."
+  },
+  "onboardingDonePlan": {
+    "message": "So wird der Vorschlag erstellt:"
+  },
+  "onboardingDoneDomainLevel": {
+    "message": "immer verfügbar"
+  },
+  "onboardingDoneFallback": {
+    "message": "Ist eine Stufe aus oder antwortet nicht, übernimmt die nächste, mit einem Hinweis im Panel: Du bekommst immer einen Vorschlag."
+  },
+  "onboardingDonePrivacy": {
+    "message": "Die KI erhält nur Titel und Adresse deiner Tabs (ohne Parameter), nie Tabs ausgeschlossener Domains. Kategorien, ausgeschlossene Domains und Seitenbeschreibungen kannst du in den Einstellungen ändern."
+  },
+  "onboardingOpenPanel": {
+    "message": "Panel öffnen"
+  },
+  "onboardingOpenSettings": {
+    "message": "Einstellungen öffnen"
+  },
+  "optionsOnboarding": {
+    "message": "Anleitung erneut zeigen"
+  },
+  "optionsCoffee": {
+    "message": "Spendier mir einen Kaffee"
+  },
+  "optionsReadDescriptionsProviderLost": {
+    "message": "Beschreibungen sind aus, aber ein Anbieter hat den Zugriff auf seinen Server verloren: Speichere ihn in seinem Bereich erneut."
+  },
+  "optionsSites": {
+    "message": "Websites"
+  },
+  "optionsAddSite": {
+    "message": "Website"
+  },
+  "optionsSitesHint": {
+    "message": "Tabs dieser Websites kommen immer in diese Kategorie, ohne die KI zu fragen."
+  },
+  "optionsSitePlaceholder": {
+    "message": "z. B. github.com/meine-org"
+  },
+  "optionsSiteInvalid": {
+    "message": "Das sieht nicht nach einer gültigen Website aus."
+  },
+  "optionsSiteDuplicate": {
+    "message": "Diese Website ist bereits in $CATEGORY$.",
+    "placeholders": {
+      "category": {
+        "content": "$1"
+      }
+    }
+  }
+}

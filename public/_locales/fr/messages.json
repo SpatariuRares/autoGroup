@@ -1,0 +1,910 @@
+{
+  "extName": {
+    "message": "autoGroup – Groupes d'onglets IA"
+  },
+  "extDescription": {
+    "message": "Regroupez vos onglets avec l'IA de votre choix, avec aperçu et annulation."
+  },
+  "actionTitle": {
+    "message": "Organiser les onglets"
+  },
+  "popupTitle": {
+    "message": "Organiser les onglets"
+  },
+  "popupComputing": {
+    "message": "Calcul de la proposition…"
+  },
+  "popupNoGroups": {
+    "message": "Aucun groupe à proposer."
+  },
+  "popupRecompute": {
+    "message": "Recalculer"
+  },
+  "popupApply": {
+    "message": "Appliquer"
+  },
+  "popupApplied": {
+    "message": "Groupes créés."
+  },
+  "popupTabCount": {
+    "message": "$COUNT$ onglets",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "provenance_list": {
+    "message": "liste"
+  },
+  "provenance_existing": {
+    "message": "existant"
+  },
+  "provenance_ai": {
+    "message": "nouveau (IA)"
+  },
+  "provenance_domain": {
+    "message": "site"
+  },
+  "color_grey": {
+    "message": "gris"
+  },
+  "color_blue": {
+    "message": "bleu"
+  },
+  "color_red": {
+    "message": "rouge"
+  },
+  "color_yellow": {
+    "message": "jaune"
+  },
+  "color_green": {
+    "message": "vert"
+  },
+  "color_pink": {
+    "message": "rose"
+  },
+  "color_purple": {
+    "message": "violet"
+  },
+  "color_cyan": {
+    "message": "cyan"
+  },
+  "color_orange": {
+    "message": "orange"
+  },
+  "errorPropose": {
+    "message": "Impossible de calculer la proposition."
+  },
+  "errorApply": {
+    "message": "Impossible de créer les groupes."
+  },
+  "popupUndo": {
+    "message": "Annuler la dernière organisation"
+  },
+  "popupUndone": {
+    "message": "Organisation annulée."
+  },
+  "errorUndo": {
+    "message": "Impossible d'annuler l'organisation."
+  },
+  "popupChangeColor": {
+    "message": "Changer la couleur"
+  },
+  "popupGroupName": {
+    "message": "Nom du groupe"
+  },
+  "popupDiscardGroup": {
+    "message": "Ignorer le groupe (les onglets restent libres)"
+  },
+  "popupMoveTab": {
+    "message": "Déplacer l'onglet vers un autre groupe"
+  },
+  "popupMoveTo": {
+    "message": "Déplacer vers…"
+  },
+  "popupRemoveTab": {
+    "message": "Retirer du groupe (l'onglet reste ouvert, hors groupe)"
+  },
+  "popupUnnamed": {
+    "message": "(sans nom)"
+  },
+  "optionsTitle": {
+    "message": "Paramètres d'autoGroup"
+  },
+  "optionsNavGeneral": {
+    "message": "Général"
+  },
+  "optionsNavCategories": {
+    "message": "Catégories et sites"
+  },
+  "optionsNavAi": {
+    "message": "IA"
+  },
+  "optionsNavAiOff": {
+    "message": "désactivée"
+  },
+  "optionsNavAbout": {
+    "message": "À propos"
+  },
+  "optionsTabs": {
+    "message": "Onglets à organiser"
+  },
+  "optionsAutoGroup": {
+    "message": "Regroupement automatique"
+  },
+  "optionsDescriptions": {
+    "message": "Descriptions des pages"
+  },
+  "optionsUseAi": {
+    "message": "Utiliser l'IA"
+  },
+  "optionsVersion": {
+    "message": "Version $VERSION$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsMoreSites": {
+    "message": "+$COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsSaved": {
+    "message": "Enregistré"
+  },
+  "optionsMinTabs": {
+    "message": "Nombre minimal d'onglets pour créer un groupe"
+  },
+  "optionsMinTabsHint": {
+    "message": "Un onglet seul peut quand même rejoindre un groupe existant."
+  },
+  "optionsMinTabsInvalid": {
+    "message": "Saisissez un nombre entier supérieur ou égal à 1."
+  },
+  "optionsAutoGroupSites": {
+    "message": "Regrouper automatiquement les onglets des sites des catégories"
+  },
+  "optionsAutoGroupSitesHint": {
+    "message": "Quand vous ouvrez un site ajouté à une catégorie, l'onglet va directement dans son groupe, sans IA. Si le groupe n'existe pas encore, il est créé dès que la catégorie atteint le nombre minimal d'onglets. Les onglets que vous retirez d'un groupe à la main n'y reviennent pas tant qu'ils ne changent pas de page."
+  },
+  "optionsExcludedDomains": {
+    "message": "Domaines exclus"
+  },
+  "optionsExcludedDomainsHint": {
+    "message": "Les onglets de ces domaines, et de leurs sous-domaines, ne sont jamais proposés ni envoyés à l'IA et restent libres."
+  },
+  "optionsDomainPlaceholder": {
+    "message": "ex. mabanque.fr"
+  },
+  "optionsAdd": {
+    "message": "Ajouter"
+  },
+  "optionsRemove": {
+    "message": "Supprimer"
+  },
+  "optionsDomainInvalid": {
+    "message": "Ce domaine ne semble pas valide."
+  },
+  "optionsDomainDuplicate": {
+    "message": "Ce domaine est déjà dans la liste."
+  },
+  "optionsSitesInvalid": {
+    "message": "Sites non valides : vérifiez que chaque site est bien écrit et ne figure que dans une seule catégorie."
+  },
+  "optionsSitesTooMany": {
+    "message": "Trop de sites : Chrome ne peut pas les enregistrer. Supprimez-en quelques-uns."
+  },
+  "optionsNoExcludedDomains": {
+    "message": "Aucun domaine exclu."
+  },
+  "optionsBackup": {
+    "message": "Sauvegarde"
+  },
+  "optionsBackupHint": {
+    "message": "Enregistrez dans un fichier le mode, les catégories, les sites, les domaines exclus et le comportement, pour les restaurer ici ou sur un autre ordinateur. Les fournisseurs et les clés d'API ne sont pas inclus."
+  },
+  "optionsExport": {
+    "message": "Exporter"
+  },
+  "optionsImport": {
+    "message": "Importer"
+  },
+  "optionsImported": {
+    "message": "Paramètres importés"
+  },
+  "optionsImportInvalid": {
+    "message": "Ce fichier n'est pas une sauvegarde autoGroup valide."
+  },
+  "popupOpenSettings": {
+    "message": "Paramètres"
+  },
+  "errorUnexpected": {
+    "message": "Une erreur inattendue s'est produite. Veuillez réessayer."
+  },
+  "category_work_name": {
+    "message": "Travail"
+  },
+  "category_work_description": {
+    "message": "Outils et pages de travail : messagerie professionnelle, agenda, documents partagés, gestion de projets, CRM, réunions."
+  },
+  "category_dev_name": {
+    "message": "Dév"
+  },
+  "category_dev_description": {
+    "message": "Programmation et outils pour développeurs : dépôts de code, documentation technique, tickets, CI, Stack Overflow, consoles cloud."
+  },
+  "category_ai_name": {
+    "message": "IA"
+  },
+  "category_ai_description": {
+    "message": "Assistants et services d'intelligence artificielle : chats avec des modèles de langage, générateurs d'images, plateformes et actualités de l'IA."
+  },
+  "category_social_name": {
+    "message": "Réseaux sociaux"
+  },
+  "category_social_description": {
+    "message": "Réseaux sociaux et communautés : profils, fils d'actualité, messages, forums et discussions."
+  },
+  "category_news_name": {
+    "message": "Actualités"
+  },
+  "category_news_description": {
+    "message": "Journaux, sites d'information, blogs d'actualité et newsletters."
+  },
+  "category_video_name": {
+    "message": "Vidéo"
+  },
+  "category_video_description": {
+    "message": "Vidéos, streaming, films, séries, musique et podcasts."
+  },
+  "category_shopping_name": {
+    "message": "Shopping"
+  },
+  "category_shopping_description": {
+    "message": "Boutiques en ligne, fiches produits, paniers, comparateurs de prix et avis sur des produits."
+  },
+  "category_travel_name": {
+    "message": "Voyages"
+  },
+  "category_travel_description": {
+    "message": "Vols, trains, hôtels, hébergements, cartes, guides et réservations de voyage."
+  },
+  "category_finance_name": {
+    "message": "Finances"
+  },
+  "category_finance_description": {
+    "message": "Banque, paiements, investissements, cryptomonnaies, impôts et factures."
+  },
+  "category_study_name": {
+    "message": "Études"
+  },
+  "category_study_description": {
+    "message": "Cours, leçons, articles scientifiques, encyclopédies, dictionnaires et supports d'étude."
+  },
+  "optionsCategories": {
+    "message": "Catégories"
+  },
+  "optionsCategoriesHint": {
+    "message": "Les catégories sont les options parmi lesquelles l'IA choisit. La description explique ce qui en fait partie ; la couleur est celle du groupe créé. Les onglets des sites d'une catégorie y vont toujours, même lors du regroupement par site."
+  },
+  "optionsCategoryName": {
+    "message": "Nom"
+  },
+  "optionsCategoryDescription": {
+    "message": "Description"
+  },
+  "optionsCategoryColor": {
+    "message": "Couleur"
+  },
+  "optionsAddCategory": {
+    "message": "Ajouter une catégorie"
+  },
+  "optionsResetCategories": {
+    "message": "Rétablir les valeurs par défaut"
+  },
+  "optionsCategoryDeleted": {
+    "message": "Catégorie « $NAME$ » supprimée",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsCategoriesReset": {
+    "message": "Catégories par défaut rétablies"
+  },
+  "optionsUndo": {
+    "message": "Annuler"
+  },
+  "optionsMoveUp": {
+    "message": "Monter"
+  },
+  "optionsMoveDown": {
+    "message": "Descendre"
+  },
+  "optionsDeleteCategory": {
+    "message": "Supprimer la catégorie"
+  },
+  "optionsNewCategoryName": {
+    "message": "Nouvelle catégorie"
+  },
+  "optionsNoCategories": {
+    "message": "Aucune catégorie : l'IA pourra seulement inventer de nouveaux groupes."
+  },
+  "categoryNameEmpty": {
+    "message": "Le nom de la catégorie ne peut pas être vide."
+  },
+  "categoryNameDuplicate": {
+    "message": "Une catégorie portant ce nom existe déjà."
+  },
+  "categoryNameTooLong": {
+    "message": "Le nom de la catégorie est trop long (40 caractères maximum)."
+  },
+  "categoryDescriptionTooLong": {
+    "message": "La description est trop longue (300 caractères maximum)."
+  },
+  "categoryInvalid": {
+    "message": "La liste des catégories n'est pas valide."
+  },
+  "errorSaveSettings": {
+    "message": "Impossible d'enregistrer les paramètres."
+  },
+  "aiLanguageName": {
+    "message": "français"
+  },
+  "userGroupDescription": {
+    "message": "Groupe créé par l'utilisateur : « $NAME$ »",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsGenerator": {
+    "message": "Générateur"
+  },
+  "optionsGeneratorHint": {
+    "message": "Le Générateur choisit parmi les catégories ou invente de nouveaux groupes. Gemini Nano fonctionne dans le navigateur, sans clé et sans envoyer de données ; vous pouvez aussi utiliser un modèle compatible OpenAI."
+  },
+  "optionsPreset": {
+    "message": "Fournisseur"
+  },
+  "optionsPresetCustom": {
+    "message": "Personnalisé"
+  },
+  "optionsBaseUrl": {
+    "message": "URL de base"
+  },
+  "optionsModel": {
+    "message": "Modèle"
+  },
+  "optionsModelPlaceholder": {
+    "message": "ex. openai/gpt-4o-mini"
+  },
+  "optionsApiKey": {
+    "message": "Clé API"
+  },
+  "optionsApiKeyPlaceholder": {
+    "message": "facultative pour les serveurs locaux"
+  },
+  "optionsApiKeyHint": {
+    "message": "La clé reste uniquement sur cet ordinateur (elle n'est pas synchronisée)."
+  },
+  "optionsSaveProvider": {
+    "message": "Enregistrer"
+  },
+  "optionsTestConnection": {
+    "message": "Tester la connexion"
+  },
+  "optionsTesting": {
+    "message": "Test en cours…"
+  },
+  "optionsTestOk": {
+    "message": "Connexion réussie."
+  },
+  "optionsUnsaved": {
+    "message": "Modifications non enregistrées."
+  },
+  "optionsGeneratorDisabled": {
+    "message": "Générateur désactivé : seul le Classificateur décide, sinon les onglets sont regroupés par site."
+  },
+  "optionsGeneratorIncomplete": {
+    "message": "Saisissez l'URL de base et le modèle pour utiliser le Générateur."
+  },
+  "optionsGeneratorBadUrl": {
+    "message": "L'URL de base doit commencer par http:// ou https://."
+  },
+  "warning_unreachable": {
+    "message": "$PROVIDER$ est injoignable.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_key": {
+    "message": "$PROVIDER$ : clé API non valide.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_rate_limit": {
+    "message": "$PROVIDER$ : trop de requêtes, réessayez dans un instant.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_timeout": {
+    "message": "$PROVIDER$ n'a pas répondu à temps.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_response": {
+    "message": "$PROVIDER$ a renvoyé une réponse non valide.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_invalid_request": {
+    "message": "$PROVIDER$ a refusé la requête (modèle ou paramètres non valides).",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_unavailable": {
+    "message": "$PROVIDER$ n'est pas disponible.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_no_permission": {
+    "message": "$PROVIDER$ : autorisation réseau manquante. Enregistrez à nouveau le fournisseur dans les paramètres et accordez l'autorisation.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupWarningFallback": {
+    "message": "Proposition moins précise :"
+  },
+  "popupWarningSettings": {
+    "message": "Paramètres"
+  },
+  "warning_needs_download": {
+    "message": "$PROVIDER$ doit être téléchargé : lancez le téléchargement depuis les paramètres.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_downloading": {
+    "message": "$PROVIDER$ est en cours de téléchargement et sera utilisé dès qu'il sera prêt.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "warning_not_supported": {
+    "message": "$PROVIDER$ n'est pas pris en charge par ce navigateur ou cet ordinateur. Choisissez un autre fournisseur ou regroupez « Par site ».",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "nanoStatus_available": {
+    "message": "Gemini Nano est disponible et sera utilisé."
+  },
+  "nanoStatus_downloadable": {
+    "message": "Gemini Nano est pris en charge mais doit être téléchargé (environ 2 à 4 Go)."
+  },
+  "nanoStatus_downloading": {
+    "message": "Téléchargement de Gemini Nano…"
+  },
+  "nanoStatus_unavailable": {
+    "message": "Gemini Nano n'est pas pris en charge par ce navigateur ou cet ordinateur : les onglets seront regroupés par site."
+  },
+  "nanoDownload": {
+    "message": "Télécharger Gemini Nano"
+  },
+  "nanoDownloadFailed": {
+    "message": "Le téléchargement de Gemini Nano a échoué."
+  },
+  "optionsClassifier": {
+    "message": "Classificateur"
+  },
+  "optionsClassifierHint": {
+    "message": "Un classificateur System One (Jev, Kev, Rizzo Flow) attribue chaque onglet à une catégorie ou à un groupe ouvert, avec une confiance calibrée. Il est rapide et peu coûteux ; les onglets incertains passent au Générateur."
+  },
+  "optionsClassifierNone": {
+    "message": "Aucun"
+  },
+  "optionsClassifierDisabled": {
+    "message": "Classificateur désactivé : le Générateur décide (ou le regroupement par domaine)."
+  },
+  "optionsClassifierModelPlaceholder": {
+    "message": "ex. jev-latest (facultatif pour Kev et Rizzo Flow)"
+  },
+  "optionsSavedProvider": {
+    "message": "Fournisseur enregistré et autorisation accordée."
+  },
+  "optionsThreshold": {
+    "message": "Seuil de confiance"
+  },
+  "optionsThresholdHint": {
+    "message": "Les onglets dont la confiance est inférieure ne sont pas attribués par le Classificateur et passent au Générateur."
+  },
+  "optionsThresholdInvalid": {
+    "message": "Le seuil doit être un nombre entre 0 et 1."
+  },
+  "optionsProviderInvalid": {
+    "message": "La configuration du fournisseur n'est pas valide."
+  },
+  "popupSaveToList": {
+    "message": "Enregistrer dans la liste"
+  },
+  "popupSaveToListHint": {
+    "message": "Ajoute ce groupe aux catégories, avec une description générée par l'IA"
+  },
+  "panelSiteRemembered": {
+    "message": "Les onglets de $SITE$ iront toujours dans $CATEGORY$.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "category": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelSiteMoved": {
+    "message": "$SITE$ déplacé de $FROM$ vers $TO$.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "from": {
+        "content": "$2"
+      },
+      "to": {
+        "content": "$3"
+      }
+    }
+  },
+  "saveToListSaved": {
+    "message": "« $NAME$ » a été ajouté aux catégories.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "saveToListNoDescription": {
+    "message": "« $NAME$ » a été ajouté aux catégories sans description : complétez-la dans les paramètres.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "saveToListDuplicate": {
+    "message": "Une catégorie « $NAME$ » existe déjà : elle n'a pas été dupliquée.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupAbort": {
+    "message": "Arrêter"
+  },
+  "panelPreviewComputing": {
+    "message": "En attendant, la proposition par site : l'IA calcule…"
+  },
+  "panelUsePreview": {
+    "message": "Utiliser celle-ci"
+  },
+  "popupAborted": {
+    "message": "Calcul interrompu : aucune proposition. Cliquez sur « Recalculer » pour réessayer."
+  },
+  "optionsReadDescriptions": {
+    "message": "Lire la description des pages pour plus de précision"
+  },
+  "optionsReadDescriptionsHint": {
+    "message": "Demande l'autorisation de lire les sites que vous consultez. Seule la description de la page (meta description) est lue, jamais son contenu ; les onglets en veille, les domaines exclus, les pages Chrome, le Web Store et les PDF ne sont jamais lus. Désactiver l'option retire l'autorisation."
+  },
+  "optionsReadDescriptionsDenied": {
+    "message": "Autorisation refusée : seuls le titre et l'URL seront utilisés."
+  },
+  "optionsMode": {
+    "message": "Mode de regroupement"
+  },
+  "optionsModeDomain": {
+    "message": "Par site"
+  },
+  "optionsModeDomainHint": {
+    "message": "Les onglets d'un même site vont dans le même groupe. Instantané, sans configuration, aucune donnée ne quitte votre ordinateur."
+  },
+  "optionsModeAi": {
+    "message": "Par thème, avec l'IA"
+  },
+  "optionsModeAiHint": {
+    "message": "L'IA choisit parmi vos catégories ou en invente de nouvelles. Si aucun fournisseur ne répond, les onglets sont regroupés par site."
+  },
+  "optionsModeDomainNote": {
+    "message": "Vous regroupez par site : les fournisseurs d'IA ne sont pas utilisés. Passez à l'IA pour les choisir et les configurer."
+  },
+  "optionsPresetNano": {
+    "message": "Gemini Nano (intégré à Chrome)"
+  },
+  "optionsGeneratorNone": {
+    "message": "Aucun"
+  },
+  "optionsStatusOff": {
+    "message": "Désactivé"
+  },
+  "panelStale": {
+    "message": "Vos onglets ont changé depuis cette proposition."
+  },
+  "panelDuplicatesOne": {
+    "message": "Un onglet est le doublon d'un autre onglet ouvert."
+  },
+  "panelDuplicates": {
+    "message": "$COUNT$ onglets sont des doublons d'autres onglets ouverts.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseDuplicates": {
+    "message": "Fermer les doublons"
+  },
+  "panelModeSite": {
+    "message": "Par site"
+  },
+  "panelModeAi": {
+    "message": "Avec l'IA"
+  },
+  "panelModeSiteSummary": {
+    "message": "Les onglets d'un même site vont ensemble. Aucune donnée envoyée."
+  },
+  "panelNoProvider": {
+    "message": "Aucun fournisseur d'IA configuré : les onglets sont regroupés par site."
+  },
+  "panelChangeProviders": {
+    "message": "Modifier"
+  },
+  "panelSectionNew": {
+    "message": "Nouveaux groupes"
+  },
+  "panelSectionExisting": {
+    "message": "Groupes ouverts"
+  },
+  "panelSectionFree": {
+    "message": "Hors groupe"
+  },
+  "panelFreeHint": {
+    "message": "Ces onglets restent hors groupe. Vous pouvez les ajouter à un groupe."
+  },
+  "panelSectionHeld": {
+    "message": "Non organisés"
+  },
+  "panelHeldPinned": {
+    "message": "épinglé"
+  },
+  "panelHeldInternal": {
+    "message": "page du navigateur"
+  },
+  "panelHeldExcluded": {
+    "message": "domaine exclu"
+  },
+  "panelHeldLoading": {
+    "message": "chargement"
+  },
+  "panelNewTab": {
+    "message": "nouveau"
+  },
+  "panelAddedCount": {
+    "message": "+ $COUNT$ nouveaux",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupTabCountOne": {
+    "message": "1 onglet"
+  },
+  "panelAddedCountOne": {
+    "message": "+ 1 nouveau"
+  },
+  "panelRule": {
+    "message": "règle"
+  },
+  "panelRuleHint": {
+    "message": "Règle : $SITE$",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelRememberSite": {
+    "message": "Toujours mettre $SITE$ dans $CATEGORY$ ?",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      },
+      "category": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelRememberSiteYes": {
+    "message": "Oui"
+  },
+  "panelCloseTab": {
+    "message": "Fermer l'onglet"
+  },
+  "onboardingTitle": {
+    "message": "Bienvenue dans autoGroup"
+  },
+  "onboardingStepCount": {
+    "message": "Étape $CURRENT$ sur $TOTAL$",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "onboardingWelcomeTitle": {
+    "message": "Des onglets en ordre, sans surprise"
+  },
+  "onboardingWelcomeText": {
+    "message": "autoGroup propose des groupes pour les onglets hors groupe de votre fenêtre. Vous voyez d'abord un aperçu et pouvez le modifier : aucun onglet ne bouge tant que vous n'avez pas cliqué sur « Appliquer », et « Annuler » remet tout en place."
+  },
+  "onboardingWelcomeShortcut": {
+    "message": "Pour l'ouvrir, cliquez sur l'icône de l'extension ou appuyez sur $SHORTCUT$.",
+    "placeholders": {
+      "shortcut": {
+        "content": "$1"
+      }
+    }
+  },
+  "onboardingWelcomeNoShortcut": {
+    "message": "Pour l'ouvrir, cliquez sur l'icône de l'extension. Vous pouvez lui attribuer un raccourci dans chrome://extensions/shortcuts."
+  },
+  "onboardingWelcomeSetup": {
+    "message": "En quelques minutes, vous choisirez comment regrouper. Vous pourrez tout modifier plus tard dans les paramètres."
+  },
+  "onboardingStart": {
+    "message": "Commencer"
+  },
+  "onboardingNext": {
+    "message": "Suivant"
+  },
+  "onboardingBack": {
+    "message": "Retour"
+  },
+  "onboardingSkip": {
+    "message": "Passer le guide"
+  },
+  "onboardingModeTitle": {
+    "message": "Comment voulez-vous regrouper ?"
+  },
+  "onboardingModeText": {
+    "message": "« Par site » fonctionne tout de suite. « Avec l'IA » répartit les onglets par thème : aux étapes suivantes, vous choisissez qui fait le travail. Vous pouvez changer à tout moment, y compris depuis le panneau."
+  },
+  "onboardingGeneratorTitle": {
+    "message": "Choisissez le Générateur"
+  },
+  "onboardingGeneratorText": {
+    "message": "Le Générateur lit le titre et l'adresse de vos onglets, les place dans vos catégories et crée de nouveaux groupes si besoin. Trois options s'offrent à vous :"
+  },
+  "onboardingGeneratorNanoText": {
+    "message": "Intégré à Chrome : gratuit, sans clé, aucune donnée ne quitte votre ordinateur. Il est téléchargé une seule fois, si votre ordinateur le prend en charge."
+  },
+  "onboardingGeneratorLocal": {
+    "message": "Serveur local"
+  },
+  "onboardingGeneratorLocalText": {
+    "message": "Ollama, LM Studio ou Unsloth Studio sur votre ordinateur : privé, mais il faut un modèle installé."
+  },
+  "onboardingGeneratorCloud": {
+    "message": "Service en ligne"
+  },
+  "onboardingGeneratorCloudText": {
+    "message": "OpenRouter ou un autre service compatible OpenAI : le plus performant, mais il faut une clé API, et les titres et adresses sont envoyés au service."
+  },
+  "onboardingGeneratorDefault": {
+    "message": "Gemini Nano est déjà sélectionné : si cela vous convient, cliquez sur « Suivant ». Sinon, choisissez ci-dessous et cliquez sur « Enregistrer »."
+  },
+  "onboardingClassifierTitle": {
+    "message": "Classificateur (facultatif)"
+  },
+  "onboardingClassifierText": {
+    "message": "Un classificateur System One (Jev, Kev, Rizzo Flow) place chaque onglet dans l'une de vos catégories en quelques dixièmes de seconde ; les onglets incertains passent au Générateur. Si vous n'en avez pas, cliquez sur « Suivant » : vous pourrez l'ajouter plus tard dans les paramètres."
+  },
+  "onboardingDoneTitle": {
+    "message": "Tout est prêt"
+  },
+  "onboardingDoneDomain": {
+    "message": "Les onglets d'un même site iront dans le même groupe. Aucune donnée ne quitte votre ordinateur."
+  },
+  "onboardingDonePlan": {
+    "message": "Voici comment la proposition sera établie :"
+  },
+  "onboardingDoneDomainLevel": {
+    "message": "toujours disponible"
+  },
+  "onboardingDoneFallback": {
+    "message": "Si un niveau est désactivé ou ne répond pas, le suivant prend le relais, avec un avis dans le panneau : vous obtenez toujours une proposition."
+  },
+  "onboardingDonePrivacy": {
+    "message": "L'IA ne reçoit que le titre et l'adresse de vos onglets (sans paramètres), jamais les onglets des domaines exclus. Les catégories, les domaines exclus et les descriptions des pages se modifient dans les paramètres."
+  },
+  "onboardingOpenPanel": {
+    "message": "Ouvrir le panneau"
+  },
+  "onboardingOpenSettings": {
+    "message": "Ouvrir les paramètres"
+  },
+  "optionsOnboarding": {
+    "message": "Revoir le guide"
+  },
+  "optionsCoffee": {
+    "message": "Offrez-moi un café"
+  },
+  "optionsReadDescriptionsProviderLost": {
+    "message": "Les descriptions sont désactivées, mais un fournisseur a perdu l'accès à son serveur : enregistrez-le à nouveau dans sa section."
+  },
+  "optionsSites": {
+    "message": "Sites"
+  },
+  "optionsAddSite": {
+    "message": "Site"
+  },
+  "optionsSitesHint": {
+    "message": "Les onglets de ces sites vont toujours dans cette catégorie, sans demander à l'IA."
+  },
+  "optionsSitePlaceholder": {
+    "message": "ex. github.com/mon-org"
+  },
+  "optionsSiteInvalid": {
+    "message": "Ce site ne semble pas valide."
+  },
+  "optionsSiteDuplicate": {
+    "message": "Ce site est déjà dans $CATEGORY$.",
+    "placeholders": {
+      "category": {
+        "content": "$1"
+      }
+    }
+  }
+}

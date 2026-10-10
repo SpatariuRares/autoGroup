@@ -203,6 +203,24 @@
   "optionsNoExcludedDomains": {
     "message": "Nessun dominio escluso."
   },
+  "optionsBackup": {
+    "message": "Backup"
+  },
+  "optionsBackupHint": {
+    "message": "Salva in un file modalità, categorie, siti, domini esclusi e comportamento, per ripristinarli qui o su un altro computer. Provider e chiavi API non sono inclusi."
+  },
+  "optionsExport": {
+    "message": "Esporta"
+  },
+  "optionsImport": {
+    "message": "Importa"
+  },
+  "optionsImported": {
+    "message": "Impostazioni importate"
+  },
+  "optionsImportInvalid": {
+    "message": "Il file non è un backup valido di autoGroup."
+  },
   "popupOpenSettings": {
     "message": "Impostazioni"
   },
@@ -649,6 +667,20 @@
   },
   "panelStale": {
     "message": "Le tab sono cambiate dopo questa proposta."
+  },
+  "panelDuplicatesOne": {
+    "message": "Una tab è il doppione di un'altra già aperta."
+  },
+  "panelDuplicates": {
+    "message": "$COUNT$ tab sono doppioni di altre già aperte.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseDuplicates": {
+    "message": "Chiudi doppioni"
   },
   "panelModeSite": {
     "message": "Per sito"

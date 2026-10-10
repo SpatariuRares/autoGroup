@@ -5,7 +5,7 @@ Texts to paste into the developer dashboard ("Store listing" tab), per language.
 **No lists of brand names in the description.** The first version was rejected on 5 October 2026 ("Yellow Argon" violation, *excessive keywords*) because of the lists of product names ("Ollama, LM Studio, Unsloth Studio", "OpenRouter", "Jev, Kev, Rizzo Flow"). Each option must be described by what it does; the provider names belong in the extension and in the README. Name and summary already come from the manifest (`extName`, `extDescription` in `public/_locales`); the detailed description is written in the dashboard for each language.
 
 - **Category**: Productivity → Workflow & Planning (*Produttività → Flusso di lavoro e pianificazione*).
-- **Languages**: Italian (default language of the manifest) and English.
+- **Languages**: Italian (default language of the manifest), English, Spanish, French and German. The detailed description below exists in Italian and English; for Spanish, French and German the store shows the English one until translated texts are added.
 - **Images**: `docs/store/<language>/screenshot-1…4.png` (1280×800), `docs/store/<language>/promo-small.png` (440×280), icon `docs/store/icon-128.png`. Regenerate them with `npm run store-assets`.
 - **Website / support**: to fill in if you publish the repository or a project page.
 - **Privacy policy**: the URL of the page published from [privacy.md](privacy.md).
@@ -45,7 +45,9 @@ PRIVACY
 • La lettura della descrizione delle pagine è facoltativa e chiede il permesso solo quando la accendi.
 • Le chiavi API restano su questo computer.
 
-Una guida al primo avvio ti aiuta a scegliere modalità e provider. Interfaccia in italiano e in inglese.
+Segnala le tab aperte due volte e chiude i doppioni con un clic. Esporta e importa le impostazioni in un file.
+
+Una guida al primo avvio ti aiuta a scegliere modalità e provider. Interfaccia in italiano, inglese, spagnolo, francese e tedesco.
 ```
 
 ## English
@@ -83,7 +85,9 @@ PRIVACY
 • Reading page descriptions is optional and asks for permission only when you turn it on.
 • API keys stay on this computer.
 
-A first-run guide helps you choose the mode and the provider. Interface in English and Italian.
+It spots tabs open twice and closes the duplicates in one click. Export and import your settings as a file.
+
+A first-run guide helps you choose the mode and the provider. Interface in English, Italian, Spanish, French and German.
 ```
 
 ## Screenshot captions

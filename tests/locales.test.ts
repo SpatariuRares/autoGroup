@@ -11,14 +11,35 @@ interface Message {
 const load = (locale: string) =>
   JSON.parse(readFileSync(new URL(`../public/_locales/${locale}/messages.json`, import.meta.url), 'utf8')) as Record<string, unknown>;
 
-describe('traduzioni', () => {
-  it('italiano e inglese hanno le stesse chiavi, tutte in un formato accettato da Chrome', () => {
-    const it = Object.keys(load('it')).sort();
-    const en = Object.keys(load('en')).sort();
+/** Tutte le lingue dell'interfaccia, dalle cartelle di public/_locales. */
+const LOCALES = readdirSync(new URL('../public/_locales/', import.meta.url));
 
-    expect(en).toEqual(it);
+describe('traduzioni', () => {
+  it('tutte le lingue hanno le stesse chiavi, tutte in un formato accettato da Chrome', () => {
+    const it = Object.keys(load('it')).sort();
+    for (const locale of LOCALES) expect(Object.keys(load(locale)).sort(), locale).toEqual(it);
     // Chrome rifiuta di caricare l'estensione se una chiave contiene caratteri diversi da questi.
     expect(it.filter((key) => !/^[A-Za-z0-9_]+$/.test(key))).toEqual([]);
+  });
+
+  it('in ogni lingua ogni testo ha gli stessi segnaposto dell\'italiano', () => {
+    const tokens = (message: string) => (message.match(/\$[A-Z_]+\$/g) ?? []).sort();
+    const it = load('it') as Record<string, Message & { placeholders?: unknown }>;
+    for (const locale of LOCALES) {
+      const other = load(locale) as Record<string, Message & { placeholders?: unknown }>;
+      for (const [key, value] of Object.entries(it)) {
+        expect(tokens(other[key]!.message), `${locale}: ${key}`).toEqual(tokens(value.message));
+        expect(other[key]!.placeholders, `${locale}: ${key}`).toEqual(value.placeholders);
+      }
+    }
+  });
+
+  it('il nome e la descrizione dell\'estensione stanno nei limiti del Chrome Web Store', () => {
+    for (const locale of LOCALES) {
+      const messages = load(locale) as Record<string, Message>;
+      expect(messages.extName!.message.length, locale).toBeLessThanOrEqual(45);
+      expect(messages.extDescription!.message.length, locale).toBeLessThanOrEqual(132);
+    }
   });
 });
 
