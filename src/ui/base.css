@@ -155,6 +155,13 @@ button.icon.small {
   height: 32px;
 }
 
+/* Solo l'icona, centrata: senza questa regola vincerebbe il rientro dei pulsanti con icona e testo
+   (button:has(> .md-icon:first-child), più specifico) e la X finirebbe spostata a destra. */
+button.icon:has(> .md-icon:first-child),
+button.icon.small:has(> .md-icon:first-child) {
+  padding: 0;
+}
+
 button.icon:disabled {
   --btn-bg: transparent;
 }
