@@ -90,7 +90,7 @@ A single seam: **the Organizer's interface** (`propose`, `apply`, `state`, and l
 
 - No Generator configured and Nano available: Nano used with the JSON schema, no network request, same cleaned data, browser language.
 - The configured Generator takes precedence over Nano; one configured without permission gives way to Nano with the warning.
-- Nano to be downloaded, downloading or not supported: proposal by domain, Nano never used, warning in the first two cases; without the Prompt API no warning.
+- Nano to be downloaded, downloading or not supported (also without the Prompt API): proposal by domain, Nano never used, with the matching warning; no warning in by-site mode or with the Generator on "None".
 - Splitting into chunks with a small context: all tabs sent exactly once, the name invented in the first chunk among the options of the second, groups with the same name merged.
 - Nano failing: proposal by domain with a warning.
 - Same validation as the other Generators.

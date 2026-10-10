@@ -106,7 +106,7 @@ describe('Gemini Nano come Generatore integrato', () => {
   it.each([
     ['downloadable', [{ level: 'generator', provider: 'Gemini Nano', cause: 'needs-download' }]],
     ['downloading', [{ level: 'generator', provider: 'Gemini Nano', cause: 'downloading' }]],
-    ['unavailable', []],
+    ['unavailable', [{ level: 'generator', provider: 'Gemini Nano', cause: 'not-supported' }]],
   ] as const)('con Nano "%s" la proposta è per dominio, senza usarlo', async (availability, warnings) => {
     openPairs();
     const nano = installFakeNano({ availability });
@@ -118,12 +118,21 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(state.proposal!.warnings).toEqual(warnings);
   });
 
-  it('senza la Prompt API nel browser la proposta è per dominio, senza avvisi', async () => {
+  it('senza la Prompt API nel browser la proposta è per dominio, con l\'avviso che Nano non è supportato', async () => {
     openPairs();
 
     const state = await organizer.propose(W);
 
     expect(summary(state).map(([, provenance]) => provenance)).toEqual(['domain', 'domain']);
+    expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'Gemini Nano', cause: 'not-supported' }]);
+  });
+
+  it('nella modalità per sito Nano non supportato non dà avvisi', async () => {
+    await saveSettings({ mode: 'domain' });
+    openPairs();
+
+    const state = await organizer.propose(W);
+
     expect(state.proposal!.warnings).toEqual([]);
   });
 

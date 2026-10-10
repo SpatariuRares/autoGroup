@@ -61,7 +61,8 @@ export interface ProposalWarning {
     | 'unavailable'
     | 'no-permission'
     | 'needs-download'
-    | 'downloading';
+    | 'downloading'
+    | 'not-supported';
 }
 
 /** Fasi misurate di un calcolo della proposta. */

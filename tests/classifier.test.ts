@@ -20,8 +20,10 @@ beforeEach(async () => {
   installFakePermissions(['http://127.0.0.1/*', 'https://openrouter.ai/*']);
   strip = installFakeTabStrip({ currentWindowId: W });
   organizer = createOrganizer();
+  // Nessun Generatore, salvo nei test che lo configurano: Nano (il predefinito) qui non è supportato e darebbe un avviso.
   await saveSettings({
     classifier: KEV,
+    generator: { preset: 'none', baseUrl: '', model: '' },
     categories: [
       { id: 'w', name: 'Lavoro', description: 'Email e documenti di lavoro', color: 'blue' },
       { id: 'n', name: 'Notizie', description: 'Giornali', color: 'red' },

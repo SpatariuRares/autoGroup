@@ -48,6 +48,7 @@ const WARNING_CAUSES: ProposalWarning['cause'][] = [
   'no-permission',
   'needs-download',
   'downloading',
+  'not-supported',
 ];
 const PROVENANCES: Provenance[] = ['list', 'existing', 'ai', 'domain'];
 const NANO_STATUSES: NanoAvailability[] = ['available', 'downloadable', 'downloading', 'unavailable'];

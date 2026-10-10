@@ -488,6 +488,14 @@
       }
     }
   },
+  "warning_not_supported": {
+    "message": "$PROVIDER$ non è supportato da questo browser o computer. Scegli un altro provider o raggruppa «Per sito».",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
   "nanoStatus_available": {
     "message": "Gemini Nano è disponibile e verrà usato."
   },

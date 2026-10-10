@@ -179,7 +179,7 @@ If there are no options (no category and no open group) the Classifier is not qu
 **Choice of the Generator** (`resolveGenerator`): it is the user's choice, with no substitutions.
 
 - **OpenAI-compatible server** (preset or custom): used if it has URL, model and host permission. Without permission the `no-permission` notice is added and the pipeline drops one level: Gemini Nano does **not** take its place, because the user chose another model.
-- **Gemini Nano** (`preset: 'nano'`, the default): used if `LanguageModel.availability()` returns `available`; with `downloadable` or `downloading` it is not used and the `needs-download` or `downloading` notice is added; with `unavailable` (or without Prompt API) no notice.
+- **Gemini Nano** (`preset: 'nano'`, the default): used if `LanguageModel.availability()` returns `available`; with `downloadable` or `downloading` it is not used and the `needs-download` or `downloading` notice is added; with `unavailable` (or without Prompt API) the `not-supported` notice is added, because otherwise the user would see groups by site and think the AI made them. Only when Nano is the chosen Generator: `inputs.nano` is also `unavailable` when it is not, and then there is no notice.
 - **None** (`preset: 'none'`): no Generator; Nano is not even queried.
 
 Nano's availability is read in `collectInputs` only in AI mode with Nano chosen, and it is part of the signature: when the download finishes, the next proposal is recomputed.

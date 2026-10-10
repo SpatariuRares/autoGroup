@@ -3,7 +3,7 @@ import { createNanoGenerator, NANO_LABEL } from '../ai/nano-generator';
 import { createOpenAiGenerator } from '../ai/openai-generator';
 import { createSystemOneClassifier } from '../ai/systemone-classifier';
 import { ProviderError, type AiOption, type AiTab, type Classifier, type Generator } from '../ai/types';
-import { categoryKey, providerLabel } from '../settings';
+import { categoryKey, NANO_PRESET, providerLabel } from '../settings';
 import type { ProposalWarning, ProposedGroup } from '../shared/types';
 import { buildOptions, prepareTabs } from './ai-input';
 import { withClassificationCache } from './classification-cache';
@@ -31,8 +31,9 @@ function resolveClassifier(inputs: ProposalInputs, warnings: ProposalWarning[]):
 
 /**
  * Il Generatore scelto dall'utente: un server compatibile OpenAI, Gemini Nano (se disponibile) o
- * nessuno. Un Generatore senza permesso host e un Gemini Nano ancora da scaricare o in download
- * producono un avviso. `inputs.nano` è "unavailable" se l'utente non ha scelto Nano.
+ * nessuno. Un Generatore senza permesso host e un Gemini Nano ancora da scaricare, in download o non
+ * supportato producono un avviso: senza, l'utente vedrebbe gruppi per sito pensando che li abbia fatti
+ * l'AI. `inputs.nano` è "unavailable" anche se l'utente non ha scelto Nano: lì nessun avviso.
  */
 export function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarning[] = []): Generator | null {
   const { settings, apiKey, usable, missingPermission } = inputs.generator;
@@ -47,6 +48,9 @@ export function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarni
       break;
     case 'downloading':
       warnings.push({ level: 'generator', provider: NANO_LABEL, cause: 'downloading' });
+      break;
+    case 'unavailable':
+      if (settings.preset === NANO_PRESET) warnings.push({ level: 'generator', provider: NANO_LABEL, cause: 'not-supported' });
       break;
   }
   return null;
