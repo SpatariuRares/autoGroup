@@ -8,7 +8,9 @@ A Chrome extension that sorts your tabs into groups, by site or by topic, with t
 - **You choose the AI**: Gemini Nano built into Chrome, a model on your computer (Ollama, LM Studio, Unsloth Studio) or an OpenAI-compatible online service (OpenRouter). Optional: a System One classifier (Jev, Kev, Rizzo Flow).
 - **Editable preview** and **Undo**: rename, recolor, move or remove tabs, then apply; if you don't like the result, go back.
 - **You always get a proposal**: if the AI doesn't answer, autoGroup falls back to grouping by site, which you already see while the AI is working.
-- Interface in **English** and **Italian**, following Chrome's language.
+- **Duplicate tabs**: the panel tells you when a page is open twice and closes the extra copies with one click.
+- **Backup**: export mode, categories, sites and excluded domains to a file and import them on another computer.
+- Interface in **English**, **Italian**, **Spanish**, **French** and **German**, following Chrome's language.
 
 <a href="https://www.buymeacoffee.com/SpatariuRares"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=✈️&slug=SpatariuRares&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" /></a>
 
@@ -27,7 +29,7 @@ To install it from source, see [Development](#development).
 3. Press **Apply**: the groups are created in Chrome.
 4. If something is off, **Undo last organization** puts every tab back where it was.
 
-The panel stays open while you browse. If your tabs change in the meantime, it tells you and offers **Recompute**. At the top of the panel you can switch between *By site* and *With AI* at any time.
+The panel stays open while you browse. If your tabs change in the meantime, it tells you and offers **Recompute**. If a page is open more than once, **Close duplicates** keeps one copy (the pinned or grouped one if there is one) and closes the free copies; pinned and grouped tabs, the active tab and excluded domains are never closed. At the top of the panel you can switch between *By site* and *With AI* at any time.
 
 **Which tabs it touches**: only the ungrouped tabs of the current window. Pinned tabs, tabs already in a group, Chrome pages and tabs from domains you exclude stay where they are. Groups you already have open are never renamed: they can only receive new tabs that belong there.
 

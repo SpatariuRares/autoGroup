@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { loadSettings, resetCategories, saveSettings, SettingsError, type Settings } from '../../src/settings';
+import { importSettings } from '../../src/settings/backup';
 import { t } from '../../src/shared/i18n';
 import { Icon } from '../../src/ui/Icon';
 import { Card } from './Card';
+import { BackupSection } from './BackupSection';
 import { AutoGroupSection, CategoriesSection } from './CategoriesSection';
 import { DescriptionsSection } from './DescriptionsSection';
 import { ModeSection } from './ModeSection';
@@ -16,13 +18,13 @@ import { resolveHash, VIEWS, type ViewId } from './views';
 /** Pagina Buy Me a Coffee dell'autore. */
 const COFFEE_URL = 'https://www.buymeacoffee.com/SpatariuRares';
 
-/** Per quanto resta visibile "Annulla" dopo un'eliminazione o un ripristino delle categorie. */
+/** Per quanto resta visibile "Annulla" dopo un'eliminazione o un ripristino delle categorie, o un import. */
 const UNDO_MS = 8000;
 
-/** Un'azione sulle categorie che si può annullare: il testo della snackbar e le categorie e i siti di prima. */
+/** Un'azione che si può annullare: il testo della snackbar e i valori di prima delle impostazioni che ha cambiato. */
 interface Undoable {
   text: string;
-  before: Pick<Settings, 'categories' | 'categorySites'>;
+  before: Partial<Settings>;
 }
 
 /** La pagina indicata dall'indirizzo (#general, #categories, … o una sezione come #generator), seguita al cambio. */
@@ -128,7 +130,18 @@ export function App() {
           </p>
         )}
 
-        {view === 'general' && <GeneralView settings={settings} update={update} />}
+        {view === 'general' && (
+          <GeneralView
+            settings={settings}
+            update={update}
+            onImport={async (text) => {
+              const patch = await importSettings(text);
+              const before = Object.fromEntries(Object.keys(patch).map((key) => [key, settings[key as keyof Settings]])) as Partial<Settings>;
+              setSettings(await loadSettings());
+              offerUndo(t('optionsImported'), before);
+            }}
+          />
+        )}
         {view === 'categories' && (
           <>
             <CategoriesSection
@@ -185,7 +198,7 @@ export function App() {
 type Update = (patch: Partial<Settings>) => Promise<boolean>;
 
 /** Generale: come raggruppare e quali tab organizzare. */
-function GeneralView({ settings, update }: { settings: Settings; update: Update }) {
+function GeneralView({ settings, update, onImport }: { settings: Settings; update: Update; onImport: (text: string) => Promise<void> }) {
   return (
     <>
       <ModeSection mode={settings.mode} onChange={(mode) => update({ mode })} />
@@ -195,6 +208,7 @@ function GeneralView({ settings, update }: { settings: Settings; update: Update 
         excludedDomains={settings.excludedDomains}
         onExcludedDomains={(excludedDomains) => update({ excludedDomains })}
       />
+      <BackupSection settings={settings} onImport={onImport} />
     </>
   );
 }

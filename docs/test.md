@@ -248,3 +248,19 @@ The settings are split into pages chosen by the address (`resolveHash`): no addr
 
 The smoke test goes through the pages from the menu: the four entries visible at 800 px, the coffee button in *About*, `#classifier` opening the AI page, a category opened to rename it, "Undo" after deleting a category (the category and its sites come back), the providers and the descriptions switch in the AI page, and the AI page in by-site mode showing only the note.
 
+## Duplicate tabs, in `tests/duplicates.test.ts`
+
+- The free copies of a page are closed and the first one stays; the fragment does not count, the query does.
+- The pinned or grouped copy stays; pinned and grouped tabs are never closed.
+- Excluded domains, browser pages and other windows are not touched.
+- A current proposal stays current without the closed tabs.
+
+## Backup, in `tests/backup.test.ts`
+
+- The export has mode, minimum tabs, excluded domains, categories, sites and automatic grouping, never providers or API keys.
+- Importing an exported file restores the same settings and leaves providers and keys alone.
+- Excluded domains are normalized, invalid ones dropped.
+- Not JSON, another app's JSON, invalid categories or an invalid minimum are rejected with a `SettingsError` and nothing changes.
+
+`tests/locales.test.ts` checks that every language has the same keys and placeholders as Italian and that the extension name and description fit the Chrome Web Store limits. The smoke test closes nothing as duplicates but imports a backup and undoes it.
+

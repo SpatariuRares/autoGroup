@@ -7,6 +7,7 @@ import check from '@material-symbols/svg-400/rounded/check.svg?raw';
 import chevronRight from '@material-symbols/svg-400/rounded/chevron_right.svg?raw';
 import close from '@material-symbols/svg-400/rounded/close.svg?raw';
 import deleteIcon from '@material-symbols/svg-400/rounded/delete.svg?raw';
+import download from '@material-symbols/svg-400/rounded/download.svg?raw';
 import driveFileMove from '@material-symbols/svg-400/rounded/drive_file_move.svg?raw';
 import info from '@material-symbols/svg-400/rounded/info.svg?raw';
 import language from '@material-symbols/svg-400/rounded/language.svg?raw';
@@ -19,6 +20,7 @@ import stop from '@material-symbols/svg-400/rounded/stop.svg?raw';
 import tab from '@material-symbols/svg-400/rounded/tab.svg?raw';
 import tune from '@material-symbols/svg-400/rounded/tune.svg?raw';
 import undo from '@material-symbols/svg-400/rounded/undo.svg?raw';
+import upload from '@material-symbols/svg-400/rounded/upload.svg?raw';
 import warning from '@material-symbols/svg-400/rounded/warning.svg?raw';
 
 /**
@@ -35,6 +37,7 @@ const ICONS = {
   chevronRight,
   close,
   delete: deleteIcon,
+  download,
   driveFileMove,
   info,
   language,
@@ -47,6 +50,7 @@ const ICONS = {
   tab,
   tune,
   undo,
+  upload,
   warning,
 } as const;
 

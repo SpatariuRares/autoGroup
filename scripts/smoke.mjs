@@ -1,7 +1,9 @@
 // Prova manuale automatizzata in Chrome for Testing: carica l'estensione da .output/chrome-mv3,
 // apre alcune pagine, apre il pannello laterale come pagina e preme "Applica".
 // Uso: npm run build && node scripts/smoke.mjs
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
 
@@ -195,6 +197,20 @@ try {
   await options.type('#tabs input[type=text]', 'https://127.0.0.1/qualcosa');
   await options.click('#tabs button[type=submit]');
   await options.waitForSelector('.domains li');
+  // Importa un backup (aggiunge un dominio escluso), poi "Annulla" lo toglie.
+  const backupDir = mkdtempSync(path.join(tmpdir(), 'autogroup-smoke-'));
+  const backupFile = path.join(backupDir, 'backup.json');
+  writeFileSync(backupFile, JSON.stringify({ app: 'autoGroup', version: 1, settings: { minTabs: 3, excludedDomains: ['127.0.0.1', 'importato.it'] } }));
+  await (await options.$('#backup input[type=file]')).uploadFile(backupFile);
+  await options.waitForSelector('.snackbar button');
+  const imported = (await sw.evaluate(() => chrome.storage.sync.get('excludedDomains'))).excludedDomains;
+  await options.click('.snackbar button');
+  await options.waitForFunction(() => !document.querySelector('.snackbar'), { timeout: 5000 });
+  await new Promise((r) => setTimeout(r, 200));
+  const undone = (await sw.evaluate(() => chrome.storage.sync.get('excludedDomains'))).excludedDomains;
+  rmSync(backupDir, { recursive: true });
+  console.log('Importa e annulla: domini esclusi', JSON.stringify(imported), '→', JSON.stringify(undone));
+  if (!imported.includes('importato.it') || undone.includes('importato.it')) throw new Error('Import o "Annulla" non hanno funzionato');
   await openView('about');
   console.log('Pulsante caffè:', await options.$eval('a.coffee', (el) => `${el.textContent} → ${el.href} (${el.target}) | visibile: ${el.checkVisibility()}`));
   // Il link del pannello verso una sezione apre la pagina che la contiene.

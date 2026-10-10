@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isValidMinTabs, normalizeDomain } from '../../src/settings';
 import { t } from '../../src/shared/i18n';
 import { Icon } from '../../src/ui/Icon';
@@ -17,6 +17,10 @@ export function TabsSection({ minTabs, onMinTabs, excludedDomains, onExcludedDom
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const valid = value.trim() !== '' && isValidMinTabs(Number(value));
+  // Segue il valore salvato quando cambia da fuori (import, "Annulla", altra pagina), non mentre si scrive.
+  useEffect(() => {
+    if (Number(value) !== minTabs) setValue(String(minTabs));
+  }, [minTabs]);
 
   function add() {
     const domain = normalizeDomain(draft);
