@@ -209,7 +209,7 @@ Smoke test: "Open the panel" in the guide really opens the side panel (target `s
 
 `npm run smoke` builds and runs `scripts/smoke.mjs`: it opens Chrome for Testing with the extension loaded, opens pages served by a local server on `localhost` and `127.0.0.1` (two different domains), opens the side panel as a page (`sidepanel.html`), reloads the panel to verify that the proposal stays, renames a group, changes its color and moves a tab (saving a screenshot to `scripts/smoke-popup.png`), reloads again to verify that the edits stay, presses "Apply", then "Undo last organization" and checks that tab order and groups go back to how they were; finally it opens the options page, tests the Categories section (duplicate name rejected, rename, add, reorder, restore, checking `storage.sync`), sets the minimum to 3 and excludes `127.0.0.1` (screenshot in `scripts/smoke-options.png`), checks `storage.sync` and recomputes the proposal. It prints the groups created and any console errors from the service worker and the panel.
 
-Then the script turns on "Read page descriptions" in the Privacy section, recomputes and checks that the fake Generator receives the meta descriptions read from the pages with `chrome.scripting`, then turns the switch off.
+Then the script turns on "Read page descriptions" in the AI page of the settings, recomputes and checks that the fake Generator receives the meta descriptions read from the pages with `chrome.scripting`, then turns the switch off.
 
 Finally the script configures the Classifier (Custom preset pointing to a fake System One endpoint on the same server), saves it, tests the connection and recomputes: the proposal comes from the Classifier, with no calls to the Generator and no warnings.
 
@@ -241,4 +241,10 @@ Stable Chrome ignores `--load-extension` since version 137, so the script uses C
 - Toggling the switch does not make the proposal stale.
 
 The smoke test checks the real listener: with a rule on `127.0.0.1/auto`, a new page goes into the category's group; with the switch off it stays free.
+
+## Settings pages, in `tests/options-views.test.ts`
+
+The settings are split into pages chosen by the address (`resolveHash`): no address or an unknown one opens *General*; a page name opens that page; the panel's links to a section (`#generator`, `#classifier`, `#mode`) and the section names of the old single page (`#behavior`, `#privacy`) open the page that contains them, on the section.
+
+The smoke test goes through the pages from the menu: the four entries visible at 800 px, the coffee button in *About*, `#classifier` opening the AI page, a category opened to rename it, the providers and the descriptions switch in the AI page, and the AI page in by-site mode showing only the note.
 

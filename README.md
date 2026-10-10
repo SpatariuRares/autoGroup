@@ -62,7 +62,7 @@ When you save a provider, Chrome asks for permission to contact **that server on
 
 **Sites**: each category can also have sites, such as `github.com` or `github.com/my-org`. Tabs from those sites (subdomains included) always go to that category, before any AI, also when grouping *By site*: the AI only receives the other tabs. If two sites match, the more specific one wins. In the panel, after you move a tab into a category, autoGroup offers to **always put** that site there.
 
-**Automatic grouping**: when you open a page from one of those sites, the tab goes straight into the category's group, without AI and without opening the panel. If the group isn't open yet, it's created once the category has the minimum number of tabs. It only happens when a tab changes address, so a tab you take out of a group by hand stays out until it opens another page. You can turn it off in *Settings > Behavior*.
+**Automatic grouping**: when you open a page from one of those sites, the tab goes straight into the category's group, without AI and without opening the panel. If the group isn't open yet, it's created once the category has the minimum number of tabs. It only happens when a tab changes address, so a tab you take out of a group by hand stays out until it opens another page. You can turn it off in *Settings > Categories and sites*.
 
 **If the AI doesn't answer**: the next level takes over (Classifier → Generator → by site) and the panel shows a notice with the cause and a link to the settings. While the AI is working you already see the by-site proposal: **Use this** keeps it without waiting.
 

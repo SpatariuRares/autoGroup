@@ -112,11 +112,51 @@
   "optionsTitle": {
     "message": "Impostazioni di autoGroup"
   },
+  "optionsNavGeneral": {
+    "message": "Generale"
+  },
+  "optionsNavCategories": {
+    "message": "Categorie e siti"
+  },
+  "optionsNavAi": {
+    "message": "AI"
+  },
+  "optionsNavAiOff": {
+    "message": "spenta"
+  },
+  "optionsNavAbout": {
+    "message": "Informazioni"
+  },
+  "optionsTabs": {
+    "message": "Tab da organizzare"
+  },
+  "optionsAutoGroup": {
+    "message": "Raggruppamento automatico"
+  },
+  "optionsDescriptions": {
+    "message": "Descrizione delle pagine"
+  },
+  "optionsUseAi": {
+    "message": "Usa l'AI"
+  },
+  "optionsVersion": {
+    "message": "Versione $VERSION$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsMoreSites": {
+    "message": "+$COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "optionsSaved": {
     "message": "Salvato"
-  },
-  "optionsBehavior": {
-    "message": "Comportamento"
   },
   "optionsMinTabs": {
     "message": "Numero minimo di tab per creare un gruppo nuovo"
@@ -127,8 +167,11 @@
   "optionsMinTabsInvalid": {
     "message": "Inserisci un numero intero maggiore o uguale a 1."
   },
-  "optionsPrivacy": {
-    "message": "Privacy"
+  "optionsAutoGroupSites": {
+    "message": "Raggruppa da sole le tab dei siti delle categorie"
+  },
+  "optionsAutoGroupSitesHint": {
+    "message": "Quando apri un sito che hai messo in una categoria, la tab va subito nel suo gruppo, senza AI. Se il gruppo non c'è, viene creato quando le tab di quel sito raggiungono il numero minimo. Le tab tolte a mano da un gruppo non ci rientrano finché non cambi pagina."
   },
   "optionsExcludedDomains": {
     "message": "Domini esclusi"
@@ -571,7 +614,7 @@
     "message": "L'AI sceglie tra le tue categorie o ne inventa di nuove. Se nessun provider risponde, si raggruppa per sito."
   },
   "optionsModeDomainNote": {
-    "message": "Raggruppamento per sito: i provider AI non vengono usati e le categorie servono solo per i loro siti. Scegli \"Per argomento, con l'AI\" per configurare l'AI."
+    "message": "Ora raggruppi per sito: i provider AI non vengono usati. Passa all'AI per sceglierli e configurarli."
   },
   "optionsPresetNano": {
     "message": "Gemini Nano (integrato in Chrome)"

@@ -4,7 +4,9 @@ import arrowUpward from '@material-symbols/svg-400/rounded/arrow_upward.svg?raw'
 import bookmarkAdd from '@material-symbols/svg-400/rounded/bookmark_add.svg?raw';
 import category from '@material-symbols/svg-400/rounded/category.svg?raw';
 import check from '@material-symbols/svg-400/rounded/check.svg?raw';
+import chevronRight from '@material-symbols/svg-400/rounded/chevron_right.svg?raw';
 import close from '@material-symbols/svg-400/rounded/close.svg?raw';
+import deleteIcon from '@material-symbols/svg-400/rounded/delete.svg?raw';
 import driveFileMove from '@material-symbols/svg-400/rounded/drive_file_move.svg?raw';
 import info from '@material-symbols/svg-400/rounded/info.svg?raw';
 import language from '@material-symbols/svg-400/rounded/language.svg?raw';
@@ -12,8 +14,10 @@ import lock from '@material-symbols/svg-400/rounded/lock.svg?raw';
 import refresh from '@material-symbols/svg-400/rounded/refresh.svg?raw';
 import remove from '@material-symbols/svg-400/rounded/remove.svg?raw';
 import settings from '@material-symbols/svg-400/rounded/settings.svg?raw';
+import smartToy from '@material-symbols/svg-400/rounded/smart_toy.svg?raw';
 import stop from '@material-symbols/svg-400/rounded/stop.svg?raw';
 import tab from '@material-symbols/svg-400/rounded/tab.svg?raw';
+import tune from '@material-symbols/svg-400/rounded/tune.svg?raw';
 import undo from '@material-symbols/svg-400/rounded/undo.svg?raw';
 import warning from '@material-symbols/svg-400/rounded/warning.svg?raw';
 
@@ -28,7 +32,9 @@ const ICONS = {
   bookmarkAdd,
   category,
   check,
+  chevronRight,
   close,
+  delete: deleteIcon,
   driveFileMove,
   info,
   language,
@@ -36,8 +42,10 @@ const ICONS = {
   refresh,
   remove,
   settings,
+  smartToy,
   stop,
   tab,
+  tune,
   undo,
   warning,
 } as const;

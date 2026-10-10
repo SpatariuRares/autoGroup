@@ -178,30 +178,43 @@ try {
   // Impostazioni: minimo 3 tab ed esclusione di 127.0.0.1, poi una nuova proposta.
   const options = await browser.newPage();
   options.on('pageerror', (e) => errors.push(`[options] ${e.message}`));
+  // Le impostazioni sono divise in pagine (#general, #categories, #ai, #about): si cambia pagina dal menu.
+  const openView = async (view) => {
+    await options.click(`.sidebar a[href="#${view}"]`);
+    await options.waitForSelector(`.sidebar a[href="#${view}"][aria-current="page"]`);
+  };
   await options.goto(`chrome-extension://${extId}/options.html`);
-  await options.waitForSelector('#behavior input');
-  // 800 px: menu laterale nascosto, i link sono in fondo alla pagina; 1280 px: sono sotto il menu.
-  console.log('Pulsante caffè:', await options.$eval('.page-footer a.coffee', (el) => `${el.textContent} → ${el.href} (${el.target}) | visibile: ${el.checkVisibility()}`));
+  await options.waitForSelector('#tabs input');
+  // 800 px: menu come barra in alto; 1280 px: menu laterale.
+  console.log('Menu a 800 px:', await options.$$eval('.sidebar a', (els) => els.map((el) => `${el.textContent}${el.checkVisibility() ? '' : ' (nascosta)'}`).join(', ')));
   await options.setViewport({ width: 1280, height: 800 });
-  console.log('Pulsante caffè nel menu a 1280 px:', await options.$eval('.sidebar a.coffee', (el) => el.checkVisibility()), '| in fondo:', await options.$eval('.page-footer a.coffee', (el) => el.checkVisibility()));
   await options.screenshot({ path: 'scripts/smoke-options-wide.png' });
   await options.setViewport({ width: 800, height: 600 });
-  await options.$eval('#behavior input', (el) => el.select());
-  await options.type('#behavior input', '3');
-  await options.type('#privacy input[type=text]', 'https://127.0.0.1/qualcosa');
-  await options.click('#privacy button[type=submit]');
+  await options.$eval('#min-tabs', (el) => el.select());
+  await options.type('#min-tabs', '3');
+  await options.type('#tabs input[type=text]', 'https://127.0.0.1/qualcosa');
+  await options.click('#tabs button[type=submit]');
   await options.waitForSelector('.domains li');
+  await openView('about');
+  console.log('Pulsante caffè:', await options.$eval('a.coffee', (el) => `${el.textContent} → ${el.href} (${el.target}) | visibile: ${el.checkVisibility()}`));
+  // Il link del pannello verso una sezione apre la pagina che la contiene.
+  await options.evaluate(() => { location.hash = 'classifier'; });
+  await options.waitForSelector('#classifier');
+  console.log('Link #classifier: pagina', await options.$eval('.sidebar a[aria-current="page"]', (el) => el.getAttribute('href')));
+  await openView('categories');
   // Categorie: 10 predefinite, rinomina, duplicato rifiutato, aggiunta, riordino, ripristino.
-  const categoryNames = () => options.$$eval('.category-name', (els) => els.map((el) => el.value));
+  const categoryNames = () => options.$$eval('.category-title', (els) => els.map((el) => el.textContent));
   console.log('Categorie predefinite:', (await categoryNames()).join(', '));
-  const firstName = await options.$('.category-name');
+  const secondName = (await categoryNames())[1];
+  // Le righe sono chiuse: si apre la prima per modificarla.
+  await options.click('.category:nth-child(1) .category-toggle');
+  const firstName = await options.waitForSelector('.category-name');
   const retype = async (text) => {
     await firstName.click();
     await firstName.evaluate((el) => el.select());
     await options.keyboard.press('Backspace');
     await firstName.type(text);
   };
-  const secondName = await options.$$eval('.category-name', (els) => els[1].value);
   await retype(` ${secondName.toUpperCase()} `);
   await options.$eval('.category-description', (el) => el.focus());
   console.log('Errore sul duplicato:', await options.$eval('#categories .hint.error', (el) => el.textContent).catch(() => 'nessuno'));
@@ -226,6 +239,8 @@ try {
   await new Promise((r) => setTimeout(r, 300));
   console.log('Proposta con le impostazioni:', await popup.$$eval('.group:not(.existing)', (els) => els.map((el) => `${el.querySelector('.group-name').value}: ${el.querySelectorAll('.tab').length} tab`)));
 
+  await options.bringToFront();
+  await openView('ai');
   console.log('Gemini Nano:', await options.$eval('#generator .nano', (el) => el.textContent).catch(() => 'stato non mostrato'),
     '| Prompt API nel service worker:', await sw.evaluate(() => typeof LanguageModel !== 'undefined'));
 
@@ -300,19 +315,19 @@ try {
   console.log('Dopo "Usa questa":', await popup.$$eval('.group:not(.existing)', (els) => els.map((el) => `${el.querySelector('.group-name').value} (${el.querySelector('.badge').textContent})`)), '| Applica visibile:', (await popup.$('footer button.apply')) !== null);
   ai.hang = false;
 
-  // Descrizione delle pagine: interruttore nella sezione Privacy, poi una nuova proposta.
+  // Descrizione delle pagine: interruttore nella pagina AI, poi una nuova proposta.
   await options.bringToFront();
   await options.reload();
-  await options.waitForSelector('#privacy .toggle input:not([disabled])');
-  await options.click('#privacy .toggle input');
-  await options.waitForFunction(() => document.querySelector('#privacy .toggle input').checked, { timeout: 5000 });
+  await options.waitForSelector('#descriptions .toggle input:not([disabled])');
+  await options.click('#descriptions .toggle input');
+  await options.waitForFunction(() => document.querySelector('#descriptions .toggle input').checked, { timeout: 5000 });
   console.log('Descrizioni attive in sync:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('readDescriptions'))));
   ai.requests.length = 0;
   await repropose();
   console.log('Tab con descrizione inviate all\'AI:', JSON.stringify(JSON.parse(ai.requests.at(-1).messages[1].content).tabs));
   await options.bringToFront();
-  await options.click('#privacy .toggle input');
-  await options.waitForFunction(() => !document.querySelector('#privacy .toggle input').checked, { timeout: 5000 });
+  await options.click('#descriptions .toggle input');
+  await options.waitForFunction(() => !document.querySelector('#descriptions .toggle input').checked, { timeout: 5000 });
   console.log('Descrizioni spente:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('readDescriptions'))));
 
   // Classificatore: preset personalizzato verso il finto System One; il Generatore resta in errore.
@@ -368,9 +383,12 @@ try {
   await sw.evaluate((c, g) => chrome.storage.sync.set({ classifier: c, generator: g }), classifierOn, generatorOn);
   await options.bringToFront();
   await options.reload();
+  await openView('general');
   await options.waitForSelector('.mode');
   await options.click('.mode:first-child');
-  await options.waitForFunction(() => !document.querySelector('#classifier'), { timeout: 5000 });
+  // Nella modalità per sito la pagina AI resta nel menu ma mostra solo come accendere l'AI.
+  await openView('ai');
+  await options.waitForFunction(() => !document.querySelector('#classifier') && document.querySelector('main .banner button'), { timeout: 5000 });
   console.log('Modalità salvata:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('mode'))));
   const domainOnly = await repropose();
   console.log('Modalità per sito:', JSON.stringify(domainOnly), '| richieste AI', ai.requests.length);
@@ -395,6 +413,7 @@ try {
   const staleShown = (await popup.$('.banner.stale')) !== null;
   console.log('Chiudi tab: tab nel browser', tabsBefore, '→', tabsAfter, '| tab nella proposta', proposedBefore, '→', proposedBefore - 1, '| avviso di proposta superata:', staleShown);
   if (tabsAfter !== tabsBefore - 1 || staleShown) throw new Error('"Chiudi la tab" non ha funzionato come previsto');
+
   // Raggruppamento automatico: una pagina di un sito delle regole entra nel gruppo della sua categoria
   // appena apre; con l'interruttore spento resta libera.
   const category = (await sw.evaluate(() => chrome.storage.sync.get('categories'))).categories?.[0]

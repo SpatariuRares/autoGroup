@@ -112,11 +112,51 @@
   "optionsTitle": {
     "message": "autoGroup settings"
   },
+  "optionsNavGeneral": {
+    "message": "General"
+  },
+  "optionsNavCategories": {
+    "message": "Categories and sites"
+  },
+  "optionsNavAi": {
+    "message": "AI"
+  },
+  "optionsNavAiOff": {
+    "message": "off"
+  },
+  "optionsNavAbout": {
+    "message": "About"
+  },
+  "optionsTabs": {
+    "message": "Tabs to organize"
+  },
+  "optionsAutoGroup": {
+    "message": "Automatic grouping"
+  },
+  "optionsDescriptions": {
+    "message": "Page descriptions"
+  },
+  "optionsUseAi": {
+    "message": "Use AI"
+  },
+  "optionsVersion": {
+    "message": "Version $VERSION$",
+    "placeholders": {
+      "version": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsMoreSites": {
+    "message": "+$COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
   "optionsSaved": {
     "message": "Saved"
-  },
-  "optionsBehavior": {
-    "message": "Behavior"
   },
   "optionsMinTabs": {
     "message": "Minimum number of tabs to create a new group"
@@ -127,8 +167,11 @@
   "optionsMinTabsInvalid": {
     "message": "Enter a whole number greater than or equal to 1."
   },
-  "optionsPrivacy": {
-    "message": "Privacy"
+  "optionsAutoGroupSites": {
+    "message": "Group tabs from category sites automatically"
+  },
+  "optionsAutoGroupSitesHint": {
+    "message": "When you open a site you added to a category, the tab goes straight into its group, without AI. If the group doesn't exist yet, it's created once that category has the minimum number of tabs. Tabs you take out of a group by hand stay out until they change page."
   },
   "optionsExcludedDomains": {
     "message": "Excluded domains"
@@ -571,7 +614,7 @@
     "message": "AI picks from your categories or invents new ones. If no provider answers, tabs are grouped by site."
   },
   "optionsModeDomainNote": {
-    "message": "Grouping by site: AI providers are not used and categories only count for their sites. Choose \"By topic, with AI\" to set up the AI."
+    "message": "You're grouping by site: AI providers aren't used. Switch to AI to choose and set them up."
   },
   "optionsPresetNano": {
     "message": "Gemini Nano (built into Chrome)"
