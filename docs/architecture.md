@@ -7,7 +7,7 @@ Manifest V3 extension built with WXT, TypeScript and React. All the logic lives 
 ```
 entrypoints/
   background.ts          service worker: creates the Organizer, answers the panel's messages, opens the panel when the icon is clicked and the guide on install
-  sidepanel/             React side panel (index.html, main.tsx, App.tsx, style.css)
+  sidepanel/             React side panel: App.tsx composes the components (GroupCards, TabRow, ModePicker, Banners); hooks.ts holds the Organizer state, the live tab strip and the settings
   options/               React settings page, opened in a full tab; ModeSection, ProviderSection, NanoStatus and ThresholdField are also used by the guide
   onboarding/            first-run guide (onboarding.html), in steps
 src/
