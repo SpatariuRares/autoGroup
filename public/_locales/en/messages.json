@@ -290,6 +290,20 @@
   "optionsResetCategories": {
     "message": "Restore defaults"
   },
+  "optionsCategoryDeleted": {
+    "message": "Category “$NAME$” deleted",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsCategoriesReset": {
+    "message": "Default categories restored"
+  },
+  "optionsUndo": {
+    "message": "Undo"
+  },
   "optionsMoveUp": {
     "message": "Move up"
   },

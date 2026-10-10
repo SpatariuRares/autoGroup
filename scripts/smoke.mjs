@@ -226,8 +226,30 @@ try {
   const stored = await sw.evaluate(() => chrome.storage.sync.get('categories'));
   console.log('Categorie salvate:', stored.categories.map((c) => `${c.name}/${c.color}`).join(', '));
   await options.screenshot({ path: 'scripts/smoke-options.png', fullPage: true });
+  // "Elimina categoria" offre "Annulla", che rimette la categoria con i suoi siti.
+  const firstId = await options.$eval('.category:first-child', (el) => el.dataset.category);
+  await sw.evaluate((id) => chrome.storage.sync.set({ categorySites: { [id]: ['esempio.it'] } }), firstId);
+  const countBefore = (await categoryNames()).length;
+  await options.click('.category:last-child .delete-category');
+  await options.waitForSelector('.snackbar button');
+  const afterDelete = (await categoryNames()).length;
+  await options.click('.snackbar button');
+  await options.waitForFunction((n) => document.querySelectorAll('.category').length === n, { timeout: 5000 }, countBefore);
+  // Eliminare l'ultima non tocca i siti della prima; si prova anche con la prima, che ne ha.
+  await options.click('.category:first-child .category-toggle');
+  await options.click('.category:first-child .delete-category');
+  await options.waitForSelector('.snackbar button');
+  const sitesAfterDelete = (await sw.evaluate(() => chrome.storage.sync.get('categorySites'))).categorySites;
+  await options.click('.snackbar button');
+  await options.waitForFunction((id) => document.querySelector('.category:first-child')?.dataset.category === id, { timeout: 5000 }, firstId);
+  await new Promise((r) => setTimeout(r, 200));
+  const sitesAfterUndo = (await sw.evaluate(() => chrome.storage.sync.get('categorySites'))).categorySites;
+  console.log('Elimina e annulla: categorie', countBefore, '→', afterDelete, '→', (await categoryNames()).length,
+    '| siti della prima:', JSON.stringify(sitesAfterDelete), '→', JSON.stringify(sitesAfterUndo));
+  if (afterDelete !== countBefore - 1 || sitesAfterUndo?.[firstId]?.[0] !== 'esempio.it') throw new Error('"Annulla" non ha rimesso la categoria');
   await options.click('#categories .actions button.secondary');
   await new Promise((r) => setTimeout(r, 200));
+  console.log('Ripristino con "Annulla" offerto:', await options.$eval('.snackbar', (el) => el.textContent).catch(() => 'no'));
   console.log('Dopo il ripristino:', (await categoryNames()).length, 'categorie,', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get('categories'))));
   console.log('storage.sync:', JSON.stringify(await sw.evaluate(() => chrome.storage.sync.get(['minTabs', 'excludedDomains']))));
   await popup.bringToFront();

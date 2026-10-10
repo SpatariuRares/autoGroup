@@ -290,6 +290,20 @@
   "optionsResetCategories": {
     "message": "Ripristina default"
   },
+  "optionsCategoryDeleted": {
+    "message": "Categoria «$NAME$» eliminata",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "optionsCategoriesReset": {
+    "message": "Categorie predefinite ripristinate"
+  },
+  "optionsUndo": {
+    "message": "Annulla"
+  },
   "optionsMoveUp": {
     "message": "Sposta su"
   },

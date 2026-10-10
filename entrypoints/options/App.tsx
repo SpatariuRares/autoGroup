@@ -16,6 +16,15 @@ import { resolveHash, VIEWS, type ViewId } from './views';
 /** Pagina Buy Me a Coffee dell'autore. */
 const COFFEE_URL = 'https://www.buymeacoffee.com/SpatariuRares';
 
+/** Per quanto resta visibile "Annulla" dopo un'eliminazione o un ripristino delle categorie. */
+const UNDO_MS = 8000;
+
+/** Un'azione sulle categorie che si può annullare: il testo della snackbar e le categorie e i siti di prima. */
+interface Undoable {
+  text: string;
+  before: Pick<Settings, 'categories' | 'categorySites'>;
+}
+
 /** La pagina indicata dall'indirizzo (#general, #categories, … o una sezione come #generator), seguita al cambio. */
 function useView() {
   const [route, setRoute] = useState(() => resolveHash(location.hash));
@@ -32,10 +41,17 @@ export function App() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [undoable, setUndoable] = useState<Undoable | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const { view, section } = useView();
 
+  // Lette dal vivo: anche il pannello le cambia (es. "Metti sempre qui" aggiunge un sito), e "Annulla" deve ripartire da quelle vere.
   useEffect(() => {
-    loadSettings().then(setSettings);
+    const reload = () => loadSettings().then(setSettings);
+    reload();
+    const onChanged = (_changes: unknown, area: string) => area === 'sync' && reload();
+    browser.storage.onChanged.addListener(onChanged);
+    return () => browser.storage.onChanged.removeListener(onChanged);
   }, []);
 
   // Cambiando pagina si riparte dall'alto; se l'indirizzo nomina una sezione (es. #generator dal pannello) si scorre lì.
@@ -50,6 +66,21 @@ export function App() {
     setSaved(true);
     clearTimeout(savedTimer.current);
     savedTimer.current = setTimeout(() => setSaved(false), 1500);
+  }
+
+  /** Mostra "Annulla" per qualche secondo; `before` sono categorie e siti prima dell'azione. */
+  function offerUndo(text: string, before: Undoable['before']) {
+    setUndoable({ text, before });
+    clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndoable(null), UNDO_MS);
+  }
+
+  async function undo() {
+    if (!undoable) return;
+    clearTimeout(undoTimer.current);
+    setUndoable(null);
+    // Categorie e siti insieme: eliminando una categoria il salvataggio ha tolto anche i suoi siti.
+    await update(undoable.before);
   }
 
   async function update(patch: Partial<Settings>) {
@@ -106,10 +137,14 @@ export function App() {
               onChange={(categories) => update({ categories })}
               onSitesChange={(categorySites) => update({ categorySites })}
               onReset={async () => {
+                const before = { categories: settings.categories, categorySites: settings.categorySites };
                 const categories = await resetCategories();
                 setSettings((current) => (current ? { ...current, categories, categorySites: {} } : current));
-                confirmSaved();
+                offerUndo(t('optionsCategoriesReset'), before);
               }}
+              onDeleted={(category) =>
+                offerUndo(t('optionsCategoryDeleted', category.name), { categories: settings.categories, categorySites: settings.categorySites })
+              }
             />
             <AutoGroupSection enabled={settings.autoGroupSites} onChange={(autoGroupSites) => update({ autoGroupSites })} />
           </>
@@ -126,9 +161,17 @@ export function App() {
         )}
         {view === 'about' && <AboutView />}
       </main>
-      {/* Sempre visibile, anche lontano dalla cima della pagina. */}
-      <div className={`saved${saved ? ' visible' : ''}`} role="status">
-        {saved && (
+      {/* Sempre visibili, anche lontano dalla cima della pagina. "Annulla" prende il posto di "Salvato". */}
+      {undoable && (
+        <div className="snackbar" role="status">
+          <span>{undoable.text}</span>
+          <button className="text small inverse" onClick={undo}>
+            {t('optionsUndo')}
+          </button>
+        </div>
+      )}
+      <div className={`saved${saved && !undoable ? ' visible' : ''}`} role="status">
+        {saved && !undoable && (
           <>
             <Icon name="check" size={18} />
             {t('optionsSaved')}

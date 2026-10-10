@@ -246,5 +246,5 @@ The smoke test checks the real listener: with a rule on `127.0.0.1/auto`, a new 
 
 The settings are split into pages chosen by the address (`resolveHash`): no address or an unknown one opens *General*; a page name opens that page; the panel's links to a section (`#generator`, `#classifier`, `#mode`) and the section names of the old single page (`#behavior`, `#privacy`) open the page that contains them, on the section.
 
-The smoke test goes through the pages from the menu: the four entries visible at 800 px, the coffee button in *About*, `#classifier` opening the AI page, a category opened to rename it, the providers and the descriptions switch in the AI page, and the AI page in by-site mode showing only the note.
+The smoke test goes through the pages from the menu: the four entries visible at 800 px, the coffee button in *About*, `#classifier` opening the AI page, a category opened to rename it, "Undo" after deleting a category (the category and its sites come back), the providers and the descriptions switch in the AI page, and the AI page in by-site mode showing only the note.
 

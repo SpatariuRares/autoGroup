@@ -24,24 +24,27 @@ interface CategoriesSectionProps {
   /** Salva i siti di tutte le categorie; restituisce false se sono stati rifiutati. */
   onSitesChange: (sites: CategorySites) => Promise<boolean>;
   onReset: () => Promise<void>;
+  /** Una categoria è stata eliminata e salvata: la pagina offre di annullare. */
+  onDeleted: (category: Category) => void;
 }
 
 /**
  * Elenco delle categorie in righe compatte (colore, nome, siti o descrizione): un clic apre la riga
  * per modificare nome, descrizione, siti, ordine ed eliminazione.
  */
-export function CategoriesSection({ categories, sites, onChange, onSitesChange, onReset }: CategoriesSectionProps) {
+export function CategoriesSection({ categories, sites, onChange, onSitesChange, onReset, onDeleted }: CategoriesSectionProps) {
   // Bozza locale: un nome duplicato resta visibile (con l'errore) finché l'utente non lo corregge.
   const [draft, setDraft] = useState(categories);
   const [invalid, setInvalid] = useState<string | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
   useEffect(() => setDraft(categories), [categories]);
 
-  async function commit(next: Category[]) {
+  /** Salva la bozza se è valida; restituisce true se è stata salvata. */
+  async function commit(next: Category[]): Promise<boolean> {
     setDraft(next);
     const error = validateCategories(next);
     setInvalid(error);
-    if (!error) await onChange(next);
+    return error === null && (await onChange(next));
   }
 
   const update = (id: string, patch: Partial<Category>) => draft.map((c) => (c.id === id ? { ...c, ...patch } : c));
@@ -160,7 +163,10 @@ export function CategoriesSection({ categories, sites, onChange, onSitesChange, 
                       <Icon name="arrowDownward" size={18} />
                     </button>
                     <span className="spacer" />
-                    <button className="text small danger delete-category" onClick={() => commit(draft.filter((c) => c.id !== category.id))}>
+                    <button
+                      className="text small danger delete-category"
+                      onClick={async () => (await commit(draft.filter((c) => c.id !== category.id))) && onDeleted(category)}
+                    >
                       <Icon name="delete" size={18} />
                       {t('optionsDeleteCategory')}
                     </button>
