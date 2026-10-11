@@ -45,7 +45,7 @@ PRIVACY
 • La lettura della descrizione delle pagine è facoltativa e chiede il permesso solo quando la accendi.
 • Le chiavi API restano su questo computer.
 
-Segnala le tab aperte due volte, mostra quali copie chiuderebbe e chiude quelle che confermi. Esporta e importa le impostazioni in un file.
+Segnala le tab aperte due volte e quelle che non apri da una settimana, mostra quali chiuderebbe e chiude quelle che confermi. Dal pannello vai a una tab, ne togli l'audio, comprimi o chiudi un gruppo. Esporta e importa le impostazioni in un file.
 
 Una guida al primo avvio ti aiuta a scegliere modalità e provider. Interfaccia in italiano, inglese, spagnolo, francese e tedesco.
 ```
@@ -85,7 +85,7 @@ PRIVACY
 • Reading page descriptions is optional and asks for permission only when you turn it on.
 • API keys stay on this computer.
 
-It spots tabs open twice, shows which copies it would close and closes the ones you confirm. Export and import your settings as a file.
+It spots tabs open twice and tabs you haven't opened in a week, shows which ones it would close and closes the ones you confirm. From the panel you can jump to a tab, mute it, or collapse or close a group. Export and import your settings as a file.
 
 A first-run guide helps you choose the mode and the provider. Interface in English, Italian, Spanish, French and German.
 ```
