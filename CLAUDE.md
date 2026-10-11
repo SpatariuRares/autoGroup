@@ -32,3 +32,17 @@ All logic lives in the service worker (`entrypoints/background.ts`) behind the *
 ## Release
 
 Use the `/release` skill. In short: `npm run check` → update store docs if needed → `npm version <bump> -m "chore: release v%s"` → `git push --follow-tags`; CI (`.github/workflows/release.yml`) builds the zip and creates the GitHub release. Store upload is manual.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in the local `issues.json` at the repo root (gitignored, ids `AG-NN`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), stored in each issue's `labels` array. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
