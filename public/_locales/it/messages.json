@@ -1,4 +1,7 @@
 {
+  "extLang": {
+    "message": "it"
+  },
   "extName": {
     "message": "autoGroup – AI Tab Groups"
   },
@@ -714,6 +717,9 @@
   "panelSectionExisting": {
     "message": "Gruppi già aperti"
   },
+  "panelReadOnly": {
+    "message": "nome e colore non modificabili"
+  },
   "panelSectionFree": {
     "message": "Senza gruppo"
   },
@@ -776,6 +782,70 @@
   },
   "panelRememberSiteYes": {
     "message": "Sì"
+  },
+  "panelOpenTab": {
+    "message": "Vai alla tab"
+  },
+  "panelMute": {
+    "message": "Disattiva l'audio della tab"
+  },
+  "panelUnmute": {
+    "message": "Riattiva l'audio della tab"
+  },
+  "panelInactiveChip": {
+    "message": "$DAYS$ g",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactiveHint": {
+    "message": "Non la apri da $DAYS$ giorni",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactive": {
+    "message": "$COUNT$ tab non aperte da almeno $DAYS$ giorni.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "days": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelInactiveOne": {
+    "message": "1 tab non aperta da almeno $DAYS$ giorni.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCollapseGroup": {
+    "message": "Comprimi il gruppo in Chrome"
+  },
+  "panelExpandGroup": {
+    "message": "Espandi il gruppo in Chrome"
+  },
+  "panelCloseGroup": {
+    "message": "Chiudi tutte le tab del gruppo"
+  },
+  "panelCloseGroupConfirm": {
+    "message": "Chiudi $COUNT$ tab",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseGroupConfirmOne": {
+    "message": "Chiudi 1 tab"
   },
   "panelCloseTab": {
     "message": "Chiudi la tab"

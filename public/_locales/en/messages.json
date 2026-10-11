@@ -1,4 +1,7 @@
 {
+  "extLang": {
+    "message": "en"
+  },
   "extName": {
     "message": "autoGroup – AI Tab Groups"
   },
@@ -714,6 +717,9 @@
   "panelSectionExisting": {
     "message": "Open groups"
   },
+  "panelReadOnly": {
+    "message": "name and color can’t be changed"
+  },
   "panelSectionFree": {
     "message": "Ungrouped"
   },
@@ -776,6 +782,70 @@
   },
   "panelRememberSiteYes": {
     "message": "Yes"
+  },
+  "panelOpenTab": {
+    "message": "Go to tab"
+  },
+  "panelMute": {
+    "message": "Mute tab"
+  },
+  "panelUnmute": {
+    "message": "Unmute tab"
+  },
+  "panelInactiveChip": {
+    "message": "$DAYS$ d",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactiveHint": {
+    "message": "Not opened for $DAYS$ days",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactive": {
+    "message": "$COUNT$ tabs not opened for at least $DAYS$ days.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "days": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelInactiveOne": {
+    "message": "1 tab not opened for at least $DAYS$ days.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCollapseGroup": {
+    "message": "Collapse group in Chrome"
+  },
+  "panelExpandGroup": {
+    "message": "Expand group in Chrome"
+  },
+  "panelCloseGroup": {
+    "message": "Close all tabs in the group"
+  },
+  "panelCloseGroupConfirm": {
+    "message": "Close $COUNT$ tabs",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseGroupConfirmOne": {
+    "message": "Close 1 tab"
   },
   "panelCloseTab": {
     "message": "Close tab"

@@ -1,14 +1,17 @@
 import { useMemo, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
+import { INACTIVE_DAYS } from '../../src/organizer/inactive';
 import { buildWindowView } from '../../src/organizer/window-view';
 import { saveSettings, type GroupingMode } from '../../src/settings';
 import { t } from '../../src/shared/i18n';
 import { callOrganizer } from '../../src/shared/organizer-client';
 import type { ProposedTab } from '../../src/shared/types';
+import { useFocusRecovery } from '../../src/ui/focus-recovery';
 import { Icon } from '../../src/ui/Icon';
-import { ComputingStatus, DuplicatesBanner, ErrorBanner, InfoBanner, StaleBanner, WarningsBanner } from './Banners';
+import { CloseTabsBanner, ComputingStatus, ErrorBanner, InfoBanner, StaleBanner, WarningsBanner } from './Banners';
 import { ExistingCard, GroupCard } from './GroupCards';
 import { useExpiring, useOrganizer, useSettings, useWindowSnapshot } from './hooks';
+import { LiveTabsContext, type LiveTabs } from './live-tabs';
 import { ModePicker } from './ModePicker';
 import { openSettings } from './open-settings';
 import { OFFER_MS, rememberOffer, type RememberOffer } from './remember-offer';
@@ -20,7 +23,7 @@ export function App() {
   const settings = useSettings();
   const [notice, setNotice] = useState<'popupApplied' | 'popupUndone' | null>(null);
   const [stale, setStale] = useState(false);
-  const [offer, setOffer] = useExpiring<RememberOffer>(OFFER_MS);
+  const [offer, setOffer, pauseOffer] = useExpiring<RememberOffer>(OFFER_MS);
 
   const proposal = state?.phase === 'ready' && state.windowId === windowId ? state.proposal : undefined;
   const canUndo = state?.undo !== undefined && state.undo.windowId === windowId;
@@ -31,14 +34,28 @@ export function App() {
 
   // "Applica" e "Annulla" cambiano le tab: in quel momento la proposta non c'è più, quindi nessun avviso.
   // Le tab chiuse dal pannello sono già tolte dalla proposta dall'Organizzatore: non la rendono vecchia.
+  // Nemmeno i gruppi che restano vuoti chiudendo più tab insieme: l'Organizzatore ne tiene conto.
   const closing = useRef(new Set<number>());
-  const snapshot = useWindowSnapshot(windowId, (closedTabId) => {
+  const closingGroups = useRef(new Set<number>());
+  const snapshot = useWindowSnapshot(windowId, (closedTabId, removedGroupId) => {
     if (closedTabId !== undefined && closing.current.delete(closedTabId)) return;
+    if (removedGroupId !== undefined && closingGroups.current.delete(removedGroupId)) return;
     if (!busy) setStale(true);
   });
+  // Rilette insieme alle tab: i giorni di inattività si contano dal momento dell'ultima lettura.
+  const now = useMemo(() => Date.now(), [snapshot]);
   const view = useMemo(
-    () => buildWindowView(snapshot.tabs, snapshot.groups, proposal ?? preview, settings?.excludedDomains ?? []),
-    [snapshot, proposal, preview, settings?.excludedDomains],
+    () => buildWindowView(snapshot.tabs, snapshot.groups, proposal ?? preview, settings?.excludedDomains ?? [], now),
+    [snapshot, proposal, preview, settings?.excludedDomains, now],
+  );
+  const live = useMemo<LiveTabs>(
+    () => ({
+      tabs: new Map(snapshot.tabs.map((tab) => [tab.id!, tab])),
+      groups: new Map(snapshot.groups.map((group) => [group.id, group])),
+      inactive: new Set(view.inactive),
+      now,
+    }),
+    [snapshot, view.inactive, now],
   );
 
   function recompute() {
@@ -70,18 +87,33 @@ export function App() {
     if (!(await send({ type: 'organizer/close-tab', tabId }))) closing.current.delete(tabId);
   }
 
-  async function closeDuplicates(tabIds: number[]) {
-    if (windowId === null) return;
-    // Come per "Chiudi la tab": l'Organizzatore le toglie dalla proposta, quindi non la rendono vecchia.
+  /**
+   * Come per "Chiudi la tab": l'Organizzatore toglie le tab dalla proposta, quindi non la rendono
+   * vecchia; e scarta le aggiunte ai gruppi che restano vuoti, quindi neanche il gruppo che sparisce.
+   */
+  async function closeMany(tabIds: number[], request: Parameters<typeof send>[0]) {
     for (const tabId of tabIds) closing.current.add(tabId);
-    if (!(await send({ type: 'organizer/close-duplicates', windowId, tabIds }))) closing.current.clear();
+    for (const { group, current } of view.existing) {
+      if (current.every((tab) => tabIds.includes(tab.tabId))) closingGroups.current.add(group.id);
+    }
+    if (!(await send(request))) {
+      closing.current.clear();
+      closingGroups.current.clear();
+    }
   }
 
-  // I doppioni con titolo, icona e URL letti dal vivo, per l'anteprima.
-  const duplicateTabs = view.duplicates
-    .map((id) => snapshot.tabs.find((tab) => tab.id === id))
-    .filter((tab) => tab !== undefined)
-    .map((tab) => ({ tabId: tab.id!, title: tab.title?.trim() || tab.url || '', url: tab.url ?? '', favIconUrl: tab.favIconUrl }));
+  const closeDuplicates = (tabIds: number[]) => windowId !== null && closeMany(tabIds, { type: 'organizer/close-duplicates', windowId, tabIds });
+  const closeInactive = (tabIds: number[]) => windowId !== null && closeMany(tabIds, { type: 'organizer/close-inactive', windowId, tabIds });
+  const closeGroup = (groupId: number, tabIds: number[]) => closeMany(tabIds, { type: 'organizer/close-group', groupId });
+
+  // Le tab con titolo, icona e URL letti dal vivo, per le anteprime dei doppioni e delle inattive.
+  const liveTabs = (ids: number[]) =>
+    ids
+      .map((id) => live.tabs.get(id))
+      .filter((tab) => tab !== undefined)
+      .map((tab) => ({ tabId: tab.id!, title: tab.title?.trim() || tab.url || '', url: tab.url ?? '', favIconUrl: tab.favIconUrl }));
+  const duplicateTabs = liveTabs(view.duplicates);
+  const inactiveTabs = liveTabs(view.inactive);
 
   const moveTab = async (tab: ProposedTab, value: string) => {
     const target = targets.find((x) => x.value === value);
@@ -103,9 +135,32 @@ export function App() {
   const message = failure ?? state?.error;
   const touched = view.existing.filter((e) => e.added.length > 0);
   const untouched = view.existing.filter((e) => e.added.length === 0);
+  const rememberFocus = useFocusRecovery('.tab, .group');
+
+  const showStale = proposal !== undefined && stale && !computing;
+  const duplicatesText = duplicateTabs.length === 1 ? t('panelDuplicatesOne') : t('panelDuplicates', String(duplicateTabs.length));
+  const inactiveText =
+    inactiveTabs.length === 1 ? t('panelInactiveOne', String(INACTIVE_DAYS)) : t('panelInactive', [String(inactiveTabs.length), String(INACTIVE_DAYS)]);
+  const info = !proposal && !computing && (state?.notice || notice) ? (state?.notice ? t(state.notice.key, state.notice.arg) : t(notice!)) : null;
+  const noGroups = proposal !== undefined && view.created.length === 0 && touched.length === 0;
+  // Banner e stato del calcolo compaiono già pieni, e una regione live nuova di solito non viene letta:
+  // i loro testi passano da questa, sempre presente.
+  const announcement = [
+    computing && t(preview ? 'panelPreviewComputing' : 'popupComputing'),
+    showStale && t('panelStale'),
+    duplicateTabs.length > 0 && !computing && duplicatesText,
+    inactiveTabs.length > 0 && !computing && inactiveText,
+    info,
+    noGroups && t('popupNoGroups'),
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className="panel">
+    <div className="panel" onClickCapture={rememberFocus} onChangeCapture={rememberFocus}>
+      <p className="visually-hidden" role="status">
+        {announcement}
+      </p>
       <header className="top-app-bar">
         <h1>{t('popupTitle')}</h1>
         <button className="icon" title={t('popupOpenSettings')} aria-label={t('popupOpenSettings')} onClick={() => browser.runtime.openOptionsPage()}>
@@ -124,94 +179,113 @@ export function App() {
         />
       )}
 
-      <div className="content" onKeyDown={moveBetweenRows}>
-        {message && <ErrorBanner messageKey={message} />}
+      <LiveTabsContext.Provider value={live}>
+        <div className="content" onKeyDown={moveBetweenRows}>
+          {message && <ErrorBanner messageKey={message} />}
 
-        {proposal && stale && !computing && <StaleBanner onRecompute={recompute} />}
+          {showStale && <StaleBanner onRecompute={recompute} />}
 
-        {proposal && proposal.warnings.length > 0 && <WarningsBanner warnings={proposal.warnings} />}
+          {proposal && proposal.warnings.length > 0 && <WarningsBanner warnings={proposal.warnings} />}
 
-        {duplicateTabs.length > 0 && !computing && (
-          <DuplicatesBanner tabs={duplicateTabs} disabled={busy} onClose={closeDuplicates} />
-        )}
+          {duplicateTabs.length > 0 && !computing && (
+            <CloseTabsBanner
+              icon="tab"
+              text={duplicatesText}
+              tabs={duplicateTabs}
+              disabled={busy}
+              onClose={closeDuplicates}
+            />
+          )}
 
-        {!proposal && !computing && (state?.notice || notice) && (
-          <InfoBanner text={state?.notice ? t(state.notice.key, state.notice.arg) : t(notice!)} />
-        )}
+          {inactiveTabs.length > 0 && !computing && (
+            <CloseTabsBanner
+              icon="schedule"
+              text={inactiveText}
+              tabs={inactiveTabs}
+              disabled={busy}
+              onClose={closeInactive}
+            />
+          )}
 
-        {proposal && view.created.length === 0 && touched.length === 0 && <InfoBanner text={t('popupNoGroups')} />}
+          {info && <InfoBanner text={info} />}
 
-        {view.created.length > 0 && (
-          <Section title={t('panelSectionNew')} count={view.created.length}>
-            <ul className="groups">
-              {view.created.map((group) => (
-                <GroupCard
-                  key={group.id}
-                  group={group}
-                  readOnly={readOnly}
-                  targets={targets.filter((x) => x.value !== `p:${group.id}`)}
-                  onMove={moveTab}
-                  onEdit={edit}
-                  onClose={closeTab}
-                  onSave={() => run({ type: 'organizer/save-to-list', groupId: group.id })}
-                  saving={busy}
-                />
-              ))}
-            </ul>
-          </Section>
-        )}
+          {noGroups && <InfoBanner text={t('popupNoGroups')} />}
 
-        {view.existing.length > 0 && (
-          <Section title={t('panelSectionExisting')} count={view.existing.length}>
-            <ul className="groups">
-              {[...touched, ...untouched].map((existing) => (
-                <ExistingCard
-                  key={existing.group.id}
-                  existing={existing}
-                  readOnly={readOnly}
-                  targets={targets.filter((x) => x.value !== `p:${existing.proposedGroupId}` && x.value !== `c:${existing.group.id}`)}
-                  onMove={moveTab}
-                  onEdit={edit}
-                  onClose={closeTab}
-                />
-              ))}
-            </ul>
-          </Section>
-        )}
+          {view.created.length > 0 && (
+            <Section title={t('panelSectionNew')} count={view.created.length}>
+              <ul className="groups">
+                {view.created.map((group) => (
+                  <GroupCard
+                    key={group.id}
+                    group={group}
+                    readOnly={readOnly}
+                    targets={targets.filter((x) => x.value !== `p:${group.id}`)}
+                    onMove={moveTab}
+                    onEdit={edit}
+                    onClose={closeTab}
+                    onSave={() => run({ type: 'organizer/save-to-list', groupId: group.id })}
+                    saving={busy}
+                  />
+                ))}
+              </ul>
+            </Section>
+          )}
 
-        {view.free.length > 0 && (
-          <Section title={t('panelSectionFree')} count={view.free.length} hint={freeTargets.length > 0 ? t('panelFreeHint') : undefined}>
-            <ul className="tabs card-list">
-              {view.free.map((tab) => (
-                <TabRow
-                  key={tab.tabId}
-                  tab={tab}
-                  targets={freeTargets}
-                  onMove={proposal ? moveTab : groupTab}
-                  onClose={() => closeTab(tab.tabId)}
-                />
-              ))}
-            </ul>
-          </Section>
-        )}
+          {view.existing.length > 0 && (
+            <Section title={t('panelSectionExisting')} count={view.existing.length}>
+              <ul className="groups">
+                {[...touched, ...untouched].map((existing) => (
+                  <ExistingCard
+                    key={existing.group.id}
+                    existing={existing}
+                    readOnly={readOnly}
+                    targets={targets.filter((x) => x.value !== `p:${existing.proposedGroupId}` && x.value !== `c:${existing.group.id}`)}
+                    onMove={moveTab}
+                    onEdit={edit}
+                    onClose={closeTab}
+                    onCloseGroup={() => closeGroup(existing.group.id, existing.current.map((tab) => tab.tabId))}
+                  />
+                ))}
+              </ul>
+            </Section>
+          )}
 
-        {view.held.length > 0 && (
-          <details className="section held">
-            <summary>
-              <span className="section-title">{t('panelSectionHeld')}</span>
-              <span className="section-count">{view.held.length}</span>
-            </summary>
-            <ul className="tabs card-list">
-              {view.held.map(({ tab, reason }) => (
-                <TabRow key={tab.tabId} tab={tab} reason={reason} onClose={() => closeTab(tab.tabId)} />
-              ))}
-            </ul>
-          </details>
-        )}
-      </div>
+          {view.free.length > 0 && (
+            <Section title={t('panelSectionFree')} count={view.free.length} hint={freeTargets.length > 0 ? t('panelFreeHint') : undefined}>
+              <ul className="tabs card-list">
+                {view.free.map((tab) => (
+                  <TabRow
+                    key={tab.tabId}
+                    tab={tab}
+                    targets={freeTargets}
+                    onMove={proposal ? moveTab : groupTab}
+                    onClose={() => closeTab(tab.tabId)}
+                  />
+                ))}
+              </ul>
+            </Section>
+          )}
 
+          {view.held.length > 0 && (
+            <details className="section held">
+              <summary>
+                <span className="section-title">{t('panelSectionHeld')}</span>
+                <span className="section-count">{view.held.length}</span>
+              </summary>
+              <ul className="tabs card-list">
+                {view.held.map(({ tab, reason }) => (
+                  <TabRow key={tab.tabId} tab={tab} reason={reason} onClose={() => closeTab(tab.tabId)} />
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      </LiveTabsContext.Provider>
+
+      {/* Regione live sempre presente: la snackbar che ci compare dentro viene letta. */}
+      <div role="status">
       {proposal && offer ? (
-        <div className="snackbar" role="status">
+        <div className="snackbar" {...pauseOffer}>
           <span>{t('panelRememberSite', [offer.site, offer.category])}</span>
           <button
             className="text small inverse"
@@ -226,7 +300,7 @@ export function App() {
       ) : (
         proposal &&
         state?.notice && (
-          <div className="snackbar" role="status">
+          <div className="snackbar">
             <span>{t(state.notice.key, state.notice.arg)}</span>
             {state.notice.key === 'saveToListNoDescription' && (
               <button className="text small inverse" onClick={() => openSettings('categories')}>
@@ -236,6 +310,7 @@ export function App() {
           </div>
         )
       )}
+      </div>
 
       <footer className="bottom-bar">
         {canUndo && (

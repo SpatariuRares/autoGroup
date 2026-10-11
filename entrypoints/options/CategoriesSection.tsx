@@ -10,6 +10,7 @@ import {
 import { t } from '../../src/shared/i18n';
 import { GROUP_COLORS, type Category, type GroupColor } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
+import { moveInRadioGroup } from '../../src/ui/radio-keys';
 import { Card } from './Card';
 import { SitesRow } from './SitesRow';
 
@@ -216,6 +217,12 @@ export function AutoGroupSection({ enabled, onChange }: { enabled: boolean; onCh
 function ColorPicker({ color, onChange }: { color: GroupColor; onChange: (color: GroupColor) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const swatch = useRef<HTMLButtonElement>(null);
+  // Chiudendo la tavolozza il focus torna sul pallino: i suoi pulsanti spariscono e lo lascerebbero sul body.
+  const close = () => {
+    swatch.current?.focus();
+    setOpen(false);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -227,6 +234,7 @@ function ColorPicker({ color, onChange }: { color: GroupColor; onChange: (color:
   return (
     <div className="color-picker" ref={ref}>
       <button
+        ref={swatch}
         className={`swatch color-${color}`}
         title={`${t('optionsCategoryColor')}: ${t(`color_${color}`)}`}
         aria-label={`${t('optionsCategoryColor')}: ${t(`color_${color}`)}`}
@@ -234,17 +242,20 @@ function ColorPicker({ color, onChange }: { color: GroupColor; onChange: (color:
         onClick={() => setOpen(!open)}
       />
       {open && (
-        <div className="palette popover" role="radiogroup" aria-label={t('optionsCategoryColor')}>
+        <div className="palette popover" role="radiogroup" aria-label={t('optionsCategoryColor')} onKeyDown={(e) => (e.key === 'Escape' ? close() : moveInRadioGroup(e))}>
           {GROUP_COLORS.map((c) => (
             <button
               key={c}
               role="radio"
               aria-checked={c === color}
+              // Aprendo la tavolozza il focus va sul colore attuale; le frecce passano agli altri.
+              autoFocus={c === color}
+              tabIndex={c === color ? 0 : -1}
               className={`swatch color-${c}${c === color ? ' selected' : ''}`}
               title={t(`color_${c}`)}
               aria-label={t(`color_${c}`)}
               onClick={() => {
-                setOpen(false);
+                close();
                 if (c !== color) onChange(c);
               }}
             />

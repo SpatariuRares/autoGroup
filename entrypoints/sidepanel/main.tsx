@@ -6,7 +6,8 @@ import '../../src/ui/md3-tokens.css';
 import '../../src/ui/base.css';
 import './style.css';
 
-document.documentElement.lang = navigator.language;
+// La lingua dei testi, non quella del browser: senza traduzione Chrome usa l'italiano (default_locale).
+document.documentElement.lang = t('extLang');
 document.title = t('popupTitle');
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

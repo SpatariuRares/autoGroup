@@ -20,6 +20,9 @@ interface TabRecord {
   groupId: number;
   discarded: boolean;
   favIconUrl?: string;
+  active: boolean;
+  audible: boolean;
+  lastAccessed?: number;
 }
 
 interface GroupRecord {
@@ -36,6 +39,10 @@ export interface NewTab {
   windowId?: number;
   pinned?: boolean;
   discarded?: boolean;
+  active?: boolean;
+  audible?: boolean;
+  /** Ultima volta che la tab è stata guardata, in ms dall'epoca (come `Tab.lastAccessed`). */
+  lastAccessed?: number;
 }
 
 export function installFakeTabStrip(options: { currentWindowId?: number } = {}) {
@@ -62,7 +69,9 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
       groupId: t.groupId,
       discarded: t.discarded,
       favIconUrl: t.favIconUrl,
-      active: false,
+      active: t.active,
+      audible: t.audible,
+      lastAccessed: t.lastAccessed,
       highlighted: false,
       incognito: false,
       selected: false,
@@ -239,6 +248,9 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
         pinned: tab.pinned ?? false,
         groupId: NONE,
         discarded: tab.discarded ?? false,
+        active: tab.active ?? false,
+        audible: tab.audible ?? false,
+        lastAccessed: tab.lastAccessed,
       };
       tabs.set(record.id, record);
       strip(record.windowId).push(record.id);

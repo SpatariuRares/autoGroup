@@ -12,15 +12,21 @@ import driveFileMove from '@material-symbols/svg-400/rounded/drive_file_move.svg
 import info from '@material-symbols/svg-400/rounded/info.svg?raw';
 import language from '@material-symbols/svg-400/rounded/language.svg?raw';
 import lock from '@material-symbols/svg-400/rounded/lock.svg?raw';
+import openInNew from '@material-symbols/svg-400/rounded/open_in_new.svg?raw';
 import refresh from '@material-symbols/svg-400/rounded/refresh.svg?raw';
 import remove from '@material-symbols/svg-400/rounded/remove.svg?raw';
+import schedule from '@material-symbols/svg-400/rounded/schedule.svg?raw';
 import settings from '@material-symbols/svg-400/rounded/settings.svg?raw';
 import smartToy from '@material-symbols/svg-400/rounded/smart_toy.svg?raw';
 import stop from '@material-symbols/svg-400/rounded/stop.svg?raw';
 import tab from '@material-symbols/svg-400/rounded/tab.svg?raw';
 import tune from '@material-symbols/svg-400/rounded/tune.svg?raw';
 import undo from '@material-symbols/svg-400/rounded/undo.svg?raw';
+import unfoldLess from '@material-symbols/svg-400/rounded/unfold_less.svg?raw';
+import unfoldMore from '@material-symbols/svg-400/rounded/unfold_more.svg?raw';
 import upload from '@material-symbols/svg-400/rounded/upload.svg?raw';
+import volumeOff from '@material-symbols/svg-400/rounded/volume_off.svg?raw';
+import volumeUp from '@material-symbols/svg-400/rounded/volume_up.svg?raw';
 import warning from '@material-symbols/svg-400/rounded/warning.svg?raw';
 
 /**
@@ -42,15 +48,21 @@ const ICONS = {
   info,
   language,
   lock,
+  openInNew,
   refresh,
   remove,
+  schedule,
   settings,
   smartToy,
   stop,
   tab,
   tune,
   undo,
+  unfoldLess,
+  unfoldMore,
   upload,
+  volumeOff,
+  volumeUp,
   warning,
 } as const;
 

@@ -78,6 +78,7 @@ export function SitesRow({ category, categories, sites, onChange }: SitesRowProp
             placeholder={t('optionsSitePlaceholder')}
             aria-label={`${t('optionsSites')}: ${category.name}`}
             aria-invalid={error !== null}
+            aria-describedby={error ? `sites-error-${category.id}` : undefined}
             onChange={(e) => {
               setDraft(e.target.value);
               setError(null);
@@ -89,7 +90,11 @@ export function SitesRow({ category, categories, sites, onChange }: SitesRowProp
           </button>
         </form>
       )}
-      {error && <p className="hint error">{t(error.key, error.arg)}</p>}
+      {error && (
+        <p id={`sites-error-${category.id}`} className="hint error" role="alert">
+          {t(error.key, error.arg)}
+        </p>
+      )}
     </div>
   );
 }

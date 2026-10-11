@@ -57,6 +57,21 @@ a {
   outline-offset: 2px;
 }
 
+/* Titoli che ricevono il focus da codice (cambio di passo o di pagina): niente contorno. */
+h1[tabindex='-1']:focus {
+  outline: none;
+}
+
+/* Testo solo per gli screen reader, es. le regioni che annunciano i cambiamenti. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Icone Material Symbols in linea. */
 .md-icon {
   display: inline-flex;
@@ -164,6 +179,23 @@ button.icon.small:has(> .md-icon:first-child) {
 
 button.icon:disabled {
   --btn-bg: transparent;
+}
+
+/* Pulsante con l'aspetto di un link, per le azioni dentro una frase (es. "Cambia" nel riepilogo). */
+button.link {
+  display: inline;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--md-sys-color-primary);
+  font: inherit;
+  text-decoration: underline;
+}
+
+button.link:hover:not(:disabled),
+button.link:active:not(:disabled) {
+  background: none;
 }
 
 button.icon.danger:hover:not(:disabled) {
@@ -311,6 +343,11 @@ input[role='switch']:disabled {
   .md-linear-progress::after {
     animation-duration: 4s;
   }
+
+  /* La snackbar compare senza scivolare; il doppio selettore vince sulla regola delle singole pagine. */
+  .snackbar.snackbar {
+    animation: none;
+  }
 }
 
 /* Pallini dei colori dei gruppi: sono i 9 colori fissi di Chrome, non colori del tema. */
@@ -320,7 +357,8 @@ input[role='switch']:disabled {
   border-radius: 50%;
   flex: none;
   padding: 0;
-  border: 2px solid transparent;
+  /* Bordo sottile: giallo e arancione da soli hanno meno di 3:1 sullo sfondo chiaro. */
+  border: 1px solid var(--md-sys-color-outline);
   cursor: pointer;
 }
 

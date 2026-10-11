@@ -16,13 +16,17 @@ export function ThresholdField({ threshold, onChange }: { threshold: number; onC
             step={0.05}
             value={value}
             aria-label={t('optionsThreshold')}
+            aria-valuetext={`${Math.round(value * 100)}%`}
+            aria-describedby="threshold-hint"
             onChange={(e) => setValue(Number(e.target.value))}
             onPointerUp={() => value !== threshold && onChange(value)}
             onKeyUp={() => value !== threshold && onChange(value)}
           />
           <output>{Math.round(value * 100)}%</output>
         </div>
-        <p className="hint">{t('optionsThresholdHint')}</p>
+        <p id="threshold-hint" className="hint">
+          {t('optionsThresholdHint')}
+        </p>
       </div>
     </div>
   );

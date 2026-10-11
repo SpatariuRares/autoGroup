@@ -194,8 +194,11 @@ export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderS
         )}
         {dirty && <span className="hint unsaved">{t('optionsUnsaved')}</span>}
       </div>
-      {status && <p className={`hint ${status.kind === 'error' ? 'error' : status.kind === 'ok' ? 'ok' : ''}`}>{t(status.key, status.sub)}</p>}
-      {!status && permission === false && <p className="hint error">{t('warning_no_permission', providerLabel(role, saved))}</p>}
+      {/* Sempre presente, così l'esito di "Salva" e "Prova connessione" viene letto dallo screen reader. */}
+      <div role="status">
+        {status && <p className={`hint ${status.kind === 'error' ? 'error' : status.kind === 'ok' ? 'ok' : ''}`}>{t(status.key, status.sub)}</p>}
+        {!status && permission === false && <p className="hint error">{t('warning_no_permission', providerLabel(role, saved))}</p>}
+      </div>
       {extra && <div className="extra">{extra}</div>}
     </Card>
   );

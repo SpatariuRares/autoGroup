@@ -7,7 +7,8 @@ import '../options/style.css';
 import { App } from './App';
 import './style.css';
 
-document.documentElement.lang = navigator.language;
+// La lingua dei testi, non quella del browser: senza traduzione Chrome usa l'italiano (default_locale).
+document.documentElement.lang = t('extLang');
 document.title = t('onboardingTitle');
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

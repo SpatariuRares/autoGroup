@@ -49,10 +49,20 @@ export function DescriptionsSection({ enabled, onChange }: { enabled: boolean; o
           <strong>{t('optionsReadDescriptions')}</strong>
           <span className="hint">{t('optionsReadDescriptionsHint')}</span>
         </span>
-        <input type="checkbox" role="switch" checked={on} disabled={permitted === null} onChange={(e) => toggle(e.target.checked)} />
+        <input
+          type="checkbox"
+          role="switch"
+          checked={on}
+          disabled={permitted === null}
+          aria-describedby={denied || providerLost ? 'descriptions-error' : undefined}
+          onChange={(e) => toggle(e.target.checked)}
+        />
       </label>
-      {denied && <p className="hint error">{t('optionsReadDescriptionsDenied')}</p>}
-      {providerLost && <p className="hint error">{t('optionsReadDescriptionsProviderLost')}</p>}
+      {(denied || providerLost) && (
+        <p id="descriptions-error" className="hint error" role="alert">
+          {t(denied ? 'optionsReadDescriptionsDenied' : 'optionsReadDescriptionsProviderLost')}
+        </p>
+      )}
     </Card>
   );
 }

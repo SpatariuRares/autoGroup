@@ -13,6 +13,8 @@ export type OrganizerRequest =
   | { type: 'organizer/undo' }
   | { type: 'organizer/close-tab'; tabId: number }
   | { type: 'organizer/close-duplicates'; windowId: number; tabIds: number[] }
+  | { type: 'organizer/close-inactive'; windowId: number; tabIds: number[] }
+  | { type: 'organizer/close-group'; groupId: number }
   | { type: 'organizer/group-tab'; tabId: number; groupId: number };
 
 /** Notifica dal service worker al pannello quando lo stato cambia. */
@@ -35,6 +37,8 @@ const REQUEST_TYPES = new Set<string>([
   'organizer/undo',
   'organizer/close-tab',
   'organizer/close-duplicates',
+  'organizer/close-inactive',
+  'organizer/close-group',
   'organizer/group-tab',
 ] satisfies OrganizerRequest['type'][]);
 

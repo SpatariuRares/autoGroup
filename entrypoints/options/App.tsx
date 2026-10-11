@@ -3,7 +3,9 @@ import { browser } from 'wxt/browser';
 import { loadSettings, resetCategories, saveSettings, SettingsError, type Settings } from '../../src/settings';
 import { importSettings } from '../../src/settings/backup';
 import { t } from '../../src/shared/i18n';
+import { useFocusRecovery } from '../../src/ui/focus-recovery';
 import { Icon } from '../../src/ui/Icon';
+import { useExpiring } from '../../src/ui/use-expiring';
 import { Card } from './Card';
 import { BackupSection } from './BackupSection';
 import { AutoGroupSection, CategoriesSection } from './CategoriesSection';
@@ -18,7 +20,7 @@ import { resolveHash, VIEWS, type ViewId } from './views';
 /** Pagina Buy Me a Coffee dell'autore. */
 const COFFEE_URL = 'https://www.buymeacoffee.com/SpatariuRares';
 
-/** Per quanto resta visibile "Annulla" dopo un'eliminazione o un ripristino delle categorie, o un import. */
+/** Per quanto resta visibile "Annulla" dopo un'eliminazione o un ripristino delle categorie, o un import (fermo con mouse o focus sopra). */
 const UNDO_MS = 8000;
 
 /** Un'azione che si può annullare: il testo della snackbar e i valori di prima delle impostazioni che ha cambiato. */
@@ -43,9 +45,9 @@ export function App() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [undoable, setUndoable] = useState<Undoable | null>(null);
-  const undoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [undoable, setUndoable, holdUndo] = useExpiring<Undoable>(UNDO_MS);
   const { view, section } = useView();
+  const rememberFocus = useFocusRecovery('.chip, .category');
 
   // Lette dal vivo: anche il pannello le cambia (es. "Metti sempre qui" aggiunge un sito), e "Annulla" deve ripartire da quelle vere.
   useEffect(() => {
@@ -56,9 +58,16 @@ export function App() {
     return () => browser.storage.onChanged.removeListener(onChanged);
   }, []);
 
+  const heading = useRef<HTMLHeadingElement>(null);
+  const shownView = useRef<ViewId | null>(null);
+
   // Cambiando pagina si riparte dall'alto; se l'indirizzo nomina una sezione (es. #generator dal pannello) si scorre lì.
+  // Il titolo della scheda nomina la pagina, e il focus va sul suo h1: lo screen reader annuncia dove si è arrivati.
   useEffect(() => {
     if (!settings) return;
+    document.title = `${t(VIEWS.find((v) => v.id === view)!.title)} – ${t('optionsTitle')}`;
+    if (shownView.current !== null && shownView.current !== view) heading.current?.focus({ preventScroll: true });
+    shownView.current = view;
     if (section) document.getElementById(section)?.scrollIntoView();
     else window.scrollTo(0, 0);
   }, [view, section, settings === null]);
@@ -73,13 +82,10 @@ export function App() {
   /** Mostra "Annulla" per qualche secondo; `before` sono categorie e siti prima dell'azione. */
   function offerUndo(text: string, before: Undoable['before']) {
     setUndoable({ text, before });
-    clearTimeout(undoTimer.current);
-    undoTimer.current = setTimeout(() => setUndoable(null), UNDO_MS);
   }
 
   async function undo() {
     if (!undoable) return;
-    clearTimeout(undoTimer.current);
     setUndoable(null);
     // Categorie e siti insieme: eliminando una categoria il salvataggio ha tolto anche i suoi siti.
     await update(undoable.before);
@@ -102,7 +108,7 @@ export function App() {
   const title = VIEWS.find((v) => v.id === view)!.title;
 
   return (
-    <div className="layout">
+    <div className="layout" onClickCapture={rememberFocus} onChangeCapture={rememberFocus}>
       <nav className="sidebar" aria-label={t('optionsTitle')}>
         <div className="brand">
           <img src="/icon/32.png" alt="" width={24} height={24} />
@@ -122,7 +128,9 @@ export function App() {
       </nav>
       <main>
         <header className="page-header">
-          <h1>{t(title)}</h1>
+          <h1 ref={heading} tabIndex={-1}>
+            {t(title)}
+          </h1>
         </header>
         {saveError && (
           <p className="banner error" role="alert">
@@ -175,14 +183,17 @@ export function App() {
         {view === 'about' && <AboutView />}
       </main>
       {/* Sempre visibili, anche lontano dalla cima della pagina. "Annulla" prende il posto di "Salvato". */}
-      {undoable && (
-        <div className="snackbar" role="status">
-          <span>{undoable.text}</span>
-          <button className="text small inverse" onClick={undo}>
-            {t('optionsUndo')}
-          </button>
-        </div>
-      )}
+      {/* Regione live sempre presente: la snackbar che ci compare dentro viene letta. */}
+      <div role="status">
+        {undoable && (
+          <div className="snackbar" {...holdUndo}>
+            <span>{undoable.text}</span>
+            <button className="text small inverse" onClick={undo}>
+              {t('optionsUndo')}
+            </button>
+          </div>
+        )}
+      </div>
       <div className={`saved${saved && !undoable ? ' visible' : ''}`} role="status">
         {saved && !undoable && (
           <>

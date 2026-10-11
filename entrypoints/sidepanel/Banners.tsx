@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { t, warningKey } from '../../src/shared/i18n';
 import type { Proposal, ProposedTab } from '../../src/shared/types';
-import { Icon } from '../../src/ui/Icon';
+import { Icon, type IconName } from '../../src/ui/Icon';
 import { openSettings } from './open-settings';
 
 /**
@@ -20,8 +20,9 @@ export function ComputingStatus({
   onAbort: () => void;
 }) {
   return (
-    <div className="status computing" role="status">
-      <div className="md-linear-progress" />
+    // Il testo è annunciato dalla regione live del pannello: questa compare già piena e non verrebbe letta.
+    <div className="status computing">
+      <div className="md-linear-progress" aria-hidden="true" />
       <div className="status-row">
         <span>{t(preview ? 'panelPreviewComputing' : 'popupComputing')}</span>
         {started && (
@@ -65,7 +66,7 @@ export function ErrorBanner({ messageKey }: { messageKey: string }) {
 /** Le tab sono cambiate dopo la proposta: si offre di ricalcolare, senza farlo da soli. */
 export function StaleBanner({ onRecompute }: { onRecompute: () => void }) {
   return (
-    <div className="banner stale" role="status">
+    <div className="banner stale">
       <Icon name="info" />
       <span>{t('panelStale')}</span>
       <button className="text small" onClick={onRecompute}>
@@ -85,10 +86,22 @@ const hostOf = (url: string) => {
 };
 
 /**
- * Pagine aperte più volte nella finestra. "Rivedi" apre l'anteprima: le copie che verrebbero chiuse,
- * tutte spuntate; si tolgono le spunte a quelle da tenere, poi "Chiudi" chiude solo le altre.
+ * Tab che si possono chiudere in blocco (doppioni, inattive). "Rivedi" apre l'anteprima: le tab che
+ * verrebbero chiuse, tutte spuntate; si tolgono le spunte a quelle da tenere, poi "Chiudi" chiude solo le altre.
  */
-export function DuplicatesBanner({ tabs, disabled, onClose }: { tabs: ProposedTab[]; disabled: boolean; onClose: (tabIds: number[]) => void }) {
+export function CloseTabsBanner({
+  icon,
+  text,
+  tabs,
+  disabled,
+  onClose,
+}: {
+  icon: IconName;
+  text: string;
+  tabs: ProposedTab[];
+  disabled: boolean;
+  onClose: (tabIds: number[]) => void;
+}) {
   const [open, setOpen] = useState(false);
   // Le tab da tenere, non quelle da chiudere: un doppione nuovo comparso mentre l'anteprima è aperta parte spuntato.
   const [kept, setKept] = useState<Set<number>>(new Set());
@@ -100,20 +113,35 @@ export function DuplicatesBanner({ tabs, disabled, onClose }: { tabs: ProposedTa
       return next;
     });
 
+  // "Rivedi" sparisce aprendo l'anteprima e torna chiudendola: il focus lo segue, invece di finire sul body.
+  const review = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+  const returnFocus = useRef(false);
+  useLayoutEffect(() => {
+    if (open) list.current?.querySelector('input')?.focus();
+    else if (returnFocus.current) review.current?.focus();
+    returnFocus.current = false;
+  }, [open]);
+  const closePreview = () => {
+    returnFocus.current = true;
+    setOpen(false);
+    setKept(new Set());
+  };
+
   return (
-    <div className="banner duplicates" role="status">
+    <div className="banner duplicates">
       <div className="duplicates-row">
-        <Icon name="tab" />
-        <span>{tabs.length === 1 ? t('panelDuplicatesOne') : t('panelDuplicates', String(tabs.length))}</span>
+        <Icon name={icon} />
+        <span>{text}</span>
         {!open && (
-          <button className="text small" onClick={() => setOpen(true)}>
+          <button ref={review} className="text small" onClick={() => setOpen(true)}>
             {t('panelReviewDuplicates')}
           </button>
         )}
       </div>
       {open && (
         <>
-          <ul className="duplicates-list">
+          <ul ref={list} className="duplicates-list">
             {tabs.map((tab) => (
               <li key={tab.tabId}>
                 <label title={tab.url}>
@@ -126,13 +154,7 @@ export function DuplicatesBanner({ tabs, disabled, onClose }: { tabs: ProposedTa
             ))}
           </ul>
           <div className="duplicates-actions">
-            <button
-              className="text small"
-              onClick={() => {
-                setOpen(false);
-                setKept(new Set());
-              }}
-            >
+            <button className="text small" onClick={closePreview}>
               {t('panelCancel')}
             </button>
             <button
@@ -140,8 +162,7 @@ export function DuplicatesBanner({ tabs, disabled, onClose }: { tabs: ProposedTa
               disabled={disabled || chosen.length === 0}
               onClick={() => {
                 onClose(chosen);
-                setOpen(false);
-                setKept(new Set());
+                closePreview();
               }}
             >
               {t('panelCloseSelected', String(chosen.length))}
@@ -156,18 +177,21 @@ export function DuplicatesBanner({ tabs, disabled, onClose }: { tabs: ProposedTa
 /** Livelli dell'AI saltati, con la causa e il collegamento alla sezione giusta delle impostazioni. */
 export function WarningsBanner({ warnings }: { warnings: Proposal['warnings'] }) {
   return (
-    <ul className="banner warnings" role="alert">
+    // role="alert" su un contenitore: sulla <ul> sostituirebbe la semantica di elenco.
+    <div role="alert">
+      <ul className="banner warnings">
       {warnings.map((w, i) => (
         <li key={i}>
           <Icon name="warning" />
           <span>
             {t('popupWarningFallback')} {t(warningKey(w.cause), w.provider)}{' '}
-            <a href="#" onClick={(e) => { e.preventDefault(); openSettings(w.level); }}>
+            <button className="link" onClick={() => openSettings(w.level)}>
               {t('popupWarningSettings')}
-            </a>
+            </button>
           </span>
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   );
 }

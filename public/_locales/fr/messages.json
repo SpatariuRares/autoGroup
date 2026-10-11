@@ -1,4 +1,7 @@
 {
+  "extLang": {
+    "message": "fr"
+  },
   "extName": {
     "message": "autoGroup – Groupes d'onglets IA"
   },
@@ -714,6 +717,9 @@
   "panelSectionExisting": {
     "message": "Groupes ouverts"
   },
+  "panelReadOnly": {
+    "message": "nom et couleur non modifiables"
+  },
   "panelSectionFree": {
     "message": "Hors groupe"
   },
@@ -776,6 +782,70 @@
   },
   "panelRememberSiteYes": {
     "message": "Oui"
+  },
+  "panelOpenTab": {
+    "message": "Aller à l'onglet"
+  },
+  "panelMute": {
+    "message": "Couper le son de l'onglet"
+  },
+  "panelUnmute": {
+    "message": "Réactiver le son de l'onglet"
+  },
+  "panelInactiveChip": {
+    "message": "$DAYS$ j",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactiveHint": {
+    "message": "Pas ouvert depuis $DAYS$ jours",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactive": {
+    "message": "$COUNT$ onglets non ouverts depuis au moins $DAYS$ jours.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "days": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelInactiveOne": {
+    "message": "1 onglet non ouvert depuis au moins $DAYS$ jours.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCollapseGroup": {
+    "message": "Réduire le groupe dans Chrome"
+  },
+  "panelExpandGroup": {
+    "message": "Développer le groupe dans Chrome"
+  },
+  "panelCloseGroup": {
+    "message": "Fermer tous les onglets du groupe"
+  },
+  "panelCloseGroupConfirm": {
+    "message": "Fermer $COUNT$ onglets",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseGroupConfirmOne": {
+    "message": "Fermer 1 onglet"
   },
   "panelCloseTab": {
     "message": "Fermer l'onglet"

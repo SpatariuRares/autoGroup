@@ -1,4 +1,7 @@
 {
+  "extLang": {
+    "message": "es"
+  },
   "extName": {
     "message": "autoGroup – Grupos de pestañas con IA"
   },
@@ -714,6 +717,9 @@
   "panelSectionExisting": {
     "message": "Grupos abiertos"
   },
+  "panelReadOnly": {
+    "message": "nombre y color no editables"
+  },
   "panelSectionFree": {
     "message": "Sin grupo"
   },
@@ -776,6 +782,70 @@
   },
   "panelRememberSiteYes": {
     "message": "Sí"
+  },
+  "panelOpenTab": {
+    "message": "Ir a la pestaña"
+  },
+  "panelMute": {
+    "message": "Silenciar pestaña"
+  },
+  "panelUnmute": {
+    "message": "Activar el sonido de la pestaña"
+  },
+  "panelInactiveChip": {
+    "message": "$DAYS$ d",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactiveHint": {
+    "message": "Sin abrir desde hace $DAYS$ días",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactive": {
+    "message": "$COUNT$ pestañas sin abrir desde hace al menos $DAYS$ días.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "days": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelInactiveOne": {
+    "message": "1 pestaña sin abrir desde hace al menos $DAYS$ días.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCollapseGroup": {
+    "message": "Contraer el grupo en Chrome"
+  },
+  "panelExpandGroup": {
+    "message": "Expandir el grupo en Chrome"
+  },
+  "panelCloseGroup": {
+    "message": "Cerrar todas las pestañas del grupo"
+  },
+  "panelCloseGroupConfirm": {
+    "message": "Cerrar $COUNT$ pestañas",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseGroupConfirmOne": {
+    "message": "Cerrar 1 pestaña"
   },
   "panelCloseTab": {
     "message": "Cerrar pestaña"

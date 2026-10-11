@@ -244,8 +244,14 @@ body {
   background: transparent;
 }
 
+/* Linea sotto sempre visibile, così si capisce che il nome è un campo da modificare. */
+input.group-name:not(:read-only) {
+  border-bottom-color: var(--md-sys-color-outline);
+}
+
 .group-name:not(:read-only):hover {
   border-color: var(--md-sys-color-outline-variant);
+  border-bottom-color: var(--md-sys-color-outline);
   cursor: text;
 }
 
@@ -344,10 +350,10 @@ body {
   white-space: nowrap;
 }
 
-/* "Sposta in…" si vede sempre, attenuato, così si capisce che le tab si possono spostare; ✕ e − solo al passaggio. */
+/* "Sposta in…" si vede sempre, attenuato, così si capisce che le tab si possono spostare; vai, ✕ e − solo al passaggio o con la riga selezionata. */
+/* Attenuato col colore del contorno, non con l'opacità: resta sopra 3:1 sullo sfondo. */
 .tab .move {
-  opacity: 0.55;
-  transition: opacity var(--md-sys-motion-duration-short);
+  color: var(--md-sys-color-outline);
 }
 
 .tab>.icon {
@@ -355,11 +361,14 @@ body {
   transition: opacity var(--md-sys-motion-duration-short);
 }
 
-.tab:hover .move,
 .tab:hover>.icon,
-.tab:focus-within .move,
 .tab:focus-within>.icon {
   opacity: 1;
+}
+
+.tab:hover .move,
+.tab:focus-within .move {
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 /* "Sposta in…": icona cliccabile con il menu nativo sopra, trasparente. */
@@ -376,6 +385,12 @@ body {
 
 .move:hover {
   background: color-mix(in srgb, var(--md-sys-color-on-surface) var(--md-sys-state-hover), transparent);
+}
+
+/* Il menu è trasparente, quindi il suo contorno di focus non si vedrebbe: lo disegna l'icona. */
+.move:has(select:focus-visible) {
+  outline: 3px solid var(--md-sys-color-secondary);
+  outline-offset: 2px;
 }
 
 .move select {
@@ -540,23 +555,28 @@ body {
   border-color: var(--md-sys-color-primary);
 }
 
-/* Margine a zero: non è il titolo di una sezione, anche se sta dentro una (.section summary). */
-.group.existing summary {
-  margin: 0;
-  cursor: pointer;
-  list-style: none;
+/* Intestazione che apre e chiude l'elenco: un pulsante senza l'aspetto di pulsante, largo quanto il nome. */
+.group.existing .group-toggle {
+  --btn-bg: transparent;
+  --btn-fg: var(--md-sys-color-on-surface-variant);
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
+  height: auto;
   min-height: 40px;
-  color: var(--md-sys-color-on-surface-variant);
+  padding: 0;
   border-radius: var(--md-sys-shape-corner-small);
+  font: inherit;
+  text-align: left;
 }
 
-.group.existing summary:hover .group-name.static {
+.group.existing .group-toggle:hover:not(:disabled) {
+  background: none;
+}
+
+.group.existing .group-toggle:hover .group-name.static {
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-.group.existing summary::-webkit-details-marker {
-  display: none;
 }
 
 .swatch.static {
@@ -601,4 +621,34 @@ body {
 .tab-chip.muted {
   background: var(--md-sys-color-surface-container-highest);
   color: var(--md-sys-color-on-surface-variant);
+}
+
+/* La tab che si sta guardando: elemento di lista selezionato di Material 3 (secondary container). */
+.tab.current {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.tab.current:hover {
+  background: color-mix(in srgb, var(--md-sys-color-secondary-container), var(--md-sys-color-on-secondary-container) var(--md-sys-state-hover));
+}
+
+/* Audio: pulsante icona a due stati di Material 3, sempre visibile finché la tab suona o è muta. */
+.tab>.icon.audio {
+  opacity: 1;
+}
+
+.tab>.icon.audio.muted {
+  --btn-fg: var(--md-sys-color-primary);
+}
+
+/* "Chiudi N tab": pulsante di testo con il colore di errore, conferma la chiusura del gruppo. */
+button.text.close-group {
+  --btn-fg: var(--md-sys-color-error);
+  white-space: nowrap;
+}
+
+/* Il pallino dentro l'intestazione cliccabile dei gruppi aperti segue il cursore del pulsante. */
+.group-toggle .swatch.static {
+  cursor: inherit;
 }

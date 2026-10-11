@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { NANO_LABEL, nanoAvailability, type NanoAvailability } from '../../src/ai/nano-generator';
 import { loadSettings, NANO_PRESET, saveSettings, type GroupingMode, type Settings } from '../../src/settings';
@@ -19,10 +19,22 @@ import { ThresholdField } from '../options/ThresholdField';
 export function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [index, setIndex] = useState(0);
+  const main = useRef<HTMLElement>(null);
+  const moved = useRef(false);
 
   useEffect(() => {
     loadSettings().then(setSettings);
   }, []);
+
+  // Cambiando passo il focus va sul titolo del nuovo: lo screen reader lo legge, e all'ultimo passo
+  // "Avanti" sparisce e lo lascerebbe sul body.
+  useEffect(() => {
+    if (!moved.current) return;
+    moved.current = false;
+    const heading = main.current?.querySelector('h1');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus();
+  }, [index]);
 
   if (!settings) return null;
   const steps = onboardingSteps(settings.mode);
@@ -32,6 +44,7 @@ export function App() {
   const last = current === steps.length - 1;
 
   function go(next: number) {
+    moved.current = true;
     setIndex(next);
     window.scrollTo(0, 0);
   }
@@ -54,7 +67,7 @@ export function App() {
       </header>
       <progress className="onboarding-progress" max={steps.length} value={current + 1} aria-hidden="true" />
 
-      <main className={`step step-${step}`}>
+      <main ref={main} className={`step step-${step}`}>
         <StepContent
           step={step}
           settings={settings}

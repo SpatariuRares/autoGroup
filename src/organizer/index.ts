@@ -4,6 +4,7 @@ import type { OrganizerState, Proposal, ProposalEdit } from '../shared/types';
 import { applyProposal } from './applier';
 import { autoGroupTab } from './auto-group';
 import { findDuplicates } from './duplicates';
+import { findInactive } from './inactive';
 import { willAskAi } from './pipeline';
 import { buildPreview, buildProposal, collectInputs, signatureOf } from './proposal-builder';
 import { TAB_GROUP_ID_NONE } from './tab-selection';
@@ -78,6 +79,16 @@ export interface Organizer {
    */
   closeDuplicates(windowId: number, tabIds: number[]): Promise<OrganizerState>;
   /**
+   * "Chiudi inattive": chiude le tab scelte nell'anteprima del pannello, ma solo quelle ancora inattive
+   * (vedi `findInactive`, ricalcolato qui). Come `closeDuplicates`, la proposta resta attuale.
+   */
+  closeInactive(windowId: number, tabIds: number[]): Promise<OrganizerState>;
+  /**
+   * Chiude tutte le tab di un gruppo aperto in Chrome. Le tab che la proposta gli aggiungeva tornano
+   * libere; la proposta resta attuale.
+   */
+  closeGroup(groupId: number): Promise<OrganizerState>;
+  /**
    * "Sposta in…" senza proposta: mette subito una tab libera in un gruppo aperto della sua finestra.
    * Si accetta solo una tab che la selezione prenderebbe (non fissata, non interna, non esclusa).
    */
@@ -120,6 +131,29 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     await saveState(state);
     options.onStateChange?.(state);
     return state;
+  }
+
+  /**
+   * Chiude più tab di una finestra e le toglie dalla proposta. Un gruppo aperto rimasto vuoto sparisce
+   * da Chrome: il gruppo della proposta che lo estendeva viene scartato e le sue tab tornano libere.
+   * Così una proposta attuale resta attuale (nuova impronta), senza un nuovo calcolo.
+   */
+  async function closeTabs(windowId: number, tabIds: number[]): Promise<OrganizerState> {
+    const current = await loadState();
+    if (tabIds.length === 0) return current;
+    const proposal = current.phase === 'ready' && current.proposal?.windowId === windowId ? current.proposal : undefined;
+    const wasCurrent = proposal !== undefined && proposal.signature === signatureOf(await collectInputs(windowId));
+    await browser.tabs.remove(tabIds);
+    if (!proposal) return current;
+    let next = tabIds.reduce((p, tabId) => editProposal(p, { kind: 'remove-tab', tabId }), proposal);
+    for (const group of next.groups) {
+      if (group.existingGroupId === undefined) continue;
+      if (!(await browser.tabGroups.get(group.existingGroupId).catch(() => null))) {
+        next = editProposal(next, { kind: 'discard-group', groupId: group.id });
+      }
+    }
+    if (wasCurrent) next = { ...next, signature: signatureOf(await collectInputs(windowId)) };
+    return setState({ ...current, proposal: next });
   }
 
   async function propose(windowId: number, force: boolean, signal: AbortSignal): Promise<OrganizerState> {
@@ -255,18 +289,26 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     closeDuplicates(windowId, chosen) {
       return exclusive(async () => {
-        const current = await loadState();
         const { excludedDomains } = await loadSettings();
         const tabIds = findDuplicates(await browser.tabs.query({ windowId }), excludedDomains).filter((id) => chosen.includes(id));
-        if (tabIds.length === 0) return current;
-        const proposal = current.phase === 'ready' && current.proposal?.windowId === windowId ? current.proposal : undefined;
-        // Le tab chiuse sono tutte libere: cambiano le candidate, quindi l'impronta va ricalcolata se era attuale.
-        const wasCurrent = proposal !== undefined && proposal.signature === signatureOf(await collectInputs(windowId));
-        await browser.tabs.remove(tabIds);
-        if (!proposal) return current;
-        let next = tabIds.reduce((p, tabId) => editProposal(p, { kind: 'remove-tab', tabId }), proposal);
-        if (wasCurrent) next = { ...next, signature: signatureOf(await collectInputs(windowId)) };
-        return setState({ ...current, proposal: next });
+        return closeTabs(windowId, tabIds);
+      });
+    },
+
+    closeInactive(windowId, chosen) {
+      return exclusive(async () => {
+        const { excludedDomains } = await loadSettings();
+        const tabIds = findInactive(await browser.tabs.query({ windowId }), excludedDomains, Date.now()).filter((id) => chosen.includes(id));
+        return closeTabs(windowId, tabIds);
+      });
+    },
+
+    closeGroup(groupId) {
+      return exclusive(async () => {
+        const group = await browser.tabGroups.get(groupId).catch(() => null);
+        if (!group) return loadState();
+        const tabIds = (await browser.tabs.query({ windowId: group.windowId, groupId })).map((tab) => tab.id!);
+        return closeTabs(group.windowId, tabIds);
       });
     },
 

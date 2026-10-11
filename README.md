@@ -9,6 +9,8 @@ A Chrome extension that sorts your tabs into groups, by site or by topic, with t
 - **Editable preview** and **Undo**: rename, recolor, move or remove tabs, then apply; if you don't like the result, go back.
 - **You always get a proposal**: if the AI doesn't answer, autoGroup falls back to grouping by site, which you already see while the AI is working.
 - **Duplicate tabs**: the panel tells you when a page is open twice, shows which copies it would close and closes the ones you confirm.
+- **Inactive tabs**: tabs you have not opened for a week are marked, and you can review and close them in one go.
+- **Tab controls in the panel**: jump to any tab, see which one is active, mute tabs that play sound, collapse or close an open group.
 - **Backup**: export mode, categories, sites and excluded domains to a file and import them on another computer.
 - Interface in **English**, **Italian**, **Spanish**, **French** and **German**, following Chrome's language.
 

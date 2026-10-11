@@ -45,13 +45,17 @@ export function TabsSection({ minTabs, onMinTabs, excludedDomains, onExcludedDom
             step={1}
             value={value}
             aria-invalid={!valid}
+            aria-describedby="min-tabs-hint"
             onChange={(e) => {
               setValue(e.target.value);
               const next = Number(e.target.value);
               if (e.target.value.trim() !== '' && isValidMinTabs(next) && next !== minTabs) onMinTabs(next);
             }}
           />
-          <p className={valid ? 'hint' : 'hint error'}>{valid ? t('optionsMinTabsHint') : t('optionsMinTabsInvalid')}</p>
+          {/* Sempre presente e live: passando da suggerimento a errore il nuovo testo viene letto. */}
+          <p id="min-tabs-hint" className={valid ? 'hint' : 'hint error'} aria-live="polite">
+            {valid ? t('optionsMinTabsHint') : t('optionsMinTabsInvalid')}
+          </p>
         </div>
       </div>
       <div className="setting excluded">
@@ -70,6 +74,7 @@ export function TabsSection({ minTabs, onMinTabs, excludedDomains, onExcludedDom
             placeholder={t('optionsDomainPlaceholder')}
             aria-label={t('optionsExcludedDomains')}
             aria-invalid={error !== null}
+            aria-describedby={error ? 'excluded-error' : undefined}
             onChange={(e) => {
               setDraft(e.target.value);
               setError(null);
@@ -79,7 +84,11 @@ export function TabsSection({ minTabs, onMinTabs, excludedDomains, onExcludedDom
             {t('optionsAdd')}
           </button>
         </form>
-        {error && <p className="hint error">{t(error)}</p>}
+        {error && (
+          <p id="excluded-error" className="hint error" role="alert">
+            {t(error)}
+          </p>
+        )}
         {excludedDomains.length === 0 ? (
           <p className="empty">{t('optionsNoExcludedDomains')}</p>
         ) : (

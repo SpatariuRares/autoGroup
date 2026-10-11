@@ -35,6 +35,7 @@ src/
     classification-cache.ts  per-tab cache of the Classifier's results
     window-view.ts       the panel's view of the whole window: proposal overlaid on tabs and open groups
     duplicates.ts        duplicate tabs: which copies "Close duplicates" closes
+    inactive.ts          inactive tabs: which tabs "Close inactive" closes
   settings/              preferences in chrome.storage.sync
     index.ts             loading and saving, validation, excluded domains, category sites
     categories.ts        default categories (from chrome.i18n), list validation
@@ -88,6 +89,8 @@ It is the main module and **the only entry point called by the panel**. Interfac
 | `rememberSite(tabId)` | "Always put here": saves the site of the tab in the category of its group (list, or open group with the same name). The site is the one of the rule that decides the tab today, moved from its category, or the bare domain. The proposal stays current. |
 | `autoGroupTab(tabId)` | Automatic grouping of a tab whose URL just changed, with the site rules only (see "Automatic grouping"). Does not change the state. |
 | `closeDuplicates(windowId)` | "Close duplicates": closes the free copies of the pages open more than once in the window (see "Duplicate tabs"). Like `closeTab`, a current proposal stays current without the closed tabs. |
+| `closeInactive(windowId, tabIds)` | "Close inactive": closes the chosen tabs that are still inactive (see "Inactive tabs"). The proposal stays current. |
+| `closeGroup(groupId)` | Closes every tab of an open Chrome group. The tabs the proposal was adding to it go back to ungrouped; the proposal stays current. |
 | `state()` | Returns the current state. |
 
 ### Automatic grouping (`auto-group.ts`)
@@ -105,6 +108,12 @@ The only thing autoGroup does without a click. The service worker listens to `ta
 ### Duplicate tabs (`duplicates.ts`)
 
 `findDuplicates(tabs, excludedDomains)` groups the window's tabs by page: the URL without the fragment (`#section`); the query counts, because `?q=` changes the page. For each page open more than once one copy stays: the pinned one, then the one in a group, then the active one, then the leftmost. Of the others only the free ones are closed: never pinned, grouped or active tabs. Browser pages and excluded domains are never considered. The panel shows the count from `buildWindowView` (`view.duplicates`) with "Review", which opens a preview inside the banner: the copies that would be closed, with favicon, title and site, all checked. Unchecking a copy keeps it; "Close (N)" closes only the checked ones, "Cancel" closes the preview. `closeDuplicates(windowId, tabIds)` closes only the chosen tabs that are still duplicates, recomputed in the service worker instead of trusting the message.
+
+`closeDuplicates`, `closeInactive` and `closeGroup` share one internal step, `closeTabs`: it closes the tabs, removes them from the proposal and, if an open group the proposal extends is left empty (so Chrome removes it), discards that proposed group, so its added tabs are ungrouped again. Only then is the signature recomputed (if the proposal was current), so the proposal never points to a group that no longer exists.
+
+### Inactive tabs (`inactive.ts`)
+
+`findInactive(tabs, excludedDomains, now)` returns the tabs not looked at for at least `INACTIVE_DAYS` (7) days, from Chrome's `Tab.lastAccessed`, in strip order. Unlike duplicates, tabs inside a group count too, because after "Apply" most tabs are grouped. Never pinned, active or audible tabs, browser pages or excluded domains; a tab without `lastAccessed` is never inactive. The panel shows them in a banner with the same "Review" preview as duplicates (`CloseTabsBanner`), and each inactive row has a chip with its days ("9 d"). `closeInactive(windowId, tabIds)` recomputes the list in the service worker and closes only the chosen tabs still in it.
 
 ### Proposal edits
 
@@ -479,6 +488,8 @@ On opening it reads the current window and requests `organizer/propose` with the
 - **Not organized** (collapsed): pinned tabs, browser pages, excluded domains and loading tabs, with the reason.
 
 **Close the tab.** Each row has ✕ "Close tab" (also tabs of open groups, ungrouped and not organized ones); "−" removes the tab from the proposed group leaving it open. The panel calls `organizer/close-tab`, and `Organizer.closeTab` closes the tab and removes it from the proposal, in the operation queue. If the proposal was current and the tab was not in an open group, the signature is recomputed after closing, so reopening the panel reuses the proposal without new AI calls. If instead the tab was the last one of an open group that the proposal extends, the group disappears: the signature stays old and the proposal stale, so as not to apply tabs to a group that no longer exists. Closes done from the panel do not make the stale-proposal notice appear.
+
+**Live details and direct actions** (`live-tabs.ts`, `tab-actions.ts`). `App` puts the live tabs and groups in a React context, so every row reads what the proposal does not carry. The row of the active tab has a bar on the left and a bold title (`aria-current`); `tabs.onActivated` refreshes it. A tab that plays sound, or is muted, has an audio chip that mutes or unmutes it. Each row has "Go to tab" (↗, also Enter on the focused row or a double click), which activates the tab. Each open group card has, in its header, collapse/expand in Chrome and "Close all tabs in the group": the first click turns ✕ into "Close N tabs", which stays armed for 4 seconds. Going to a tab, muting and collapsing call `chrome.tabs`/`chrome.tabGroups` straight from the panel, like opening the settings, because they do not touch the proposal: collapsing a group is not counted as a change that makes the proposal stale (only a new name or color is). Closing a group goes through `organizer/close-group`.
 
 **`add-tab` edit.** "Move to…" and "Add to…" use the new edit `{ kind: 'add-tab', tab, to }`, where `to` is a group of the proposal or an open group that the proposal does not touch yet. In this second case the proposal receives a new `existing` group (`id: e<idChrome>`). The Organizer (`checkAddTab`) accepts only a tab already in the proposal or still ungrouped in the window, with the same rules as the selection, and only towards a group of that window. The tab's data is reread from the browser, not taken from the message.
 

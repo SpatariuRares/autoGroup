@@ -1,4 +1,7 @@
 {
+  "extLang": {
+    "message": "de"
+  },
   "extName": {
     "message": "autoGroup – KI-Tabgruppen"
   },
@@ -714,6 +717,9 @@
   "panelSectionExisting": {
     "message": "Offene Gruppen"
   },
+  "panelReadOnly": {
+    "message": "Name und Farbe nicht änderbar"
+  },
   "panelSectionFree": {
     "message": "Ohne Gruppe"
   },
@@ -776,6 +782,70 @@
   },
   "panelRememberSiteYes": {
     "message": "Ja"
+  },
+  "panelOpenTab": {
+    "message": "Zum Tab wechseln"
+  },
+  "panelMute": {
+    "message": "Tab stummschalten"
+  },
+  "panelUnmute": {
+    "message": "Stummschaltung aufheben"
+  },
+  "panelInactiveChip": {
+    "message": "$DAYS$ T",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactiveHint": {
+    "message": "Seit $DAYS$ Tagen nicht geöffnet",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInactive": {
+    "message": "$COUNT$ Tabs seit mindestens $DAYS$ Tagen nicht geöffnet.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "days": {
+        "content": "$2"
+      }
+    }
+  },
+  "panelInactiveOne": {
+    "message": "1 Tab seit mindestens $DAYS$ Tagen nicht geöffnet.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCollapseGroup": {
+    "message": "Gruppe in Chrome minimieren"
+  },
+  "panelExpandGroup": {
+    "message": "Gruppe in Chrome maximieren"
+  },
+  "panelCloseGroup": {
+    "message": "Alle Tabs der Gruppe schließen"
+  },
+  "panelCloseGroupConfirm": {
+    "message": "$COUNT$ Tabs schließen",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelCloseGroupConfirmOne": {
+    "message": "1 Tab schließen"
   },
   "panelCloseTab": {
     "message": "Tab schließen"

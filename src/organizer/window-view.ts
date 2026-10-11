@@ -1,6 +1,7 @@
 import type { Browser } from 'wxt/browser';
 import type { ExistingGroupRef, GroupColor, Proposal, ProposedGroup, ProposedTab } from '../shared/types';
 import { findDuplicates } from './duplicates';
+import { findInactive } from './inactive';
 import { hasRealTitle, isExcluded, isInternalUrl, TAB_GROUP_ID_NONE } from './tab-selection';
 
 /** Perché una tab non può entrare in un gruppo: l'estensione non la tocca mai. */
@@ -26,6 +27,8 @@ export interface WindowView {
   held: { tab: ProposedTab; reason: HeldReason }[];
   /** Tab che "Chiudi duplicati" chiuderebbe (vedi `findDuplicates`). */
   duplicates: number[];
+  /** Tab che "Chiudi inattive" chiuderebbe (vedi `findInactive`). */
+  inactive: number[];
 }
 
 const toTab = (tab: Browser.tabs.Tab): ProposedTab => ({ tabId: tab.id!, title: tab.title?.trim() || tab.url || '', url: tab.url ?? '', favIconUrl: tab.favIconUrl });
@@ -48,6 +51,7 @@ export function buildWindowView(
   groups: Browser.tabGroups.TabGroup[],
   proposal: Proposal | undefined,
   excludedDomains: string[],
+  now = Date.now(),
 ): WindowView {
   const ordered = [...tabs].filter((t) => t.id !== undefined).sort((a, b) => a.index - b.index);
   const proposed = new Set((proposal?.groups ?? []).flatMap((g) => g.tabs.map((t) => t.tabId)));
@@ -87,5 +91,6 @@ export function buildWindowView(
     free,
     held,
     duplicates: findDuplicates(tabs, excludedDomains),
+    inactive: findInactive(tabs, excludedDomains, now),
   };
 }

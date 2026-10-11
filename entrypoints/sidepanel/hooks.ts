@@ -74,9 +74,10 @@ export function useOrganizer() {
 /**
  * Tab e gruppi della finestra letti dal vivo, per mostrare tutta la finestra e non solo la proposta.
  * `onChange` scatta solo per i cambi che rendono vecchia una proposta (tab aperte, chiuse, spostate,
- * URL, fissaggio, gruppi), non per titoli o favicon che cambiano da soli.
+ * URL, fissaggio, gruppi creati, tolti, rinominati o ricolorati), non per titoli, favicon, audio,
+ * tab attiva o gruppi compressi. Riceve la tab chiusa o il gruppo sparito, se è quello il cambio.
  */
-export function useWindowSnapshot(windowId: number | null, onChange: (closedTabId?: number) => void) {
+export function useWindowSnapshot(windowId: number | null, onChange: (closedTabId?: number, removedGroupId?: number) => void) {
   const [snapshot, setSnapshot] = useState<{ tabs: Browser.tabs.Tab[]; groups: Browser.tabGroups.TabGroup[] }>({ tabs: [], groups: [] });
   const changed = useRef(onChange);
   changed.current = onChange;
@@ -84,15 +85,19 @@ export function useWindowSnapshot(windowId: number | null, onChange: (closedTabI
   useEffect(() => {
     if (windowId === null) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    // Nome e colore dei gruppi all'ultima lettura: comprimere un gruppo non cambia la proposta.
+    const known = new Map<number, string>();
+    const look = (group: { title?: string; color: string }) => `${group.title ?? ''}|${group.color}`;
     const refresh = () => {
       clearTimeout(timer);
       timer = setTimeout(async () => {
         const [tabs, groups] = await Promise.all([browser.tabs.query({ windowId }), browser.tabGroups.query({ windowId })]);
+        for (const group of groups) known.set(group.id, look(group));
         setSnapshot({ tabs, groups });
       }, 100);
     };
-    const structural = (closedTabId?: number) => {
-      changed.current(closedTabId);
+    const structural = (closedTabId?: number, removedGroupId?: number) => {
+      changed.current(closedTabId, removedGroupId);
       refresh();
     };
     const inWindow = (x?: { windowId?: number }) => x?.windowId === windowId;
@@ -103,32 +108,41 @@ export function useWindowSnapshot(windowId: number | null, onChange: (closedTabI
       if (change.url !== undefined || change.pinned !== undefined || change.groupId !== undefined) structural();
       else refresh();
     };
+    const onActivated = (info: { windowId: number }) => info.windowId === windowId && refresh();
     const onMovedBetween = (_id: number, info: { newWindowId?: number; oldWindowId?: number }) =>
       (info.newWindowId === windowId || info.oldWindowId === windowId) && structural();
     const onMoved = (_id: number, info: { windowId: number }) => info.windowId === windowId && refresh();
     const onGroup = (group: { windowId?: number }) => inWindow(group) && structural();
+    const onGroupUpdated = (group: Browser.tabGroups.TabGroup) => {
+      if (!inWindow(group)) return;
+      if (known.get(group.id) === look(group)) refresh();
+      else structural();
+    };
+    const onGroupRemoved = (group: Browser.tabGroups.TabGroup) => inWindow(group) && structural(undefined, group.id);
 
     refresh();
     browser.tabs.onCreated.addListener(onCreated);
     browser.tabs.onRemoved.addListener(onRemoved);
     browser.tabs.onUpdated.addListener(onUpdated);
+    browser.tabs.onActivated.addListener(onActivated);
     browser.tabs.onMoved.addListener(onMoved);
     browser.tabs.onAttached.addListener(onMovedBetween);
     browser.tabs.onDetached.addListener(onMovedBetween);
     browser.tabGroups.onCreated.addListener(onGroup);
-    browser.tabGroups.onUpdated.addListener(onGroup);
-    browser.tabGroups.onRemoved.addListener(onGroup);
+    browser.tabGroups.onUpdated.addListener(onGroupUpdated);
+    browser.tabGroups.onRemoved.addListener(onGroupRemoved);
     return () => {
       clearTimeout(timer);
       browser.tabs.onCreated.removeListener(onCreated);
       browser.tabs.onRemoved.removeListener(onRemoved);
       browser.tabs.onUpdated.removeListener(onUpdated);
+      browser.tabs.onActivated.removeListener(onActivated);
       browser.tabs.onMoved.removeListener(onMoved);
       browser.tabs.onAttached.removeListener(onMovedBetween);
       browser.tabs.onDetached.removeListener(onMovedBetween);
       browser.tabGroups.onCreated.removeListener(onGroup);
-      browser.tabGroups.onUpdated.removeListener(onGroup);
-      browser.tabGroups.onRemoved.removeListener(onGroup);
+      browser.tabGroups.onUpdated.removeListener(onGroupUpdated);
+      browser.tabGroups.onRemoved.removeListener(onGroupRemoved);
     };
   }, [windowId]);
 
@@ -148,13 +162,4 @@ export function useSettings() {
   return settings;
 }
 
-/** Valore che torna a `null` da solo dopo `ms` millisecondi (es. un'offerta nella snackbar). */
-export function useExpiring<T>(ms: number) {
-  const [value, setValue] = useState<T | null>(null);
-  useEffect(() => {
-    if (value === null) return;
-    const timer = setTimeout(() => setValue(null), ms);
-    return () => clearTimeout(timer);
-  }, [value, ms]);
-  return [value, setValue] as const;
-}
+export { useExpiring } from '../../src/ui/use-expiring';

@@ -1,6 +1,7 @@
 import type { GroupingMode, Settings } from '../../src/settings';
 import { t } from '../../src/shared/i18n';
 import { Icon } from '../../src/ui/Icon';
+import { moveInRadioGroup } from '../../src/ui/radio-keys';
 import { providerName } from '../../src/ui/provider-name';
 import { openSettings } from './open-settings';
 
@@ -8,12 +9,13 @@ import { openSettings } from './open-settings';
 export function ModePicker({ settings, disabled, onChoose }: { settings: Settings; disabled: boolean; onChoose: (mode: GroupingMode) => void }) {
   return (
     <div className="mode-picker">
-      <div className="segmented" role="radiogroup" aria-label={t('optionsMode')}>
+      <div className="segmented" role="radiogroup" aria-label={t('optionsMode')} onKeyDown={moveInRadioGroup}>
         {(['domain', 'ai'] as const).map((mode) => (
           <button
             key={mode}
             role="radio"
             aria-checked={settings.mode === mode}
+            tabIndex={settings.mode === mode ? 0 : -1}
             className={settings.mode === mode ? 'selected' : ''}
             disabled={disabled}
             onClick={() => onChoose(mode)}
@@ -35,9 +37,9 @@ function ProviderSummary({ settings }: { settings: Settings }) {
   return (
     <p className="mode-summary">
       {names.length > 0 ? names.join(' → ') : t('panelNoProvider')}{' '}
-      <a href="#" onClick={(e) => { e.preventDefault(); openSettings(names.length > 0 ? 'classifier' : 'generator'); }}>
+      <button className="link" onClick={() => openSettings(names.length > 0 ? 'classifier' : 'generator')}>
         {t('panelChangeProviders')}
-      </a>
+      </button>
     </p>
   );
 }
