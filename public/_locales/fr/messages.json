@@ -962,6 +962,51 @@
   "optionsCoffee": {
     "message": "Offrez-moi un café"
   },
+  "optionsAboutText": {
+    "message": "autoGroup regroupe les onglets de votre fenêtre par site ou par thème, avec l'IA de votre choix. Vous voyez toujours la proposition avant que quoi que ce soit change, et « Annuler » remet tout comme avant."
+  },
+  "optionsAboutRate": {
+    "message": "Laisser un avis"
+  },
+  "optionsAboutSource": {
+    "message": "Code source"
+  },
+  "optionsAboutIssue": {
+    "message": "Signaler un problème"
+  },
+  "optionsAboutPrivacy": {
+    "message": "Confidentialité"
+  },
+  "optionsAboutPrivacyHint": {
+    "message": "autoGroup n'a pas de serveur à lui : le développeur ne reçoit ni données, ni statistiques, ni rapports d'erreur."
+  },
+  "optionsAboutLocal": {
+    "message": "Par site ou avec Gemini Nano"
+  },
+  "optionsAboutLocalHint": {
+    "message": "Aucune donnée ne quitte votre ordinateur."
+  },
+  "optionsAboutProvider": {
+    "message": "Avec un fournisseur d'IA"
+  },
+  "optionsAboutProviderHint": {
+    "message": "Le titre et l'adresse nettoyée des onglets, ainsi que la description des pages si vous l'activez, vont uniquement au fournisseur que vous avez choisi, directement depuis le navigateur."
+  },
+  "optionsAboutKeys": {
+    "message": "Clés API"
+  },
+  "optionsAboutKeysHint": {
+    "message": "Elles restent sur cet ordinateur et vont uniquement à leur fournisseur : elles ne sont jamais synchronisées."
+  },
+  "optionsAboutPolicy": {
+    "message": "Lire la politique de confidentialité complète"
+  },
+  "optionsAboutSupport": {
+    "message": "Vous le trouvez utile ?"
+  },
+  "optionsAboutSupportHint": {
+    "message": "autoGroup est gratuit et sans publicité. S'il vous fait gagner du temps, vous pouvez m'offrir un café."
+  },
   "optionsReadDescriptionsProviderLost": {
     "message": "Les descriptions sont désactivées, mais un fournisseur a perdu l'accès à son serveur : enregistrez-le à nouveau dans sa section."
   },

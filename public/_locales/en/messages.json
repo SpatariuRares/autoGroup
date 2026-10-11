@@ -962,6 +962,51 @@
   "optionsCoffee": {
     "message": "Buy me a coffee"
   },
+  "optionsAboutText": {
+    "message": "autoGroup groups the tabs in your window by site or by topic, with the AI you choose. You always see the proposal before anything changes, and \"Undo\" puts everything back."
+  },
+  "optionsAboutRate": {
+    "message": "Leave a review"
+  },
+  "optionsAboutSource": {
+    "message": "Source code"
+  },
+  "optionsAboutIssue": {
+    "message": "Report a problem"
+  },
+  "optionsAboutPrivacy": {
+    "message": "Privacy"
+  },
+  "optionsAboutPrivacyHint": {
+    "message": "autoGroup has no servers of its own: the developer receives no data, statistics or crash reports."
+  },
+  "optionsAboutLocal": {
+    "message": "By site or with Gemini Nano"
+  },
+  "optionsAboutLocalHint": {
+    "message": "No data leaves your computer."
+  },
+  "optionsAboutProvider": {
+    "message": "With an AI provider"
+  },
+  "optionsAboutProviderHint": {
+    "message": "Tab titles and cleaned addresses, plus page descriptions if you turn them on, go only to the provider you chose, straight from your browser."
+  },
+  "optionsAboutKeys": {
+    "message": "API keys"
+  },
+  "optionsAboutKeysHint": {
+    "message": "They stay on this computer and go only to their provider: they are never synced."
+  },
+  "optionsAboutPolicy": {
+    "message": "Read the full privacy policy"
+  },
+  "optionsAboutSupport": {
+    "message": "Finding it useful?"
+  },
+  "optionsAboutSupportHint": {
+    "message": "autoGroup is free and has no ads. If it saves you time, you can buy me a coffee."
+  },
   "optionsReadDescriptionsProviderLost": {
     "message": "Descriptions are off, but a provider lost access to its server: save it again in its section."
   },

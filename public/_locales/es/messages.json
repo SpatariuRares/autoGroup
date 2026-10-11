@@ -962,6 +962,51 @@
   "optionsCoffee": {
     "message": "Invítame a un café"
   },
+  "optionsAboutText": {
+    "message": "autoGroup agrupa las pestañas de tu ventana por sitio o por tema, con la IA que tú elijas. Siempre ves la propuesta antes de que cambie nada, y con «Deshacer» todo vuelve a estar como antes."
+  },
+  "optionsAboutRate": {
+    "message": "Deja una reseña"
+  },
+  "optionsAboutSource": {
+    "message": "Código fuente"
+  },
+  "optionsAboutIssue": {
+    "message": "Informar de un problema"
+  },
+  "optionsAboutPrivacy": {
+    "message": "Privacidad"
+  },
+  "optionsAboutPrivacyHint": {
+    "message": "autoGroup no tiene servidores propios: el desarrollador no recibe datos, estadísticas ni informes de errores."
+  },
+  "optionsAboutLocal": {
+    "message": "Por sitio o con Gemini Nano"
+  },
+  "optionsAboutLocalHint": {
+    "message": "Ningún dato sale de tu ordenador."
+  },
+  "optionsAboutProvider": {
+    "message": "Con un proveedor de IA"
+  },
+  "optionsAboutProviderHint": {
+    "message": "El título y la dirección limpia de las pestañas, y la descripción de las páginas si la activas, van solo al proveedor que has elegido, directamente desde el navegador."
+  },
+  "optionsAboutKeys": {
+    "message": "Claves de API"
+  },
+  "optionsAboutKeysHint": {
+    "message": "Se quedan en este ordenador y van solo a su proveedor: nunca se sincronizan."
+  },
+  "optionsAboutPolicy": {
+    "message": "Lee la política de privacidad completa"
+  },
+  "optionsAboutSupport": {
+    "message": "¿Te resulta útil?"
+  },
+  "optionsAboutSupportHint": {
+    "message": "autoGroup es gratuito y sin anuncios. Si te ahorra tiempo, puedes invitarme a un café."
+  },
   "optionsReadDescriptionsProviderLost": {
     "message": "Las descripciones están desactivadas, pero un proveedor ha perdido el acceso a su servidor: vuelve a guardarlo en su sección."
   },

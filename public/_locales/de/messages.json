@@ -962,6 +962,51 @@
   "optionsCoffee": {
     "message": "Spendier mir einen Kaffee"
   },
+  "optionsAboutText": {
+    "message": "autoGroup gruppiert die Tabs deines Fensters nach Website oder nach Thema, mit der KI deiner Wahl. Du siehst immer zuerst den Vorschlag, bevor sich etwas ändert, und mit „Rückgängig“ ist alles wieder wie vorher."
+  },
+  "optionsAboutRate": {
+    "message": "Bewertung schreiben"
+  },
+  "optionsAboutSource": {
+    "message": "Quellcode"
+  },
+  "optionsAboutIssue": {
+    "message": "Problem melden"
+  },
+  "optionsAboutPrivacy": {
+    "message": "Datenschutz"
+  },
+  "optionsAboutPrivacyHint": {
+    "message": "autoGroup hat keine eigenen Server: Der Entwickler erhält keine Daten, Statistiken oder Fehlerberichte."
+  },
+  "optionsAboutLocal": {
+    "message": "Nach Website oder mit Gemini Nano"
+  },
+  "optionsAboutLocalHint": {
+    "message": "Keine Daten verlassen deinen Computer."
+  },
+  "optionsAboutProvider": {
+    "message": "Mit einem KI-Anbieter"
+  },
+  "optionsAboutProviderHint": {
+    "message": "Titel und bereinigte Adresse der Tabs, und die Seitenbeschreibung, wenn du sie einschaltest, gehen nur an den Anbieter deiner Wahl, direkt aus deinem Browser."
+  },
+  "optionsAboutKeys": {
+    "message": "API-Schlüssel"
+  },
+  "optionsAboutKeysHint": {
+    "message": "Sie bleiben auf diesem Computer und gehen nur an ihren Anbieter: Sie werden nie synchronisiert."
+  },
+  "optionsAboutPolicy": {
+    "message": "Vollständige Datenschutzerklärung lesen"
+  },
+  "optionsAboutSupport": {
+    "message": "Hilft es dir?"
+  },
+  "optionsAboutSupportHint": {
+    "message": "autoGroup ist kostenlos und werbefrei. Wenn es dir Zeit spart, kannst du mir einen Kaffee spendieren."
+  },
   "optionsReadDescriptionsProviderLost": {
     "message": "Beschreibungen sind aus, aber ein Anbieter hat den Zugriff auf seinen Server verloren: Speichere ihn in seinem Bereich erneut."
   },

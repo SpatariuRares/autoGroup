@@ -962,6 +962,51 @@
   "optionsCoffee": {
     "message": "Offrimi un caffè"
   },
+  "optionsAboutText": {
+    "message": "autoGroup raggruppa le tab della finestra per sito o per argomento, con l'AI che scegli tu. Vedi sempre la proposta prima che cambi qualcosa, e con «Annulla» torni com'eri."
+  },
+  "optionsAboutRate": {
+    "message": "Lascia una recensione"
+  },
+  "optionsAboutSource": {
+    "message": "Codice sorgente"
+  },
+  "optionsAboutIssue": {
+    "message": "Segnala un problema"
+  },
+  "optionsAboutPrivacy": {
+    "message": "Privacy"
+  },
+  "optionsAboutPrivacyHint": {
+    "message": "autoGroup non ha server suoi: lo sviluppatore non riceve dati, statistiche né segnalazioni di errore."
+  },
+  "optionsAboutLocal": {
+    "message": "Per sito o con Gemini Nano"
+  },
+  "optionsAboutLocalHint": {
+    "message": "Nessun dato lascia il computer."
+  },
+  "optionsAboutProvider": {
+    "message": "Con un provider AI"
+  },
+  "optionsAboutProviderHint": {
+    "message": "Titolo e indirizzo ripulito delle tab, e la descrizione delle pagine se la attivi, vanno solo al provider che hai scelto, direttamente dal browser."
+  },
+  "optionsAboutKeys": {
+    "message": "Chiavi API"
+  },
+  "optionsAboutKeysHint": {
+    "message": "Restano su questo computer e vanno solo al loro provider: non vengono mai sincronizzate."
+  },
+  "optionsAboutPolicy": {
+    "message": "Leggi l'informativa completa"
+  },
+  "optionsAboutSupport": {
+    "message": "Ti è utile?"
+  },
+  "optionsAboutSupportHint": {
+    "message": "autoGroup è gratuito e senza pubblicità. Se ti fa risparmiare tempo, puoi offrirmi un caffè."
+  },
   "optionsReadDescriptionsProviderLost": {
     "message": "Descrizioni spente, ma un provider ha perso l'accesso al suo server: salvalo di nuovo nella sua sezione."
   },
