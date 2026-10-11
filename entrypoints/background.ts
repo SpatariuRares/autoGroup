@@ -1,9 +1,8 @@
 import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { createOrganizer } from '../src/organizer';
-import { isOrganizerRequest, type OrganizerRequest, type OrganizerResponse, type StateChangedMessage } from '../src/shared/messages';
+import { announceState, serveOrganizer } from '../src/shared/organizer-remote';
 import { openOnboardingOnInstall } from '../src/shared/onboarding';
-import type { OrganizerState } from '../src/shared/types';
 
 export default defineBackground(() => {
   // Il clic sull'icona (e la scorciatoia) apre il pannello laterale: a differenza di un popup resta
@@ -13,13 +12,8 @@ export default defineBackground(() => {
     openOnboardingOnInstall(details).catch((err) => console.error('autoGroup:', err));
   });
 
-  const organizer = createOrganizer({
-    onStateChange(state) {
-      const message: StateChangedMessage = { type: 'organizer/state-changed', state };
-      // Se il pannello è chiuso non c'è nessun destinatario: l'errore è atteso.
-      browser.runtime.sendMessage(message).catch(() => {});
-    },
-  });
+  const organizer = createOrganizer({ onStateChange: announceState });
+  serveOrganizer(organizer);
 
   // Raggruppamento automatico con le regole sui siti: solo quando l'URL cambia, non a ogni ricarica,
   // così una tab tolta a mano dal gruppo non ci rientra finché non cambia pagina.
@@ -27,44 +21,26 @@ export default defineBackground(() => {
     if (change.url !== undefined) organizer.autoGroupTab(tabId);
   });
 
-  function handle(request: OrganizerRequest): Promise<OrganizerState> {
-    switch (request.type) {
-      case 'organizer/state':
-        return organizer.state();
-      case 'organizer/propose':
-        return organizer.propose(request.windowId, { force: request.force });
-      case 'organizer/edit':
-        return organizer.edit(request.edit);
-      case 'organizer/save-to-list':
-        return organizer.saveToList(request.groupId);
-      case 'organizer/remember-site':
-        return organizer.rememberSite(request.tabId);
-      case 'organizer/apply':
-        return organizer.apply();
-      case 'organizer/abort':
-        return organizer.abort();
-      case 'organizer/accept-preview':
-        return organizer.acceptPreview();
-      case 'organizer/undo':
-        return organizer.undo();
-      case 'organizer/close-tab':
-        return organizer.closeTab(request.tabId);
-      case 'organizer/close-duplicates':
-        return organizer.closeDuplicates(request.windowId, request.tabIds);
-      case 'organizer/close-inactive':
-        return organizer.closeInactive(request.windowId, request.tabIds);
-      case 'organizer/close-group':
-        return organizer.closeGroup(request.groupId);
-      case 'organizer/group-tab':
-        return organizer.groupTab(request.tabId, request.groupId);
-    }
-  }
-
-  browser.runtime.onMessage.addListener((request: unknown, _sender, sendResponse) => {
-    if (!isOrganizerRequest(request)) return;
-    handle(request)
-      .then((state) => sendResponse({ ok: true, state } satisfies OrganizerResponse))
-      .catch((err) => sendResponse({ ok: false, error: String(err) } satisfies OrganizerResponse));
-    return true;
+  // Proposta scaduta: dopo un cambio di tab, gruppi, impostazioni o permessi l'Organizzatore la
+  // ricontrolla con la sua impronta. Più cambi ravvicinati (es. "Chiudi doppioni") valgono un controllo.
+  let recheckTimer: ReturnType<typeof setTimeout> | undefined;
+  const recheck = () => {
+    clearTimeout(recheckTimer);
+    recheckTimer = setTimeout(() => organizer.checkStale().catch((err) => console.error('autoGroup:', err)), 150);
+  };
+  browser.tabs.onCreated.addListener(recheck);
+  browser.tabs.onRemoved.addListener(recheck);
+  browser.tabs.onAttached.addListener(recheck);
+  browser.tabs.onDetached.addListener(recheck);
+  // Titoli, favicon, audio e tab attiva non contano; il caricamento finito sì (una tab senza titolo vero non è candidata).
+  browser.tabs.onUpdated.addListener((_tabId, change) => {
+    if (change.url !== undefined || change.pinned !== undefined || change.groupId !== undefined || change.status === 'complete') recheck();
   });
+  browser.tabGroups.onCreated.addListener(recheck);
+  browser.tabGroups.onUpdated.addListener(recheck);
+  browser.tabGroups.onRemoved.addListener(recheck);
+  // Non "session": è dove l'Organizzatore salva il suo stato.
+  browser.storage.onChanged.addListener((_changes, area) => area !== 'session' && recheck());
+  browser.permissions.onAdded.addListener(recheck);
+  browser.permissions.onRemoved.addListener(recheck);
 });

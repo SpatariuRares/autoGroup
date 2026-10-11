@@ -284,6 +284,32 @@ describe('Metti sempre qui', () => {
     expect(state.notice).toEqual({ key: 'panelSiteMoved', arg: ['github.com/mia-org', 'Work', 'Dev'] });
   });
 
+  it('dopo "Sposta in…" verso una categoria offre di ricordare il sito; l\'offerta vale solo per quella risposta', async () => {
+    strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
+    strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
+    const gitlab = strip.addTab({ url: 'https://www.gitlab.com/x', title: 'GitLab' });
+    const { proposal } = await organizer.propose(W);
+    const dev = proposal!.groups.find((g) => g.name === 'Dev')!;
+
+    const state = await organizer.edit({ kind: 'add-tab', tab: { tabId: gitlab, title: 'GitLab', url: 'https://www.gitlab.com/x' }, to: { groupId: dev.id } });
+
+    expect(state.offer).toEqual({ tabId: gitlab, site: 'gitlab.com', category: 'Dev' });
+    expect((await organizer.state()).offer).toBeUndefined();
+  });
+
+  it('nessuna offerta spostando verso un gruppo che non è una categoria', async () => {
+    strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
+    strip.addTab({ url: 'https://news.ycombinator.com/2', title: 'HN 2' });
+    const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
+    const { proposal } = await organizer.propose(W);
+    const hn = proposal!.groups.find((g) => g.name === 'news.ycombinator.com')!;
+
+    const state = await organizer.edit({ kind: 'add-tab', tab: { tabId: solo, title: 'Solo', url: 'https://solo.com/' }, to: { groupId: hn.id } });
+
+    expect(state.proposal!.groups.find((g) => g.id === hn.id)!.tabs.map((t) => t.title)).toEqual(['HN 1', 'HN 2', 'Solo']);
+    expect(state.offer).toBeUndefined();
+  });
+
   it('non fa nulla per i gruppi che non sono una categoria', async () => {
     const hn = strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
     strip.addTab({ url: 'https://news.ycombinator.com/2', title: 'HN 2' });

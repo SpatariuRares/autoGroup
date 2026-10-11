@@ -77,13 +77,14 @@ export async function collectInputs(windowId: number): Promise<ProposalInputs> {
 /**
  * Impronta delle tab candidate (ID e URL), dei gruppi aperti, delle impostazioni e della
  * disponibilità dei provider: se cambia, una proposta salvata non è più attuale. Il titolo resta
- * fuori perché cambia spesso da solo (contatori come "(3) Posta"); le chiavi API non ci sono mai.
+ * fuori perché cambia spesso da solo (contatori come "(3) Posta"); l'ordine delle tab anche, perché
+ * spostarle non cambia i gruppi; le chiavi API non ci sono mai.
  */
 export function signatureOf(inputs: ProposalInputs): string {
   // Il raggruppamento automatico non cambia la proposta: accenderlo o spegnerlo non la rende superata.
   const { autoGroupSites: _, ...settings } = inputs.settings;
   return JSON.stringify([
-    inputs.candidates.map((t) => [t.tabId, t.url]),
+    [...inputs.candidates].sort((a, b) => a.tabId - b.tabId).map((t) => [t.tabId, t.url]),
     inputs.openGroups.map((g) => [g.id, g.title, g.color]),
     settings,
     inputs.classifier.usable,
@@ -91,6 +92,17 @@ export function signatureOf(inputs: ProposalInputs): string {
     inputs.nano,
     inputs.readDescriptions,
   ]);
+}
+
+/**
+ * Esegue un cambio che tocca la finestra o le impostazioni e anche la proposta (tab chiuse, sito
+ * ricordato, categoria salvata). Se la proposta era attuale subito prima del cambio resta attuale:
+ * l'impronta viene riletta dopo. Se era già scaduta resta scaduta, con la vecchia impronta.
+ */
+export async function keepCurrent(proposal: Proposal, change: () => Promise<Proposal>): Promise<Proposal> {
+  const wasCurrent = proposal.signature === signatureOf(await collectInputs(proposal.windowId));
+  const next = await change();
+  return wasCurrent ? { ...next, signature: signatureOf(await collectInputs(next.windowId)) } : next;
 }
 
 /**

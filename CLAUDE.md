@@ -17,7 +17,7 @@ Chrome MV3 extension (WXT 0.21, React 19, TypeScript 5.9) that groups the tabs o
 
 ## Architecture in one paragraph
 
-All logic lives in the service worker (`entrypoints/background.ts`) behind the **Organizer** (`src/organizer/index.ts`: `propose / edit / apply / undo / state`). The side panel, options page and onboarding are React UIs that talk to it only through `src/shared/messages.ts` / `organizer-client.ts`. AI adapters in `src/ai/` have no dependency on the Organizer. Full map and design decisions: `docs/architecture.md`. Performance notes: `docs/performance.md`.
+All logic lives in the service worker (`entrypoints/background.ts`) behind the **Organizer** (`src/organizer/index.ts`: `propose / edit / apply / undo / state`). The side panel, options page and onboarding are React UIs that talk to it only through `remoteOrganizer` in `src/shared/organizer-remote.ts` (same interface as the Organizer, one message per call). AI adapters in `src/ai/` have no dependency on the Organizer. Full map and design decisions: `docs/architecture.md`. Performance notes: `docs/performance.md`.
 
 ## Conventions
 

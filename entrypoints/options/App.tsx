@@ -6,6 +6,7 @@ import { t } from '../../src/shared/i18n';
 import { useFocusRecovery } from '../../src/ui/focus-recovery';
 import { Icon } from '../../src/ui/Icon';
 import { useExpiring } from '../../src/ui/use-expiring';
+import { useSettings } from '../../src/ui/use-settings';
 import { Card } from './Card';
 import { BackupSection } from './BackupSection';
 import { AutoGroupSection, CategoriesSection } from './CategoriesSection';
@@ -41,22 +42,14 @@ function useView() {
 }
 
 export function App() {
-  const [settings, setSettings] = useState<Settings | null>(null);
+  // Lette dal vivo: anche il pannello le cambia (es. "Metti sempre qui" aggiunge un sito), e "Annulla" deve ripartire da quelle vere.
+  const [settings, setSettings] = useSettings();
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [undoable, setUndoable, holdUndo] = useExpiring<Undoable>(UNDO_MS);
   const { view, section } = useView();
   const rememberFocus = useFocusRecovery('.chip, .category');
-
-  // Lette dal vivo: anche il pannello le cambia (es. "Metti sempre qui" aggiunge un sito), e "Annulla" deve ripartire da quelle vere.
-  useEffect(() => {
-    const reload = () => loadSettings().then(setSettings);
-    reload();
-    const onChanged = (_changes: unknown, area: string) => area === 'sync' && reload();
-    browser.storage.onChanged.addListener(onChanged);
-    return () => browser.storage.onChanged.removeListener(onChanged);
-  }, []);
 
   const heading = useRef<HTMLHeadingElement>(null);
   const shownView = useRef<ViewId | null>(null);

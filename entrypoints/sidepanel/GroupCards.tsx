@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ExistingGroupView } from '../../src/organizer/window-view';
 import { t } from '../../src/shared/i18n';
-import { GROUP_COLORS, type ProposalEdit, type ProposedGroup, type ProposedTab } from '../../src/shared/types';
+import { GROUP_COLORS, type ExistingGroupView, type ProposalEdit, type ProposedGroup, type ProposedTab } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
 import { moveInRadioGroup } from '../../src/ui/radio-keys';
 import { useExpiring } from './hooks';
-import { useLiveTabs } from './live-tabs';
 import { setCollapsed } from './tab-actions';
 import { addedCount, tabCount, TabRow, type Target } from './TabRow';
 
@@ -165,8 +163,7 @@ export function ExistingCard({
   onCloseGroup: () => void;
   readOnly?: boolean;
 }) {
-  const { group, current, added } = existing;
-  const collapsed = useLiveTabs().groups.get(group.id)?.collapsed ?? false;
+  const { group, current, added, collapsed } = existing;
   const [armed, setArmed] = useExpiring<true>(CONFIRM_MS);
   // Come faceva <details open>: aperta se la proposta gli aggiunge tab, chiusa se non più.
   const [open, setOpen] = useState(added.length > 0);

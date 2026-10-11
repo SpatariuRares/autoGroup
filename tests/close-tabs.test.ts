@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { createOrganizer, type Organizer } from '../src/organizer';
-import { buildWindowView } from '../src/organizer/window-view';
 import { saveSettings } from '../src/settings';
 import { installFakeI18n } from './fake-i18n';
 import { installFakeTabStrip, type FakeTabStrip } from './fake-tab-strip';
@@ -24,15 +23,12 @@ beforeEach(async () => {
 
 /** Le tab che il pannello mostra come inattive, per titolo. */
 async function inactiveInView() {
-  const tabs = await browser.tabs.query({ windowId: W });
-  const view = buildWindowView(tabs, await browser.tabGroups.query({ windowId: W }), undefined, ['banca.it']);
-  return view.inactive.map((id) => tabs.find((t) => t.id === id)!.title);
+  return (await organizer.view(W)).inactive.map((t) => t.title);
 }
 
 /** Le tab inattive tutte scelte: come premere "Chiudi" senza togliere spunte. */
 async function inactiveIds() {
-  const tabs = await browser.tabs.query({ windowId: W });
-  return buildWindowView(tabs, [], undefined, ['banca.it']).inactive;
+  return (await organizer.view(W)).inactive.map((t) => t.tabId);
 }
 
 describe('tab inattive', () => {

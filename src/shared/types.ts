@@ -111,11 +111,63 @@ export interface UndoSnapshot {
   createdGroupIds: number[];
 }
 
+/** "Metti sempre qui" proposto dopo uno spostamento: la tab, il sito che verrebbe salvato e la categoria. */
+export interface RememberOffer {
+  tabId: number;
+  site: string;
+  category: string;
+}
+
+/** Perché una tab non può entrare in un gruppo: l'estensione non la tocca mai. */
+export type HeldReason = 'pinned' | 'internal' | 'excluded' | 'loading';
+
+/** Un gruppo già aperto in Chrome, con le sue tab di adesso e quelle che la proposta gli aggiunge. */
+export interface ExistingGroupView {
+  group: ExistingGroupRef;
+  current: ProposedTab[];
+  added: ProposedTab[];
+  /** Il gruppo della proposta che lo estende, se c'è. */
+  proposedGroupId?: string;
+  collapsed: boolean;
+}
+
+/** Dettagli dal vivo di una tab che la proposta non porta. */
+export interface LiveTab {
+  active: boolean;
+  audible: boolean;
+  muted: boolean;
+  /** Giorni senza essere guardata, solo per le tab che "Chiudi inattive" chiuderebbe. */
+  idleDays?: number;
+}
+
+/** Tutta la finestra come la mostra il pannello: niente resta nascosto. */
+export interface WindowView {
+  existing: ExistingGroupView[];
+  /** Gruppi nuovi della proposta (lista, nuovo AI, sito). */
+  created: ProposedGroup[];
+  /** Tab libere che la proposta lascia fuori: l'utente può metterle in un gruppo. */
+  free: ProposedTab[];
+  /** Tab che l'estensione non tocca mai, con il motivo. */
+  held: { tab: ProposedTab; reason: HeldReason }[];
+  /** Tab che "Chiudi duplicati" chiuderebbe, nell'ordine della barra. */
+  duplicates: ProposedTab[];
+  /** Tab che "Chiudi inattive" chiuderebbe, nell'ordine della barra. */
+  inactive: ProposedTab[];
+  /** Dopo quanti giorni una tab conta come inattiva. */
+  inactiveDays: number;
+  /** Dettagli dal vivo di ogni tab della finestra, per ID. */
+  live: Record<number, LiveTab>;
+}
+
 /** Stato dell'Organizzatore, salvato in chrome.storage.session. */
 export interface OrganizerState {
   phase: 'idle' | 'computing' | 'ready';
   windowId?: number;
   proposal?: Proposal;
+  /** Vero se le tab, i gruppi aperti o le impostazioni sono cambiati dopo il calcolo della proposta. */
+  stale?: boolean;
+  /** Solo nello stato restituito da "Sposta in…" verso una categoria: l'offerta "Metti sempre qui". */
+  offer?: RememberOffer;
   /**
    * Solo durante `computing` in modalità AI: la proposta per sito, pronta subito. Il pannello la mostra
    * in sola lettura mentre l'AI lavora; "Usa questa" ferma l'AI e la rende la proposta corrente.

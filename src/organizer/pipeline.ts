@@ -5,10 +5,9 @@ import { createSystemOneClassifier } from '../ai/systemone-classifier';
 import { ProviderError, type AiOption, type AiTab, type Classifier, type Generator } from '../ai/types';
 import { categoryKey, NANO_PRESET, providerLabel } from '../settings';
 import type { ProposalWarning, ProposedGroup } from '../shared/types';
-import { buildOptions, prepareTabs } from './ai-input';
+import { buildOptions, cleanUrl, prepareTabs } from './ai-input';
 import { withClassificationCache } from './classification-cache';
 import { readDescriptions } from './description-reader';
-import { domainOf } from './domain-grouping';
 import { applyGroupRules, type RulesContext } from './group-rules';
 import type { ProposalInputs } from './proposal-builder';
 import { createSiteMatcher, type SiteMatch } from './site-rules';
@@ -35,7 +34,7 @@ function resolveClassifier(inputs: ProposalInputs, warnings: ProposalWarning[]):
  * supportato producono un avviso: senza, l'utente vedrebbe gruppi per sito pensando che li abbia fatti
  * l'AI. `inputs.nano` è "unavailable" anche se l'utente non ha scelto Nano: lì nessun avviso.
  */
-export function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarning[] = []): Generator | null {
+function resolveGenerator(inputs: ProposalInputs, warnings: ProposalWarning[] = []): Generator | null {
   const { settings, apiKey, usable, missingPermission } = inputs.generator;
   const label = providerLabel('generator', settings);
   if (usable) return createOpenAiGenerator({ label, baseUrl: settings.baseUrl, model: settings.model, apiKey });
@@ -69,8 +68,34 @@ export function willAskAi(inputs: ProposalInputs): boolean {
 }
 
 /** Lingua dei nomi nuovi, presa dalla lingua del browser. */
-export function languageName(): string {
+function languageName(): string {
   return browser.i18n.getMessage('aiLanguageName' as never) || browser.i18n.getUILanguage();
+}
+
+/** Tab di esempio inviate al Generatore per descrivere una categoria. */
+const MAX_EXAMPLES = 8;
+
+/**
+ * La descrizione di una categoria nuova ("Salva nella lista"), chiesta allo stesso Generatore della
+ * pipeline con alcune tab di esempio, dagli URL ripuliti. Stringa vuota se non c'è un Generatore o se
+ * non risponde.
+ */
+export async function describeCategory(
+  inputs: ProposalInputs,
+  name: string,
+  tabs: { title: string; url: string }[],
+  signal?: AbortSignal,
+): Promise<string> {
+  const generator = resolveGenerator(inputs);
+  if (!generator) return '';
+  const examples = tabs.slice(0, MAX_EXAMPLES).map((t, i) => ({ id: `t${i + 1}`, title: t.title, url: cleanUrl(t.url) }));
+  try {
+    return await generator.describe({ name, examples, language: languageName() }, signal);
+  } catch (err) {
+    if (!(err instanceof ProviderError)) throw err;
+    console.warn(`autoGroup: descrizione non generata da ${generator.label} (${err.reason})`);
+    return '';
+  }
 }
 
 /** Le tab candidate prese da una regola sui siti: ID della tab in Chrome → regola. */
@@ -272,6 +297,17 @@ function mergeByName(groups: ValidGroup[]): ValidGroup[] {
     else merged.set(key, { name: g.name, tabIds: [...g.tabIds] });
   }
   return [...merged.values()];
+}
+
+/** Dominio di una tab senza "www.", oppure null se l'URL non ha un host (es. file://). */
+function domainOf(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (!host) return null;
+    return host.startsWith('www.') ? host.slice(4) : host;
+  } catch {
+    return null;
+  }
 }
 
 /**

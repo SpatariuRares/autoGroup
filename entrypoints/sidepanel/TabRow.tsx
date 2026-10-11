@@ -1,7 +1,5 @@
-import { daysSinceAccess } from '../../src/organizer/inactive';
-import type { HeldReason } from '../../src/organizer/window-view';
 import { t } from '../../src/shared/i18n';
-import type { ProposalEdit, ProposedTab } from '../../src/shared/types';
+import type { HeldReason, ProposalEdit, ProposedTab } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
 import { useLiveTabs } from './live-tabs';
 import { openTab, setMuted } from './tab-actions';
@@ -47,10 +45,9 @@ export function TabRow({
   reason?: HeldReason;
   added?: boolean;
 }) {
-  const live = useLiveTabs();
-  const chrome = live.tabs.get(tab.tabId);
-  const muted = chrome?.mutedInfo?.muted ?? false;
-  const idleDays = live.inactive.has(tab.tabId) && chrome ? daysSinceAccess(chrome, live.now) : undefined;
+  const chrome = useLiveTabs()[tab.tabId];
+  const muted = chrome?.muted ?? false;
+  const idleDays = chrome?.idleDays;
   // Il nome accessibile dei controlli dice anche quale tab: tra tante "Chiudi la tab" si sente quale si chiude.
   const named = (key: string) => `${t(key)}: ${tab.title}`;
   return (

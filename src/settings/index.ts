@@ -1,7 +1,19 @@
 import { browser } from 'wxt/browser';
 import type { Category } from '../shared/types';
 import { defaultCategories, normalizeCategories, validateCategories } from './categories';
-import { isProviderConfigured, isProviderSettings, NANO_PROVIDER, NO_PROVIDER, normalizeProvider, originPattern, type ProviderSettings } from './providers';
+import {
+  isLocalOnly,
+  isProviderConfigured,
+  isProviderSettings,
+  NANO_PRESET,
+  NANO_PROVIDER,
+  NO_PROVIDER,
+  normalizeProvider,
+  originPattern,
+  saveApiKey,
+  type ProviderRole,
+  type ProviderSettings,
+} from './providers';
 
 export * from './categories';
 export * from './providers';
@@ -156,6 +168,39 @@ export async function removeDescriptionPermission(): Promise<string[]> {
   if (missing.length === 0) return [];
   const granted = await browser.permissions.request({ origins: missing }).catch(() => false);
   return granted ? [] : missing;
+}
+
+/** Esito di "Salva" per un provider: spento, Gemini Nano, dati mancanti, pronto, oppure permesso rifiutato. */
+export type ProviderSaveResult = 'off' | 'nano' | 'incomplete' | 'ready' | 'no-permission';
+
+/**
+ * "Salva" di un provider: salva le impostazioni e la chiave API (solo in storage.local), toglie il
+ * permesso host dell'URL base di prima se nessuno dei due provider lo usa più, poi aspetta la risposta
+ * dell'utente al permesso. `granted` è la promessa di `permissions.request`, che la pagina chiama dentro
+ * il clic per l'origine di `providerOrigin(draft)` (o `false` se non serve).
+ */
+export async function saveProvider(role: ProviderRole, draft: ProviderSettings, apiKey: string, granted: Promise<boolean>): Promise<ProviderSaveResult> {
+  const previous = (await loadSettings())[role];
+  await saveSettings({ [role]: draft });
+  await saveApiKey(role, apiKey.trim());
+  await releaseUnusedPermission(previous.baseUrl);
+  const ok = await granted;
+  if (draft.preset === 'none') return 'off';
+  if (draft.preset === NANO_PRESET) return 'nano';
+  if (!isProviderConfigured(role, draft)) return 'incomplete';
+  return ok ? 'ready' : 'no-permission';
+}
+
+/**
+ * Toglie il permesso host di un URL base non più usato. Classificatore e Generatore possono
+ * condividere un host (es. entrambi su 127.0.0.1): il permesso resta finché uno dei due lo usa.
+ */
+async function releaseUnusedPermission(previousBaseUrl: string) {
+  const previous = originPattern(previousBaseUrl);
+  if (!previous) return;
+  const { classifier, generator } = await loadSettings();
+  const inUse = [classifier, generator].some((p) => !isLocalOnly(p) && originPattern(p.baseUrl) === previous);
+  if (!inUse) await browser.permissions.remove({ origins: [previous] }).catch(() => {});
 }
 
 /** "Ripristina default": torna alla lista predefinita nella lingua del browser, senza siti. */

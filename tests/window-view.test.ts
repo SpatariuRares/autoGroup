@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { createOrganizer, type Organizer } from '../src/organizer';
-import { buildWindowView } from '../src/organizer/window-view';
 import { saveSettings } from '../src/settings';
-import type { OrganizerState } from '../src/shared/types';
 import { installFakeI18n } from './fake-i18n';
 import { installFakeTabStrip, type FakeTabStrip } from './fake-tab-strip';
 
@@ -20,11 +17,9 @@ beforeEach(async () => {
   await saveSettings({ mode: 'domain', excludedDomains: ['banca.it'] });
 });
 
-/** La vista come la costruisce il pannello: tab e gruppi dal vivo più la proposta. */
-async function view(state?: OrganizerState) {
-  const tabs = await browser.tabs.query({ windowId: W });
-  const groups = await browser.tabGroups.query({ windowId: W });
-  const v = buildWindowView(tabs, groups, state?.proposal, ['banca.it']);
+/** La vista che il pannello mostra: tab e gruppi dal vivo più la proposta corrente. */
+async function view() {
+  const v = await organizer.view(W);
   return {
     existing: v.existing.map((e) => ({ name: e.group.name, current: e.current.map((t) => t.title), added: e.added.map((t) => t.title) })),
     created: v.created.map((g) => ({ name: g.name, tabs: g.tabs.map((t) => t.title) })),
@@ -44,9 +39,9 @@ describe('vista della finestra nel pannello', () => {
     strip.addTab({ url: 'chrome://settings/', title: 'Impostazioni' });
     strip.addTab({ url: 'https://banca.it/conto', title: 'Conto' });
 
-    const state = await organizer.propose(W);
+    await organizer.propose(W);
 
-    expect(await view(state)).toEqual({
+    expect(await view()).toEqual({
       existing: [{ name: 'Lavoro', current: ['Doc 1'], added: [] }],
       created: [{ name: 'a.com', tabs: ['A1', 'A2'] }],
       free: ['Solo'],
@@ -73,7 +68,7 @@ describe('"add-tab": mettere una tab libera in un gruppo', () => {
 
     const state = await organizer.edit({ kind: 'add-tab', tab: { tabId: solo, title: 'falso', url: 'https://x' }, to: { groupId } });
 
-    expect((await view(state)).created).toEqual([{ name: 'a.com', tabs: ['A1', 'A2', 'Solo'] }]);
+    expect((await view()).created).toEqual([{ name: 'a.com', tabs: ['A1', 'A2', 'Solo'] }]);
     // I dati della tab vengono dal browser, non dal messaggio.
     expect(state.proposal!.groups[0]!.tabs.at(-1)).toMatchObject({ title: 'Solo', url: 'https://solo.com/' });
   });
@@ -91,7 +86,7 @@ describe('"add-tab": mettere una tab libera in un gruppo', () => {
     });
 
     expect(state.proposal!.groups).toMatchObject([{ provenance: 'existing', existingGroupId: chromeGroup, tabs: [{ title: 'Solo' }] }]);
-    expect((await view(state)).existing).toEqual([{ name: 'Lavoro', current: ['Doc 1'], added: ['Solo'] }]);
+    expect((await view()).existing).toEqual([{ name: 'Lavoro', current: ['Doc 1'], added: ['Solo'] }]);
     await organizer.apply();
     expect(strip.groupsIn().map((g) => [g.title, g.tabs])).toEqual([['Lavoro', ['Doc 1', 'Solo']]]);
   });
@@ -162,7 +157,7 @@ describe('"Chiudi tab" dal pannello', () => {
     expect((await organizer.state()).proposal!.groups).toEqual(proposed.proposal!.groups);
   });
 
-  it("se chiude l'ultima tab di un gruppo aperto che la proposta estende, la proposta diventa scaduta", async () => {
+  it("se chiude l'ultima tab di un gruppo aperto che la proposta estende, scarta l'estensione e resta attuale", async () => {
     const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     const chromeGroup = await strip.addGroup('docs.com', 'blue', [d1]);
     strip.addTab({ url: 'https://docs.com/2', title: 'Doc 2' });
@@ -171,9 +166,9 @@ describe('"Chiudi tab" dal pannello', () => {
 
     const state = await organizer.closeTab(d1);
 
-    expect(state.proposal!.signature).toBe(proposed.proposal!.signature);
-    const recomputed = await createOrganizer().propose(W);
-    expect(recomputed.proposal!.groups).toEqual([]);
+    expect(state.proposal!.groups).toEqual([]);
+    expect((await view()).free).toEqual(['Doc 2']);
+    expect((await createOrganizer().propose(W)).proposal).toEqual(state.proposal);
   });
 
   it('una tab già chiusa non cambia nulla', async () => {

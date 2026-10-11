@@ -1,28 +1,28 @@
-import { useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import { browser } from 'wxt/browser';
-import { INACTIVE_DAYS } from '../../src/organizer/inactive';
-import { buildWindowView } from '../../src/organizer/window-view';
 import { saveSettings, type GroupingMode } from '../../src/settings';
 import { t } from '../../src/shared/i18n';
-import { callOrganizer } from '../../src/shared/organizer-client';
-import type { ProposedTab } from '../../src/shared/types';
+import { remoteOrganizer as organizer } from '../../src/shared/organizer-remote';
+import type { ProposedTab, RememberOffer } from '../../src/shared/types';
 import { useFocusRecovery } from '../../src/ui/focus-recovery';
 import { Icon } from '../../src/ui/Icon';
 import { CloseTabsBanner, ComputingStatus, ErrorBanner, InfoBanner, StaleBanner, WarningsBanner } from './Banners';
 import { ExistingCard, GroupCard } from './GroupCards';
-import { useExpiring, useOrganizer, useSettings, useWindowSnapshot } from './hooks';
-import { LiveTabsContext, type LiveTabs } from './live-tabs';
+import { useSettings } from '../../src/ui/use-settings';
+import { useExpiring, useOrganizer, useWindowView } from './hooks';
+import { LiveTabsContext } from './live-tabs';
 import { ModePicker } from './ModePicker';
 import { openSettings } from './open-settings';
-import { OFFER_MS, rememberOffer, type RememberOffer } from './remember-offer';
 import { moveBetweenRows } from './row-navigation';
 import { TabRow, type Target } from './TabRow';
 
+/** Per quanto resta visibile l'offerta "Metti sempre qui". */
+const OFFER_MS = 8000;
+
 export function App() {
-  const { state, setState, windowId, busy, failure, run, send, edit } = useOrganizer();
-  const settings = useSettings();
+  const { state, windowId, busy, failure, run, send, edit } = useOrganizer();
+  const [settings] = useSettings();
   const [notice, setNotice] = useState<'popupApplied' | 'popupUndone' | null>(null);
-  const [stale, setStale] = useState(false);
   const [offer, setOffer, pauseOffer] = useExpiring<RememberOffer>(OFFER_MS);
 
   const proposal = state?.phase === 'ready' && state.windowId === windowId ? state.proposal : undefined;
@@ -32,38 +32,13 @@ export function App() {
   const preview = state?.phase === 'computing' && state.windowId === windowId ? state.preview : undefined;
   const readOnly = !proposal && preview !== undefined;
 
-  // "Applica" e "Annulla" cambiano le tab: in quel momento la proposta non c'è più, quindi nessun avviso.
-  // Le tab chiuse dal pannello sono già tolte dalla proposta dall'Organizzatore: non la rendono vecchia.
-  // Nemmeno i gruppi che restano vuoti chiudendo più tab insieme: l'Organizzatore ne tiene conto.
-  const closing = useRef(new Set<number>());
-  const closingGroups = useRef(new Set<number>());
-  const snapshot = useWindowSnapshot(windowId, (closedTabId, removedGroupId) => {
-    if (closedTabId !== undefined && closing.current.delete(closedTabId)) return;
-    if (removedGroupId !== undefined && closingGroups.current.delete(removedGroupId)) return;
-    if (!busy) setStale(true);
-  });
-  // Rilette insieme alle tab: i giorni di inattività si contano dal momento dell'ultima lettura.
-  const now = useMemo(() => Date.now(), [snapshot]);
-  const view = useMemo(
-    () => buildWindowView(snapshot.tabs, snapshot.groups, proposal ?? preview, settings?.excludedDomains ?? [], now),
-    [snapshot, proposal, preview, settings?.excludedDomains, now],
-  );
-  const live = useMemo<LiveTabs>(
-    () => ({
-      tabs: new Map(snapshot.tabs.map((tab) => [tab.id!, tab])),
-      groups: new Map(snapshot.groups.map((group) => [group.id, group])),
-      inactive: new Set(view.inactive),
-      now,
-    }),
-    [snapshot, view.inactive, now],
-  );
+  const view = useWindowView(windowId, state, settings);
 
   function recompute() {
     if (windowId === null) return;
     setNotice(null);
     setOffer(null);
-    setStale(false);
-    run({ type: 'organizer/propose', windowId, force: true });
+    run(() => organizer.propose(windowId, { force: true }));
   }
 
   async function chooseMode(mode: GroupingMode) {
@@ -82,44 +57,20 @@ export function App() {
       ]
     : [];
 
-  async function closeTab(tabId: number) {
-    closing.current.add(tabId);
-    if (!(await send({ type: 'organizer/close-tab', tabId }))) closing.current.delete(tabId);
-  }
+  // L'Organizzatore toglie le tab chiuse dalla proposta e la tiene attuale: nessun avviso di proposta vecchia.
+  const closeTab = (tabId: number) => send(() => organizer.closeTab(tabId));
+  const closeDuplicates = (tabIds: number[]) => windowId !== null && send(() => organizer.closeDuplicates(windowId, tabIds));
+  const closeInactive = (tabIds: number[]) => windowId !== null && send(() => organizer.closeInactive(windowId, tabIds));
+  const closeGroup = (groupId: number) => send(() => organizer.closeGroup(groupId));
 
-  /**
-   * Come per "Chiudi la tab": l'Organizzatore toglie le tab dalla proposta, quindi non la rendono
-   * vecchia; e scarta le aggiunte ai gruppi che restano vuoti, quindi neanche il gruppo che sparisce.
-   */
-  async function closeMany(tabIds: number[], request: Parameters<typeof send>[0]) {
-    for (const tabId of tabIds) closing.current.add(tabId);
-    for (const { group, current } of view.existing) {
-      if (current.every((tab) => tabIds.includes(tab.tabId))) closingGroups.current.add(group.id);
-    }
-    if (!(await send(request))) {
-      closing.current.clear();
-      closingGroups.current.clear();
-    }
-  }
-
-  const closeDuplicates = (tabIds: number[]) => windowId !== null && closeMany(tabIds, { type: 'organizer/close-duplicates', windowId, tabIds });
-  const closeInactive = (tabIds: number[]) => windowId !== null && closeMany(tabIds, { type: 'organizer/close-inactive', windowId, tabIds });
-  const closeGroup = (groupId: number, tabIds: number[]) => closeMany(tabIds, { type: 'organizer/close-group', groupId });
-
-  // Le tab con titolo, icona e URL letti dal vivo, per le anteprime dei doppioni e delle inattive.
-  const liveTabs = (ids: number[]) =>
-    ids
-      .map((id) => live.tabs.get(id))
-      .filter((tab) => tab !== undefined)
-      .map((tab) => ({ tabId: tab.id!, title: tab.title?.trim() || tab.url || '', url: tab.url ?? '', favIconUrl: tab.favIconUrl }));
-  const duplicateTabs = liveTabs(view.duplicates);
-  const inactiveTabs = liveTabs(view.inactive);
+  const duplicateTabs = view.duplicates;
+  const inactiveTabs = view.inactive;
 
   const moveTab = async (tab: ProposedTab, value: string) => {
     const target = targets.find((x) => x.value === value);
     if (!target) return;
     const next = await edit({ kind: 'add-tab', tab, to: target.to });
-    setOffer(next ? rememberOffer(next, tab.tabId, settings) : null);
+    setOffer(next?.offer ?? null);
   };
 
   // Senza proposta (es. dopo "Applica") le tab libere vanno subito in un gruppo aperto. Non durante il calcolo.
@@ -129,7 +80,8 @@ export function App() {
   const groupTab = (tab: ProposedTab, value: string) => {
     const target = directTargets.find((x) => x.value === value);
     if (!target || !('existingGroup' in target.to)) return;
-    send({ type: 'organizer/group-tab', tabId: tab.tabId, groupId: target.to.existingGroup.id });
+    const groupId = target.to.existingGroup.id;
+    send(() => organizer.groupTab(tab.tabId, groupId));
   };
 
   const message = failure ?? state?.error;
@@ -137,10 +89,11 @@ export function App() {
   const untouched = view.existing.filter((e) => e.added.length === 0);
   const rememberFocus = useFocusRecovery('.tab, .group');
 
-  const showStale = proposal !== undefined && stale && !computing;
+  // "Applica" e "Annulla" tolgono la proposta: nessun avviso nemmeno se le tab cambiano.
+  const showStale = proposal !== undefined && state?.stale === true && !computing;
   const duplicatesText = duplicateTabs.length === 1 ? t('panelDuplicatesOne') : t('panelDuplicates', String(duplicateTabs.length));
   const inactiveText =
-    inactiveTabs.length === 1 ? t('panelInactiveOne', String(INACTIVE_DAYS)) : t('panelInactive', [String(inactiveTabs.length), String(INACTIVE_DAYS)]);
+    inactiveTabs.length === 1 ? t('panelInactiveOne', String(view.inactiveDays)) : t('panelInactive', [String(inactiveTabs.length), String(view.inactiveDays)]);
   const info = !proposal && !computing && (state?.notice || notice) ? (state?.notice ? t(state.notice.key, state.notice.arg) : t(notice!)) : null;
   const noGroups = proposal !== undefined && view.created.length === 0 && touched.length === 0;
   // Banner e stato del calcolo compaiono già pieni, e una regione live nuova di solito non viene letta:
@@ -174,12 +127,12 @@ export function App() {
         <ComputingStatus
           preview={preview}
           started={state?.phase === 'computing'}
-          onAccept={() => callOrganizer({ type: 'organizer/accept-preview' }).then(setState).catch(console.error)}
-          onAbort={() => callOrganizer({ type: 'organizer/abort' }).then(setState).catch(console.error)}
+          onAccept={() => send(() => organizer.acceptPreview())}
+          onAbort={() => send(() => organizer.abort())}
         />
       )}
 
-      <LiveTabsContext.Provider value={live}>
+      <LiveTabsContext.Provider value={view.live}>
         <div className="content" onKeyDown={moveBetweenRows}>
           {message && <ErrorBanner messageKey={message} />}
 
@@ -223,7 +176,7 @@ export function App() {
                     onMove={moveTab}
                     onEdit={edit}
                     onClose={closeTab}
-                    onSave={() => run({ type: 'organizer/save-to-list', groupId: group.id })}
+                    onSave={() => run(() => organizer.saveToList(group.id))}
                     saving={busy}
                   />
                 ))}
@@ -243,7 +196,7 @@ export function App() {
                     onMove={moveTab}
                     onEdit={edit}
                     onClose={closeTab}
-                    onCloseGroup={() => closeGroup(existing.group.id, existing.current.map((tab) => tab.tabId))}
+                    onCloseGroup={() => closeGroup(existing.group.id)}
                   />
                 ))}
               </ul>
@@ -291,7 +244,7 @@ export function App() {
             className="text small inverse"
             onClick={() => {
               setOffer(null);
-              run({ type: 'organizer/remember-site', tabId: offer.tabId });
+              run(() => organizer.rememberSite(offer.tabId));
             }}
           >
             {t('panelRememberSiteYes')}
@@ -314,7 +267,7 @@ export function App() {
 
       <footer className="bottom-bar">
         {canUndo && (
-          <button className="text undo" disabled={busy} onClick={() => run({ type: 'organizer/undo' }, () => setNotice('popupUndone'))}>
+          <button className="text undo" disabled={busy} onClick={() => run(() => organizer.undo(), () => setNotice('popupUndone'))}>
             <Icon name="undo" size={18} />
             {t('popupUndo')}
           </button>
@@ -331,8 +284,7 @@ export function App() {
             className="apply"
             disabled={busy}
             onClick={() =>
-              run({ type: 'organizer/apply' }, () => {
-                setStale(false);
+              run(() => organizer.apply(), () => {
                 setOffer(null);
                 setNotice('popupApplied');
               })

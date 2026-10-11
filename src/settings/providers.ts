@@ -105,6 +105,15 @@ export function originPattern(baseUrl: string): string | null {
   }
 }
 
+/**
+ * Il permesso host da chiedere salvando un provider: `undefined` se non ha un server (nessuno, Gemini
+ * Nano), `null` se l'URL base non è http(s). Sincrono, perché va calcolato dentro il clic, prima di
+ * `permissions.request`.
+ */
+export function providerOrigin(settings: ProviderSettings): string | null | undefined {
+  return isLocalOnly(settings) ? undefined : originPattern(settings.baseUrl);
+}
+
 /** Vero se il permesso host per l'URL base è già stato concesso. */
 export async function hasHostPermission(baseUrl: string): Promise<boolean> {
   const origin = originPattern(baseUrl);

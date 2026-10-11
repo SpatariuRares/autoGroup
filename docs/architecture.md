@@ -7,19 +7,18 @@ Manifest V3 extension built with WXT, TypeScript and React. All the logic lives 
 ```
 entrypoints/
   background.ts          service worker: creates the Organizer, answers the panel's messages, opens the panel when the icon is clicked and the guide on install
-  sidepanel/             React side panel: App.tsx composes the components (GroupCards, TabRow, ModePicker, Banners); hooks.ts holds the Organizer state, the live tab strip and the settings
+  sidepanel/             React side panel: App.tsx composes the components (GroupCards, TabRow, ModePicker, Banners); hooks.ts holds the Organizer state and the window view
   options/               React settings page in four pages (views.ts), opened in a full tab; ModeSection, ProviderSection, NanoStatus and ThresholdField are also used by the guide
   onboarding/            first-run guide (onboarding.html), in steps
 src/
   organizer/             the Organizer and its internal modules
-    index.ts             public interface: createOrganizer() → propose / edit / apply / undo / state
+    index.ts             public interface: createOrganizer() → propose / edit / apply / undo / state …; the state in chrome.storage.session
     proposal-builder.ts  reading of the inputs (tabs, open groups, settings, Generator) and signature
-    pipeline.ts          fallback table: choice of the Generator, call, fallback to domain
+    pipeline.ts          fallback table: choice of the Generator, call, fallback to domain; domain of a URL; category description for "Save to list"
     ai-input.ts          data for the AI (short IDs, cleaned URL) and options (categories + open groups)
     validator.ts         validation of the Generator's response
     group-rules.ts       rules on groups and colors, shared by all AI levels
     tab-selection.ts     selection of the candidate tabs
-    domain-grouping.ts   domain of a URL ("no AI" level)
     site-rules.ts        site rules of the categories: matching, most specific rule, site to remember
     remember-site.ts     "Always put here": saves a tab's site in the category of its group
     auto-group.ts        automatic grouping: a tab that opens a category site goes into that category's group
@@ -29,15 +28,14 @@ src/
     proposal-edits.ts    user edits to the proposal (pure function)
     save-to-list.ts      "Save to list": new category from a group invented by the AI
     description-reader.ts  Description reader: pages' meta description, with optional permission
-    session-state.ts     reading and writing of the state in chrome.storage.session
     stopwatch.ts         stopwatch for the phases of a computation (proposal.timings)
     session-cache.ts     key → value cache in chrome.storage.session, with a maximum number of entries
     classification-cache.ts  per-tab cache of the Classifier's results
-    window-view.ts       the panel's view of the whole window: proposal overlaid on tabs and open groups
+    window-view.ts       the panel's view of the whole window (`Organizer.view`): proposal overlaid on tabs and open groups
     duplicates.ts        duplicate tabs: which copies "Close duplicates" closes
     inactive.ts          inactive tabs: which tabs "Close inactive" closes
   settings/              preferences in chrome.storage.sync
-    index.ts             loading and saving, validation, excluded domains, category sites
+    index.ts             loading and saving, validation, excluded domains, category sites, saving a provider (saveProvider)
     categories.ts        default categories (from chrome.i18n), list validation
     providers.ts         presets of the two roles, configuration, API keys, host permissions
     backup.ts            export and import of the transferable preferences (no providers, no API keys)
@@ -45,6 +43,7 @@ src/
   ui/base.css            Material 3 basics: typography, shapes, buttons, fields, switch, chips, progress
   ui/Icon.tsx            Material Symbols icons included as SVG
   ui/provider-name.ts    short name of the chosen provider, for panel, settings and guide
+  ui/use-settings.ts     useSettings(): settings read live (storage.onChanged), for panel and settings page
   ai/                    AI provider adapters, with no dependencies on the Organizer
     types.ts             contracts of Generator and Classifier, AiTab, AiOption, ProviderError
     http.ts              shared JSON POST: Bearer, timeout, one retry, error classification; times (TIMINGS)
@@ -54,8 +53,7 @@ src/
     nano-generator.ts    Gemini Nano (Prompt API): availability, download, chunked generation
   shared/                code used by both the service worker and the panel
     types.ts             data shape: Proposal, ProposedGroup, OrganizerState, colors
-    messages.ts          contract of the panel ↔ service worker messages
-    organizer-client.ts  Panel side: sending requests and listening for state changes
+    organizer-remote.ts  the Organizer seen from the pages (remoteOrganizer), the service worker side (serveOrganizer) and state announcements
     i18n.ts              t(): texts through chrome.i18n
     onboarding.ts        guide steps and opening on first install
 public/
@@ -80,7 +78,7 @@ It is the main module and **the only entry point called by the panel**. Interfac
 | Method | What it does |
 |---|---|
 | `propose(windowId, { force? })` | Computes a proposal for the window and saves it in the state. Reuses the saved proposal (with the user's edits) if it is for the same window and its signature matches the current one, unless `force`; if a computation is in progress it returns that one, without starting a second one. |
-| `edit(edit)` | Applies a user edit to the current proposal and saves it in the state. |
+| `edit(edit)` | Applies a user edit to the current proposal and saves it in the state. After an `add-tab` towards a category, the returned state carries `offer` ("Always put here", see `rememberOffer`); the next operation drops it. |
 | `saveToList(groupId)` | "Save to list": adds a "new AI" group to the category list. |
 | `apply()` | Saves the undo snapshot, creates the groups of the current proposal in Chrome, then clears the proposal. |
 | `undo()` | Undoes the last applied organization and clears the proposal. |
@@ -91,6 +89,9 @@ It is the main module and **the only entry point called by the panel**. Interfac
 | `closeDuplicates(windowId)` | "Close duplicates": closes the free copies of the pages open more than once in the window (see "Duplicate tabs"). Like `closeTab`, a current proposal stays current without the closed tabs. |
 | `closeInactive(windowId, tabIds)` | "Close inactive": closes the chosen tabs that are still inactive (see "Inactive tabs"). The proposal stays current. |
 | `closeGroup(groupId)` | Closes every tab of an open Chrome group. The tabs the proposal was adding to it go back to ungrouped; the proposal stays current. |
+| `closeTab(tabId)` | Closes one tab from the panel and removes it from the proposal, through the same step as `closeGroup` (see below). |
+| `checkStale()` | Compares the current proposal's signature with the live inputs and writes the result to `state.stale` (see "Stale proposal"). Goes through the queue. |
+| `view(windowId)` | The whole window as the panel shows it (see "The whole window"). Read-only; does not wait for the queue, so the panel can ask while the AI computes. |
 | `state()` | Returns the current state. |
 
 ### Automatic grouping (`auto-group.ts`)
@@ -109,7 +110,9 @@ The only thing autoGroup does without a click. The service worker listens to `ta
 
 `findDuplicates(tabs, excludedDomains)` groups the window's tabs by page: the URL without the fragment (`#section`); the query counts, because `?q=` changes the page. For each page open more than once one copy stays: the pinned one, then the one in a group, then the active one, then the leftmost. Of the others only the free ones are closed: never pinned, grouped or active tabs. Browser pages and excluded domains are never considered. The panel shows the count from `buildWindowView` (`view.duplicates`) with "Review", which opens a preview inside the banner: the copies that would be closed, with favicon, title and site, all checked. Unchecking a copy keeps it; "Close (N)" closes only the checked ones, "Cancel" closes the preview. `closeDuplicates(windowId, tabIds)` closes only the chosen tabs that are still duplicates, recomputed in the service worker instead of trusting the message.
 
-`closeDuplicates`, `closeInactive` and `closeGroup` share one internal step, `closeTabs`: it closes the tabs, removes them from the proposal and, if an open group the proposal extends is left empty (so Chrome removes it), discards that proposed group, so its added tabs are ungrouped again. Only then is the signature recomputed (if the proposal was current), so the proposal never points to a group that no longer exists.
+`closeTab`, `closeDuplicates`, `closeInactive` and `closeGroup` share one internal step, `closeTabs`: it closes the tabs, removes them from the proposal and, if an open group the proposal extends is left empty (so Chrome removes it), discards that proposed group, so its added tabs are ungrouped again. The proposal never points to a group that no longer exists.
+
+**Keeping a proposal current** (`keepCurrent` in `proposal-builder.ts`). Every operation that changes the window or the settings *and* the proposal (`closeTabs`, `rememberTabSite`, `saveGroupToList`) runs its change through `keepCurrent(proposal, change)`: if the proposal was current just before the change, its signature is reread after it, so it stays current; if it was already stale, it stays stale. This is the only place that re-signs a proposal.
 
 ### Inactive tabs (`inactive.ts`)
 
@@ -131,11 +134,11 @@ A group left without tabs disappears from the proposal. Edits to nonexistent gro
 
 ### Save to list (`save-to-list.ts`)
 
-Only for groups with provenance `ai`. The new category takes the group's **current name and color** in the proposal (so also those changed by the user) and a description requested from the Generator with `describe` (the same Generator as the pipeline). The Generator receives the name and up to 8 example tabs, with title and cleaned URL.
+Only for groups with provenance `ai`. The new category takes the group's **current name and color** in the proposal (so also those changed by the user) and a description from `describeCategory` in `pipeline.ts`, which asks the same Generator as the pipeline (`describe`); the choice of the Generator stays private to the pipeline. The Generator receives the name and up to 8 example tabs, with title and cleaned URL.
 
 - Generator missing or in error: the category is saved with an empty description and the notice invites the user to complete it in the settings (with a link to the Categories section).
 - A category with the same name already exists (case-insensitive): no duplicate, notice.
-- After saving, the group becomes `list` and the proposal's signature is updated with the new list: the proposal stays current (the categories changed, but the proposal already takes them into account), so reopening the panel does not lose the edits. The tabs are read only once, before requesting the description: if the proposal was already stale it stays stale, and a tab opened during the description (up to 30 s) makes it stale.
+- After saving, the group becomes `list` and, through `keepCurrent`, the proposal stays current with the new list (the categories changed, but the proposal already takes them into account), so reopening the panel does not lose the edits. Currency is checked after the description arrives: a tab opened during the description (up to 30 s) makes the proposal stale.
 - The outcome goes in the state's `notice` field (i18n key and name), shown in the panel; the next edit removes it.
 
 ### Queued operations
@@ -163,7 +166,7 @@ Each `propose` that actually computes measures its phases with a stopwatch: `inp
 
 ### Proposal signature
 
-Each proposal has a `signature`: IDs and URLs of the candidate tabs, open groups (ID, name, color), settings used, availability of the providers and of Gemini Nano, and whether description reading is on. When the panel reopens, `propose` rereads the inputs and compares the signature: if it matches it returns the saved proposal (with the user's edits), otherwise it computes a new one. The title is not part of the signature, because it often changes by itself (counters like "(3) Mail").
+Each proposal has a `signature`: IDs and URLs of the candidate tabs, open groups (ID, name, color), settings used, availability of the providers and of Gemini Nano, and whether description reading is on. When the panel reopens, `propose` rereads the inputs and compares the signature: if it matches it returns the saved proposal (with the user's edits), otherwise it computes a new one. The title is not part of the signature, because it often changes by itself (counters like "(3) Mail"); neither is the order of the tabs (candidates are sorted by ID), because moving a tab does not change the groups. The same signature decides the "Your tabs changed" notice (`checkStale`), so the notice and the reuse on reopening never disagree.
 
 ### AI pipeline (`pipeline.ts`)
 
@@ -431,7 +434,7 @@ Changes are saved immediately, with a "✓ Saved" toast at the bottom of the win
 
 - **General**: *How to group*, two selectable cards, *By site* and *By topic, with AI* (`settings.mode`). Then *Tabs to organize*: minimum number of tabs (an invalid value is flagged and not saved) and the excluded domains, shown as chips with ✕, with adding (Enter or "Add") and rejection of duplicates and invalid values.
 - **Categories and sites**: one compact row per category, with the color dot (a click opens the palette of the 9 colors in a popover), the name and, on the right, its first two sites as chips ("+N" for the others) or, without sites, the start of the description. A click on the row opens it: name, description, sites (`SitesRow.tsx`), ↑ ↓ and "Delete category". A new category opens by itself. "Add category" (name "New category", numbered if already present, and the first color not yet used) and "Restore defaults". The page keeps a local draft: an invalid edit (e.g. duplicate name) stays visible with the error and is not saved until it is fixed. Name and description are saved when leaving the field, color and order immediately. Below, the *Automatic grouping* switch, because it only applies to these sites.
-- **AI**: in the order of importance, not of the pipeline. First the **Generator**, which is enough on its own, then *Page descriptions*, then the optional **Classifier** with the confidence threshold. Generator and Classifier are the same generic section (`ProviderSection`, parameterized by role), with the fields in aligned label–field rows and, at the top right, the saved provider or "Off". Provider, base URL, model, API key (password field, saved in `storage.local`), "Save" and "Test connection", and "Unsaved changes" if the draft differs from what is saved. The preset fills in URL and model. "Save" requests the host permission **within the user gesture, before any `await`** (otherwise Chrome rejects the request), removes the previous provider's permission if neither role uses that host anymore, and shows the outcome. The threshold is a slider from 0 to 100%, saved on release. The Generator has the *None* and *Gemini Nano* entries: with Nano the section shows the model's status (available, to download, downloading, not supported) and, if it needs downloading, "Download Gemini Nano" with the progress. The "Read page descriptions" switch requests `<all_urls>` within the user gesture; if the permission is denied the switch stays off with a notice; turning it off removes the permission, without removing access to the providers (see "Provider host inside `<all_urls>`" in "Permissions"). The switch appears on only if the option is saved **and** the permission is actually there. In by-site mode the page stays in the menu (marked "off") and shows only a note with "Use AI", which switches the mode.
+- **AI**: in the order of importance, not of the pipeline. First the **Generator**, which is enough on its own, then *Page descriptions*, then the optional **Classifier** with the confidence threshold. Generator and Classifier are the same generic section (`ProviderSection`, parameterized by role), with the fields in aligned label–field rows and, at the top right, the saved provider or "Off". Provider, base URL, model, API key (password field, saved in `storage.local`), "Save" and "Test connection", and "Unsaved changes" if the draft differs from what is saved. The preset fills in URL and model. "Save" requests the host permission **within the user gesture, before any `await`** (otherwise Chrome rejects the request), then calls `saveProvider` (in `src/settings`), which saves the provider and the API key, removes the previous provider's permission if neither role uses that host anymore, and returns the outcome the section shows (`off`, `nano`, `incomplete`, `ready`, `no-permission`). The threshold is a slider from 0 to 100%, saved on release. The Generator has the *None* and *Gemini Nano* entries: with Nano the section shows the model's status (available, to download, downloading, not supported) and, if it needs downloading, "Download Gemini Nano" with the progress. The "Read page descriptions" switch requests `<all_urls>` within the user gesture; if the permission is denied the switch stays off with a notice; turning it off removes the permission, without removing access to the providers (see "Provider host inside `<all_urls>`" in "Permissions"). The switch appears on only if the option is saved **and** the permission is actually there. In by-site mode the page stays in the menu (marked "off") and shows only a note with "Use AI", which switches the mode.
 - **About**: version, "Show the guide again" and "Buy me a coffee".
 - **Backup** (at the bottom of *General*, `BackupSection.tsx`, `src/settings/backup.ts`): "Export" downloads a JSON file (`{ app: 'autoGroup', version: 1, settings }`) with mode, minimum tabs, excluded domains, categories, category sites and automatic grouping, through a local `blob:` link, so no `downloads` permission. Providers and API keys are never exported. "Import" reads the file and saves it with the same validation as the settings (excluded domains normalized, invalid ones dropped); an invalid file changes nothing and shows an error. Like deleting a category, it shows "Undo", which saves back the previous values of the imported keys.
 
@@ -457,21 +460,14 @@ The proposal's notices appear at the top of the preview ("Less accurate proposal
 
 ## Panel ↔ service worker messages
 
-Defined in `src/shared/messages.ts`.
+Defined in `src/shared/organizer-remote.ts`. The pages do not build messages: they call `remoteOrganizer`, which has the Organizer's own interface (`RemoteOrganizer` = `Organizer` without `autoGroupTab` and `checkStale`, which only the service worker calls). Each call becomes one message; adding a method to the Organizer only needs one line in `METHODS`, which the compiler keeps in step with the interface.
 
 | Message | Direction | Response |
 |---|---|---|
-| `organizer/state` | panel → SW | `{ ok, state }` |
-| `organizer/propose` (`windowId`, `force?`) | panel → SW | `{ ok, state }` when the computation is done |
-| `organizer/edit` (`edit`) | panel → SW | `{ ok, state }` |
-| `organizer/save-to-list` (`groupId`) | panel → SW | `{ ok, state }` with `state.notice` |
-| `organizer/apply` | panel → SW | `{ ok, state }` |
-| `organizer/undo` | panel → SW | `{ ok, state }` |
-| `organizer/abort` | panel → SW | `{ ok, state }`; does not go through the queue |
-| `organizer/accept-preview` | panel → SW | `{ ok, state }` with the preview as the proposal; does not go through the queue |
-| `organizer/state-changed` (`state`) | SW → panel | none; the SW ignores the error if the panel is closed |
+| `organizer/call` (`method`, `args`) | page → SW | `{ ok: true, value }` with the method's result (an `OrganizerState`, or the `WindowView` for `view`), or `{ ok: false, error }` |
+| `organizer/state-changed` (`state`) | SW → pages | none; `announceState` ignores the error if no page is open |
 
-The service worker answers with `sendResponse` + `return true`, which works in all versions of Chrome MV3, and ignores messages that do not pass `isOrganizerRequest`. If the response is an error, the panel shows "An unexpected error occurred. Please try again.".
+`serveOrganizer(organizer)` in the service worker answers with `sendResponse` + `return true`, which works in all versions of Chrome MV3, and ignores other messages and methods outside `RemoteOrganizer`. An error in the service worker becomes an exception in the page. `abort`, `acceptPreview` and `view` do not go through the queue. In the panel, a failed call shows "An unexpected error occurred. Please try again.".
 
 ## Side panel
 
@@ -481,15 +477,15 @@ On opening it reads the current window and requests `organizer/propose` with the
 
 **Mode choice in the panel.** Below the top bar there is a segmented button *By site* / *With AI*: changing it saves `settings.mode` and recomputes immediately, so the user chooses the type of classification before applying. Below the selector there is a summary of what will be used: the active providers (e.g. "Rizzo Flow → Unsloth Studio" or "Gemini Nano") with the link to change them, or "No AI provider set up". The settings are read live (`storage.onChanged`), so the panel also updates if the user changes them in the options page.
 
-**The whole window, not just the proposal** (`src/organizer/window-view.ts`, `buildWindowView`). The panel reads its own window's tabs and groups live and overlays the proposal on them. The function is pure and tested, and splits the window into four sections:
+**The whole window, not just the proposal** (`Organizer.view`, built by `src/organizer/window-view.ts`). The service worker reads the window's tabs and groups live, with the excluded domains, and overlays the current proposal (or, during a computation, the by-site preview) on them. The panel asks for it again (`useWindowView`, `organizer/view`) after every tab or group event of its window, every state change and every settings change, and drops a response that arrives after a newer one. The panel imports nothing from `src/organizer/`. The view also carries the duplicates, the inactive tabs, the inactivity threshold and the live details of every tab. It splits the window into four sections:
 - **New groups**: the proposal's groups that do not exist yet, editable as before.
 - **Open groups**, in strip order: Chrome name and color (locked), the tabs they have now (view only) and those that the proposal adds, marked "new" and removable or movable. A group with no additions stays collapsed.
 - **Ungrouped**: the ungrouped (free) tabs that the proposal leaves out, with "Add to…".
 - **Not organized** (collapsed): pinned tabs, browser pages, excluded domains and loading tabs, with the reason.
 
-**Close the tab.** Each row has ✕ "Close tab" (also tabs of open groups, ungrouped and not organized ones); "−" removes the tab from the proposed group leaving it open. The panel calls `organizer/close-tab`, and `Organizer.closeTab` closes the tab and removes it from the proposal, in the operation queue. If the proposal was current and the tab was not in an open group, the signature is recomputed after closing, so reopening the panel reuses the proposal without new AI calls. If instead the tab was the last one of an open group that the proposal extends, the group disappears: the signature stays old and the proposal stale, so as not to apply tabs to a group that no longer exists. Closes done from the panel do not make the stale-proposal notice appear.
+**Close the tab.** Each row has ✕ "Close tab" (also tabs of open groups, ungrouped and not organized ones); "−" removes the tab from the proposed group leaving it open. The panel calls `organizer/close-tab`, and `Organizer.closeTab` closes the tab and removes it from the proposal, in the operation queue, through `closeTabs` and `keepCurrent`: a current proposal stays current, so reopening the panel reuses it without new AI calls. If the tab was the last one of an open group that the proposal extends, the group disappears and the tabs the proposal was adding to it go back to ungrouped. Closes done from the panel do not make the stale-proposal notice appear.
 
-**Live details and direct actions** (`live-tabs.ts`, `tab-actions.ts`). `App` puts the live tabs and groups in a React context, so every row reads what the proposal does not carry. The row of the active tab has a bar on the left and a bold title (`aria-current`); `tabs.onActivated` refreshes it. A tab that plays sound, or is muted, has an audio chip that mutes or unmutes it. Each row has "Go to tab" (↗, also Enter on the focused row or a double click), which activates the tab. Each open group card has, in its header, collapse/expand in Chrome and "Close all tabs in the group": the first click turns ✕ into "Close N tabs", which stays armed for 4 seconds. Going to a tab, muting and collapsing call `chrome.tabs`/`chrome.tabGroups` straight from the panel, like opening the settings, because they do not touch the proposal: collapsing a group is not counted as a change that makes the proposal stale (only a new name or color is). Closing a group goes through `organizer/close-group`.
+**Live details and direct actions** (`live-tabs.ts`, `tab-actions.ts`). `App` puts `view.live` (active, audible, muted, days idle, by tab ID) in a React context, so every row reads what the proposal does not carry; open group cards get `collapsed` from the view. The row of the active tab has a bar on the left and a bold title (`aria-current`); `tabs.onActivated` refreshes it. A tab that plays sound, or is muted, has an audio chip that mutes or unmutes it. Each row has "Go to tab" (↗, also Enter on the focused row or a double click), which activates the tab. Each open group card has, in its header, collapse/expand in Chrome and "Close all tabs in the group": the first click turns ✕ into "Close N tabs", which stays armed for 4 seconds. Going to a tab, muting and collapsing call `chrome.tabs`/`chrome.tabGroups` straight from the panel, like opening the settings, because they do not touch the proposal: collapsing a group is not counted as a change that makes the proposal stale (only a new name or color is). Closing a group goes through `organizer/close-group`.
 
 **`add-tab` edit.** "Move to…" and "Add to…" use the new edit `{ kind: 'add-tab', tab, to }`, where `to` is a group of the proposal or an open group that the proposal does not touch yet. In this second case the proposal receives a new `existing` group (`id: e<idChrome>`). The Organizer (`checkAddTab`) accepts only a tab already in the proposal or still ungrouped in the window, with the same rules as the selection, and only towards a group of that window. The tab's data is reread from the browser, not taken from the message.
 
@@ -510,7 +506,7 @@ Each group is an outlined card, with everything but the tabs on the title row to
 
 Each tab has favicon and title, with the URL in the tooltip. Up and down arrows move between tab rows across the panel, onto the same control of the next row (e.g. from ✕ to ✕), Home and End to the first and last row (`row-navigation.ts`); in the "Move to…" menus the arrows stay the native ones. "Move to…" (icon with the transparent native menu on top) is always visible, dimmed, so it is clear that tabs can be moved; − and ✕ appear on hover or keyboard focus. The name of a new group shows a border on hover, to show it can be renamed.
 
-**Stale proposal** (`useTabChanges`): the panel stays open, so it listens to the tab and group events of its own window. What counts: tabs created, closed, moved between windows and changes of URL, pinning or group; title and favicon do not count, as they change by themselves. If they arrive while there is a proposal, it shows "Your tabs changed after this proposal." with "Recompute". It does not recompute by itself: each computation can cost AI calls. Events caused by "Apply" and "Undo" do not count.
+**Stale proposal** (`Organizer.checkStale`, `state.stale`). The service worker listens to tab events (created, closed, moved between windows; URL, pinning, group or finished loading), group events, `storage.onChanged` (not `session`, where the state lives) and permission changes, and after 150 ms of quiet calls `checkStale()`. It compares the proposal's signature with the live inputs, so what counts is exactly what `propose` would recompute for: moving a tab, collapsing a group, titles and favicons do not count, settings changes do. The panel shows "Your tabs changed after this proposal." with "Recompute" while `state.stale` is true. It does not recompute by itself: each computation can cost AI calls. Closes, "Always put here" and "Save to list" go through the same queue and keep the proposal current, so they never trigger the notice; after "Apply" and "Undo" there is no proposal to be stale.
 
 The style follows Material Design 3 in CSS, without `@material/web`, which is in maintenance only and has no Expressive version on the web:
 - **colors:** `--md-sys-color-*` roles generated with `@material/material-color-utilities` (Tonal Spot scheme from Chrome blue `#1a73e8`) in `src/ui/md3-tokens.css`, for light and dark theme. They are regenerated with `npm run theme`;

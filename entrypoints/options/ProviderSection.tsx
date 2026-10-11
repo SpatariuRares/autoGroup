@@ -6,16 +6,15 @@ import { ProviderError } from '../../src/ai/types';
 import {
   hasHostPermission,
   isLocalOnly,
-  loadSettings,
   isProviderConfigured,
   NANO_PRESET,
   loadApiKey,
-  originPattern,
   presetsOf,
   providerLabel,
-  saveApiKey,
-  saveSettings,
+  providerOrigin,
+  saveProvider,
   type ProviderRole,
+  type ProviderSaveResult,
   type ProviderSettings,
 } from '../../src/settings';
 import { t, warningKey } from '../../src/shared/i18n';
@@ -46,18 +45,6 @@ interface ProviderSectionProps {
   extra?: ReactNode;
 }
 
-/**
- * Toglie il permesso host di un URL base non più usato. Classificatore e Generatore possono
- * condividere un host (es. entrambi su 127.0.0.1): il permesso resta finché uno dei due lo usa.
- */
-async function releaseUnusedPermission(previousBaseUrl: string) {
-  const previous = originPattern(previousBaseUrl);
-  if (!previous) return;
-  const { classifier, generator } = await loadSettings();
-  const inUse = [classifier, generator].some((p) => !isLocalOnly(p) && originPattern(p.baseUrl) === previous);
-  if (!inUse) await browser.permissions.remove({ origins: [previous] }).catch(() => {});
-}
-
 /** Sezione impostazioni di un provider: preset, URL base, modello, chiave API, Salva e Prova connessione. */
 export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderSectionProps) {
   const text = TEXT[role];
@@ -83,26 +70,27 @@ export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderS
   }
 
   function save() {
-    const local = isLocalOnly(draft);
-    const origin = local ? null : originPattern(draft.baseUrl);
-    if (!local && !origin) return setStatus({ kind: 'error', key: 'optionsGeneratorBadUrl' });
+    const origin = providerOrigin(draft);
+    if (origin === null) return setStatus({ kind: 'error', key: 'optionsGeneratorBadUrl' });
     // permissions.request va chiamato subito, dentro il gesto dell'utente, prima di ogni await.
     const granted = origin ? browser.permissions.request({ origins: [origin] }) : Promise.resolve(false);
-    (async () => {
-      await saveSettings({ [role]: draft });
-      await saveApiKey(role, apiKey.trim());
-      await releaseUnusedPermission(saved.baseUrl);
-      const ok = await granted;
-      setPermission(origin ? ok : null);
-      onSaved(draft);
-      if (draft.preset === 'none') setStatus({ kind: 'info', key: text.disabled });
-      else if (draft.preset === NANO_PRESET) setStatus({ kind: 'ok', key: 'optionsSaved' });
-      else if (!isProviderConfigured(role, draft)) setStatus({ kind: 'error', key: 'optionsGeneratorIncomplete' });
-      else setStatus(ok ? { kind: 'ok', key: 'optionsSavedProvider' } : { kind: 'error', key: 'warning_no_permission', sub: providerLabel(role, draft) });
-    })().catch((err) => {
-      console.error('autoGroup:', err);
-      setStatus({ kind: 'error', key: 'errorSaveSettings' });
-    });
+    const STATUS: Record<ProviderSaveResult, Status> = {
+      off: { kind: 'info', key: text.disabled },
+      nano: { kind: 'ok', key: 'optionsSaved' },
+      incomplete: { kind: 'error', key: 'optionsGeneratorIncomplete' },
+      ready: { kind: 'ok', key: 'optionsSavedProvider' },
+      'no-permission': { kind: 'error', key: 'warning_no_permission', sub: providerLabel(role, draft) },
+    };
+    Promise.all([saveProvider(role, draft, apiKey, granted), granted])
+      .then(([result, ok]) => {
+        setPermission(origin ? ok : null);
+        onSaved(draft);
+        setStatus(STATUS[result]);
+      })
+      .catch((err) => {
+        console.error('autoGroup:', err);
+        setStatus({ kind: 'error', key: 'errorSaveSettings' });
+      });
   }
 
   async function test() {

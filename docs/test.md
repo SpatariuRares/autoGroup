@@ -265,3 +265,17 @@ The smoke test goes through the pages from the menu: the four entries visible at
 
 `tests/locales.test.ts` checks that every language has the same keys and placeholders as Italian and that the extension name and description fit the Chrome Web Store limits. The smoke test closes nothing as duplicates but imports a backup and undoes it.
 
+## Scenarios covered (stale proposal and window view), in `tests/stale.test.ts`, `tests/window-view.test.ts`, `tests/site-rules-pipeline.test.ts`
+
+- `checkStale()`: a tab opened or closed in the browser makes the proposal stale; closes from the panel ("Close tab", "Close duplicates" even when a chosen tab is no longer a duplicate, "Close group") do not.
+- Moving a tab in the strip does not make it stale; changed settings do, and a new computation clears it. Settings changed back make it current again and the proposal is reused on reopening.
+- Without a proposal, or after "Apply", nothing is marked.
+- Closing the last tab of an open group the proposal extends discards the extension, ungroups its added tabs and keeps the proposal current.
+- The window view, duplicates and inactive tabs are read through `organizer.view(windowId)`.
+- "Move to…" towards a category returns the "Always put here" offer, only in that response; towards a non-category group there is none.
+
+## Scenarios covered (remote Organizer and provider save), in `tests/organizer-remote.test.ts`, `tests/permissions.test.ts`
+
+- `remoteOrganizer` reaches the Organizer served by `serveOrganizer` and returns its results (state, view); an error in the service worker becomes an exception in the page; methods reserved to the service worker (`checkStale`) get no answer; announced states reach `onOrganizerState`.
+- `saveProvider`: provider and API key saved (the key only in `storage.local`); permission granted → `ready`, denied → `no-permission`; changing server removes the previous host's permission, unless the other role still uses it; Gemini Nano and "none" ask for nothing and release the previous host; a Generator without model is `incomplete`; a non-http(s) URL has no origin to request.
+

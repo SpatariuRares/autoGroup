@@ -1,20 +1,31 @@
 import { browser } from 'wxt/browser';
 import { loadSettings } from '../settings';
-import type { OrganizerState, Proposal, ProposalEdit } from '../shared/types';
+import type { OrganizerState, Proposal, ProposalEdit, WindowView } from '../shared/types';
 import { applyProposal } from './applier';
 import { autoGroupTab } from './auto-group';
 import { findDuplicates } from './duplicates';
 import { findInactive } from './inactive';
 import { willAskAi } from './pipeline';
-import { buildPreview, buildProposal, collectInputs, signatureOf } from './proposal-builder';
-import { TAB_GROUP_ID_NONE } from './tab-selection';
+import { buildPreview, buildProposal, collectInputs, keepCurrent, signatureOf } from './proposal-builder';
 import { editProposal } from './proposal-edits';
-import { rememberTabSite } from './remember-site';
+import { rememberOffer, rememberTabSite } from './remember-site';
 import { saveGroupToList } from './save-to-list';
-import { loadState, saveState } from './session-state';
 import { createStopwatch } from './stopwatch';
 import { selectCandidateTabs } from './tab-selection';
 import { restoreSnapshot } from './undo';
+import { buildWindowView } from './window-view';
+
+const STATE_KEY = 'organizer';
+
+/** Stato dell'Organizzatore in chrome.storage.session: sopravvive al pannello, non alla chiusura di Chrome. */
+async function loadState(): Promise<OrganizerState> {
+  const stored = await browser.storage.session.get(STATE_KEY);
+  return (stored[STATE_KEY] as OrganizerState | undefined) ?? { phase: 'idle' };
+}
+
+async function saveState(state: OrganizerState): Promise<void> {
+  await browser.storage.session.set({ [STATE_KEY]: state });
+}
 
 /** Motivo dell'interruzione chiesta da "Usa questa": il calcolo finisce con l'anteprima per sito. */
 const ACCEPT_PREVIEW = 'accept-preview';
@@ -54,7 +65,11 @@ export interface Organizer {
    * viene condiviso; per un'altra finestra, o con `force`, ne parte uno nuovo dopo.
    */
   propose(windowId: number, options?: { force?: boolean }): Promise<OrganizerState>;
-  /** Modifica la proposta corrente (rinomina, colore, togli o sposta tab, scarta gruppo). */
+  /**
+   * Modifica la proposta corrente (rinomina, colore, togli o sposta tab, scarta gruppo). Dopo "add-tab"
+   * verso una categoria lo stato restituito porta l'offerta "Metti sempre qui" (vedi `rememberOffer`),
+   * che sparisce alla prossima operazione.
+   */
   edit(edit: ProposalEdit): Promise<OrganizerState>;
   /** "Salva nella lista": aggiunge un gruppo inventato dall'AI alla lista delle categorie. */
   saveToList(groupId: string): Promise<OrganizerState>;
@@ -69,7 +84,8 @@ export interface Organizer {
   undo(): Promise<OrganizerState>;
   /**
    * Chiude una tab dal pannello e la toglie dalla proposta. Se la proposta era ancora attuale resta
-   * attuale (nuova impronta), così chiudere una tab non costa un nuovo calcolo.
+   * attuale (nuova impronta), così chiudere una tab non costa un nuovo calcolo. Se era l'ultima di un
+   * gruppo aperto, il gruppo sparisce e le tab che la proposta gli aggiungeva tornano libere.
    */
   closeTab(tabId: number): Promise<OrganizerState>;
   /**
@@ -105,6 +121,19 @@ export interface Organizer {
    * quella come proposta corrente, modificabile e applicabile. Senza anteprima equivale a "Interrompi".
    */
   acceptPreview(): Promise<OrganizerState>;
+  /**
+   * Ricontrolla se la proposta corrente è ancora attuale (tab candidate, gruppi aperti, impostazioni,
+   * provider) e lo scrive in `stale`. Il service worker lo chiama quando cambiano tab, gruppi,
+   * impostazioni o permessi; le operazioni dell'Organizzatore che tengono attuale la proposta non la
+   * fanno risultare scaduta, perché passano dalla stessa coda.
+   */
+  checkStale(): Promise<OrganizerState>;
+  /**
+   * Tutta la finestra come la mostra il pannello: gruppi aperti, gruppi nuovi della proposta (o
+   * dell'anteprima per sito durante il calcolo), tab libere, tab mai toccate, doppioni, inattive e i
+   * dettagli dal vivo. Non aspetta la coda: si può chiedere mentre l'AI calcola.
+   */
+  view(windowId: number): Promise<WindowView>;
   /** Stato corrente: fase, proposta, annulla disponibile. */
   state(): Promise<OrganizerState>;
 }
@@ -127,6 +156,12 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     return result;
   }
 
+  /** Lo stato salvato, senza l'offerta "Metti sempre qui": vale solo per la risposta a `edit`. */
+  async function load(): Promise<OrganizerState> {
+    const { offer: _, ...state } = await loadState();
+    return state;
+  }
+
   async function setState(state: OrganizerState): Promise<OrganizerState> {
     await saveState(state);
     options.onStateChange?.(state);
@@ -139,25 +174,29 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
    * Così una proposta attuale resta attuale (nuova impronta), senza un nuovo calcolo.
    */
   async function closeTabs(windowId: number, tabIds: number[]): Promise<OrganizerState> {
-    const current = await loadState();
+    const current = await load();
     if (tabIds.length === 0) return current;
     const proposal = current.phase === 'ready' && current.proposal?.windowId === windowId ? current.proposal : undefined;
-    const wasCurrent = proposal !== undefined && proposal.signature === signatureOf(await collectInputs(windowId));
-    await browser.tabs.remove(tabIds);
-    if (!proposal) return current;
-    let next = tabIds.reduce((p, tabId) => editProposal(p, { kind: 'remove-tab', tabId }), proposal);
-    for (const group of next.groups) {
-      if (group.existingGroupId === undefined) continue;
-      if (!(await browser.tabGroups.get(group.existingGroupId).catch(() => null))) {
-        next = editProposal(next, { kind: 'discard-group', groupId: group.id });
-      }
+    if (!proposal) {
+      await browser.tabs.remove(tabIds);
+      return current;
     }
-    if (wasCurrent) next = { ...next, signature: signatureOf(await collectInputs(windowId)) };
+    const next = await keepCurrent(proposal, async () => {
+      await browser.tabs.remove(tabIds);
+      let edited = tabIds.reduce((p, tabId) => editProposal(p, { kind: 'remove-tab', tabId }), proposal);
+      for (const group of edited.groups) {
+        if (group.existingGroupId === undefined) continue;
+        if (!(await browser.tabGroups.get(group.existingGroupId).catch(() => null))) {
+          edited = editProposal(edited, { kind: 'discard-group', groupId: group.id });
+        }
+      }
+      return edited;
+    });
     return setState({ ...current, proposal: next });
   }
 
   async function propose(windowId: number, force: boolean, signal: AbortSignal): Promise<OrganizerState> {
-    const current = await loadState();
+    const current = await load();
     // La foto per "Annulla" resta valida fino alla prossima organizzazione applicata.
     const { undo } = current;
     let preview: Proposal | undefined;
@@ -172,7 +211,10 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         current.phase === 'ready' &&
         current.windowId === windowId &&
         current.proposal?.signature === signatureOf(inputs);
-      if (reusable) return current;
+      if (reusable) {
+        const { stale: _, ...fresh } = current;
+        return current.stale ? await setState(fresh) : current;
+      }
 
       // Mentre l'AI lavora il pannello mostra subito la proposta per sito, che costa pochi millisecondi.
       preview = willAskAi(inputs) ? buildPreview(inputs) : undefined;
@@ -208,18 +250,20 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     edit(edit) {
       return exclusive(async () => {
-        const current = await loadState();
+        const current = await load();
         if (current.phase !== 'ready' || !current.proposal) return current;
         const checked = edit.kind === 'add-tab' ? await checkAddTab(current.proposal, edit) : edit;
         if (!checked) return current;
         const { notice: _done, ...rest } = current;
-        return setState({ ...rest, proposal: editProposal(current.proposal, checked) });
+        const proposal = editProposal(current.proposal, checked);
+        const offer = checked.kind === 'add-tab' ? rememberOffer(proposal, checked.tab.tabId, await loadSettings()) : null;
+        return setState({ ...rest, proposal, ...(offer ? { offer } : {}) });
       });
     },
 
     saveToList(groupId) {
       return exclusive(async () => {
-        const current = await loadState();
+        const current = await load();
         if (current.phase !== 'ready' || !current.proposal) return current;
         const result = await saveGroupToList(current.proposal, groupId);
         if (!result) return current;
@@ -229,7 +273,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     rememberSite(tabId) {
       return exclusive(async () => {
-        const current = await loadState();
+        const current = await load();
         if (current.phase !== 'ready' || !current.proposal) return current;
         const result = await rememberTabSite(current.proposal, tabId);
         if (!result) return current;
@@ -239,7 +283,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     apply() {
       return exclusive(async () => {
-        const current = await loadState();
+        const current = await load();
         if (current.phase !== 'ready' || !current.proposal) return current;
         const windowId = current.proposal.windowId;
         try {
@@ -247,14 +291,14 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
           return await setState({ phase: 'idle', windowId, undo });
         } catch (err) {
           console.error('autoGroup: applicazione fallita', err);
-          return await setState({ ...(await loadState()), error: 'errorApply' });
+          return await setState({ ...(await load()), error: 'errorApply' });
         }
       });
     },
 
     undo() {
       return exclusive(async () => {
-        const current = await loadState();
+        const current = await load();
         if (!current.undo) return current;
         try {
           await restoreSnapshot(current.undo);
@@ -269,21 +313,9 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     closeTab(tabId) {
       return exclusive(async () => {
-        const current = await loadState();
         const tab = await browser.tabs.get(tabId).catch(() => null);
-        if (!tab) return current;
-        const proposal = current.phase === 'ready' && current.proposal?.windowId === tab.windowId ? current.proposal : undefined;
-        // Solo una tab senza gruppo cambia l'impronta (tab candidate). Se era in un gruppo aperto e ne era
-        // l'ultima, il gruppo sparisce: la proposta resta scaduta e il pannello propone di ricalcolare.
-        const refresh =
-          proposal !== undefined &&
-          (tab.groupId ?? TAB_GROUP_ID_NONE) === TAB_GROUP_ID_NONE &&
-          proposal.signature === signatureOf(await collectInputs(proposal.windowId));
-        await browser.tabs.remove(tabId);
-        if (!proposal) return current;
-        let next = editProposal(proposal, { kind: 'remove-tab', tabId });
-        if (refresh) next = { ...next, signature: signatureOf(await collectInputs(proposal.windowId)) };
-        return setState({ ...current, proposal: next });
+        if (!tab) return load();
+        return closeTabs(tab.windowId, [tabId]);
       });
     },
 
@@ -306,7 +338,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     closeGroup(groupId) {
       return exclusive(async () => {
         const group = await browser.tabGroups.get(groupId).catch(() => null);
-        if (!group) return loadState();
+        if (!group) return load();
         const tabIds = (await browser.tabs.query({ windowId: group.windowId, groupId })).map((tab) => tab.id!);
         return closeTabs(group.windowId, tabIds);
       });
@@ -314,7 +346,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     groupTab(tabId, groupId) {
       return exclusive(async () => {
-        const current = await loadState();
+        const current = await load();
         const [tab, group] = await Promise.all([browser.tabs.get(tabId).catch(() => null), browser.tabGroups.get(groupId).catch(() => null)]);
         if (!tab || !group || group.windowId !== tab.windowId) return current;
         const { excludedDomains } = await loadSettings();
@@ -336,17 +368,40 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
       });
     },
 
+    checkStale() {
+      return exclusive(async () => {
+        const current = await load();
+        if (current.phase !== 'ready' || !current.proposal) return current;
+        const stale = current.proposal.signature !== signatureOf(await collectInputs(current.proposal.windowId));
+        if (stale === (current.stale ?? false)) return current;
+        const { stale: _, ...rest } = current;
+        return setState(stale ? { ...rest, stale } : rest);
+      });
+    },
+
+    async view(windowId) {
+      const [current, tabs, groups, { excludedDomains }] = await Promise.all([
+        load(),
+        browser.tabs.query({ windowId }),
+        browser.tabGroups.query({ windowId }),
+        loadSettings(),
+      ]);
+      const mine = current.windowId === windowId;
+      const proposal = mine && current.phase === 'ready' ? current.proposal : mine && current.phase === 'computing' ? current.preview : undefined;
+      return buildWindowView(tabs, groups, proposal, excludedDomains, Date.now());
+    },
+
     async abort() {
       // Non passa dalla coda: deve agire proprio mentre il calcolo la occupa.
       for (const controller of controllers) controller.abort();
-      return computing?.result ?? loadState();
+      return computing?.result ?? load();
     },
 
     async acceptPreview() {
       for (const controller of controllers) controller.abort(ACCEPT_PREVIEW);
-      return computing?.result ?? loadState();
+      return computing?.result ?? load();
     },
 
-    state: loadState,
+    state: load,
   };
 }
