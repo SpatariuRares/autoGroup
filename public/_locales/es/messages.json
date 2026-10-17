@@ -378,6 +378,10 @@
   "optionsPreset": {
     "message": "Proveedor"
   },
+  "optionsProviderWebsite": {
+    "message": "Sitio, guía y descargas de $PROVIDER$",
+    "placeholders": { "provider": { "content": "$1" } }
+  },
   "optionsPresetCustom": {
     "message": "Personalizado"
   },
@@ -969,7 +973,7 @@
     "message": "Deja una reseña"
   },
   "optionsAboutSource": {
-    "message": "Código fuente"
+    "message": "Repositorio de GitHub"
   },
   "optionsAboutIssue": {
     "message": "Informar de un problema"

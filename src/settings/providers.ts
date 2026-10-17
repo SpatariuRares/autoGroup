@@ -7,6 +7,8 @@ export interface ProviderPreset {
   label: string;
   baseUrl: string;
   model: string;
+  /** Pagina ufficiale con documentazione e, per i provider open source, download/installazione. */
+  homepage: string;
 }
 
 /**
@@ -15,15 +17,20 @@ export interface ProviderPreset {
  */
 const PROVIDER_PRESETS = {
   classifier: {
-    jev: { label: 'Jev', baseUrl: 'https://api.typesafe.ai', model: 'jev-latest' },
-    kev: { label: 'Kev', baseUrl: 'http://127.0.0.1:8009', model: '' },
-    rizzo: { label: 'Rizzo Flow', baseUrl: 'http://127.0.0.1:8017', model: 'rizzo-latest' },
+    jev: { label: 'Jev', baseUrl: 'https://api.typesafe.ai', model: 'jev-latest', homepage: 'https://docs.typesafe.ai' },
+    kev: { label: 'Kev', baseUrl: 'http://127.0.0.1:8009', model: '', homepage: 'https://github.com/jaredpalmer/kev' },
+    rizzo: {
+      label: 'Rizzo Flow',
+      baseUrl: 'http://127.0.0.1:8017',
+      model: 'rizzo-latest',
+      homepage: 'https://github.com/Rizzo-AI-Academy/rizzo-flow',
+    },
   },
   generator: {
-    openrouter: { label: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini' },
-    ollama: { label: 'Ollama', baseUrl: 'http://localhost:11434/v1', model: 'llama3.2' },
-    lmstudio: { label: 'LM Studio', baseUrl: 'http://localhost:1234/v1', model: '' },
-    unsloth: { label: 'Unsloth Studio', baseUrl: 'http://127.0.0.1:8888/v1', model: '' },
+    openrouter: { label: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini', homepage: 'https://openrouter.ai/models' },
+    ollama: { label: 'Ollama', baseUrl: 'http://localhost:11434/v1', model: 'llama3.2', homepage: 'https://ollama.com/library' },
+    lmstudio: { label: 'LM Studio', baseUrl: 'http://localhost:1234/v1', model: '', homepage: 'https://lmstudio.ai/models' },
+    unsloth: { label: 'Unsloth Studio', baseUrl: 'http://127.0.0.1:8888/v1', model: '', homepage: 'https://unsloth.ai/docs/basics/unsloth-studio' },
   },
 } satisfies Record<ProviderRole, Record<string, ProviderPreset>>;
 
@@ -53,6 +60,11 @@ export function isLocalOnly(settings: ProviderSettings): boolean {
 
 export function presetsOf(role: ProviderRole): Record<string, ProviderPreset> {
   return PROVIDER_PRESETS[role];
+}
+
+/** Pagina ufficiale del preset, se la selezione non è "nessuno", Nano o personalizzata. */
+export function providerHomepage(role: ProviderRole, preset: string): string | null {
+  return presetsOf(role)[preset]?.homepage ?? null;
 }
 
 export function isProviderSettings(role: ProviderRole, value: unknown): value is ProviderSettings {

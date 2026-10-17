@@ -23,6 +23,9 @@
 }
 
 .sidebar ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -654,6 +657,12 @@ input[type='number'] {
 a.guide-link {
   color: var(--md-sys-color-primary);
   font: var(--md-sys-typescale-label-large);
+}
+
+a.provider-link {
+  display: block;
+  margin-top: 8px;
+  width: fit-content;
 }
 
 /* "Offrimi un caffè": colori del pulsante Buy Me a Coffee (giallo, testo e contorno neri), uguali nei due temi. */

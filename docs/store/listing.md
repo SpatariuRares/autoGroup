@@ -7,7 +7,7 @@ Texts to paste into the developer dashboard ("Store listing" tab), per language.
 - **Category**: Productivity → Workflow & Planning (*Produttività → Flusso di lavoro e pianificazione*).
 - **Languages**: Italian (default language of the manifest), English, Spanish, French and German. The detailed description below exists in all five languages; the screenshots exist in Italian and English (use the English ones for Spanish, French and German).
 - **Images**: `docs/store/<language>/screenshot-1…4.png` (1280×800), `docs/store/<language>/promo-small.png` (440×280), icon `docs/store/icon-128.png`. Regenerate them with `npm run store-assets`.
-- **Website / support**: to fill in if you publish the repository or a project page.
+- **Website / support**: `https://github.com/SpatariuRares/autoGroup` (issues: `https://github.com/SpatariuRares/autoGroup/issues`).
 - **Privacy policy**: the URL of the page published from [privacy.md](privacy.md).
 
 ## Italian

@@ -10,6 +10,7 @@ import {
   NANO_PRESET,
   loadApiKey,
   presetsOf,
+  providerHomepage,
   providerLabel,
   providerOrigin,
   saveProvider,
@@ -111,6 +112,8 @@ export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderS
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   // Nome del provider salvato, per l'etichetta in alto a destra della sezione.
   const active = providerName(role, saved);
+  const selectedPreset = presets[draft.preset];
+  const homepage = providerHomepage(role, draft.preset);
 
   return (
     <Card
@@ -134,6 +137,11 @@ export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderS
             ))}
             <option value="custom">{t('optionsPresetCustom')}</option>
           </select>
+          {homepage && selectedPreset && (
+            <a className="guide-link provider-link" href={homepage} target="_blank" rel="noopener noreferrer">
+              {t('optionsProviderWebsite', selectedPreset.label)}
+            </a>
+          )}
           {draft.preset === NANO_PRESET && nano}
         </div>
       </div>
