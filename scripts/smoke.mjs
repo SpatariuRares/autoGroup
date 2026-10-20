@@ -61,6 +61,11 @@ const browser = await puppeteer.launch({
   args: ['--lang=it'],
 });
 const errors = [];
+/** Un controllo: lo stampa e, se non passa, ferma lo smoke con un errore (codice di uscita 1). */
+const check = (label, ok) => {
+  console.log(`${label}:`, ok);
+  if (!ok) throw new Error(`Controllo fallito: ${label}`);
+};
 try {
   const swTarget = await browser.waitForTarget((t) => t.type() === 'service_worker' && t.url().endsWith('background.js'));
   const sw = await swTarget.worker();
@@ -179,7 +184,7 @@ try {
   const orderAfterUndo = await order();
   const groupsAfterUndo = await sw.evaluate(() => chrome.tabGroups.query({}));
   console.log('Dopo Annulla:', orderAfterUndo.join(' | '));
-  console.log('Annulla ripristina ordine e gruppi:', JSON.stringify(orderAfterUndo) === JSON.stringify(orderBefore) && groupsAfterUndo.length === 0);
+  check('Annulla ripristina ordine e gruppi', JSON.stringify(orderAfterUndo) === JSON.stringify(orderBefore) && groupsAfterUndo.length === 0);
 
   // Impostazioni: minimo 3 tab ed esclusione di 127.0.0.1, poi una nuova proposta.
   const options = await browser.newPage();
@@ -319,13 +324,24 @@ try {
   console.log('Proposta dal Generatore:', await repropose());
   console.log('Tempi del calcolo (ms):', JSON.stringify((await sw.evaluate(() => chrome.storage.session.get('organizer'))).organizer.proposal.timings));
   const sent = JSON.parse(ai.requests.at(-1).messages[1].content);
+  // "Aggiungi alle categorie": subito il segno di categoria e la snackbar d'attesa, poi l'esito.
   await popup.click('.group .save');
-  await popup.waitForFunction(() => /categor/i.test(document.querySelector('.snackbar')?.textContent ?? ''), { timeout: 10000 });
-  console.log('Salva nella lista:', await popup.$eval('.snackbar', (el) => el.textContent), '| badge:', await popup.$eval('.group .badge', (el) => el.textContent));
+  await popup.waitForSelector('.group .in-categories', { timeout: 2000 });
+  await popup.waitForFunction(() => /categor/i.test(document.querySelector('.snackbar')?.textContent ?? '') && !document.querySelector('.snackbar').textContent.endsWith('…'), { timeout: 10000 });
+  // Il gruppo diventa "lista": lo dice lo stato dell'Organizzatore, non lo stile del badge.
+  const isList = async () =>
+    (await sw.evaluate(() => chrome.storage.session.get('organizer'))).organizer.proposal?.groups.some((g) => g.provenance === 'list');
+  for (let i = 0; i < 50 && !(await isList()); i++) await new Promise((r) => setTimeout(r, 100));
+  if (!(await isList())) throw new Error('Dopo "Aggiungi alle categorie" il gruppo non è diventato "lista"');
+  console.log('Aggiungi alle categorie:', await popup.$eval('.snackbar', (el) => el.textContent), '| badge:', await popup.$eval('.group .badge', (el) => el.textContent));
   const savedCategory = (await sw.evaluate(() => chrome.storage.sync.get('categories'))).categories.at(-1);
   console.log('Categoria salvata:', JSON.stringify({ name: savedCategory.name, description: savedCategory.description, color: savedCategory.color }));
+  if (!savedCategory.description) throw new Error('"Aggiungi alle categorie" ha salvato la categoria senza la descrizione del Generatore');
+  if ((await sw.evaluate(() => chrome.storage.session.get('describingCategories'))).describingCategories?.length) {
+    throw new Error('La categoria è rimasta "in descrizione" dopo la risposta del Generatore');
+  }
   console.log('Tab inviate all\'AI:', JSON.stringify(sent.tabs));
-  console.log('Privacy (niente query, frammento, 127.0.0.1 escluso):', !JSON.stringify(ai.requests).match(/segreto|frammento|127\.0\.0\.1:/));
+  check('Privacy (niente query, frammento, 127.0.0.1 escluso)', !JSON.stringify(ai.requests).match(/segreto|frammento|127\.0\.0\.1:/));
   ai.fail = true;
   ai.requests.length = 0;
   console.log('Proposta con il Generatore in errore:', await repropose(), '| richieste (con il nuovo tentativo):', ai.requests.length);
@@ -386,9 +402,9 @@ try {
   console.log('Proposta dal Classificatore:', await repropose());
   console.log('Richieste: System One', ai.requests.filter((r) => r.systemone).length, '| Generatore', ai.requests.filter((r) => !r.systemone).length);
   console.log('State inviato al Classificatore:', JSON.stringify(ai.requests[0].systemone.state));
-  console.log('Privacy Classificatore (niente query, frammento, 127.0.0.1 escluso):', !JSON.stringify(ai.requests).match(/segreto|frammento|127\.0\.0\.1:/));
+  check('Privacy Classificatore (niente query, frammento, 127.0.0.1 escluso)', !JSON.stringify(ai.requests).match(/segreto|frammento|127\.0\.0\.1:/));
   const ids = await sw.evaluate(async () => (await chrome.tabs.query({})).map((t) => t.id));
-  console.log('Nessun ID di Chrome nelle richieste:', !ids.some((id) => JSON.stringify(ai.requests).includes(`:${id},`) || JSON.stringify(ai.requests).includes(`"${id}"`)));
+  check('Nessun ID di Chrome nelle richieste', !ids.some((id) => JSON.stringify(ai.requests).includes(`:${id},`) || JSON.stringify(ai.requests).includes(`"${id}"`)));
   console.log('Avvisi:', await popup.$eval('.warnings', (el) => el.textContent).catch(() => 'nessuno'));
   const cachedGroups = await repropose({ keepCache: true });
   const cachedRequests = ai.requests.filter((r) => r.systemone).length;
@@ -491,3 +507,5 @@ try {
   server.close();
 }
 console.log(errors.length ? `Errori:\n${errors.join('\n')}` : 'Nessun errore in console.');
+// Un errore in console è un controllo fallito: la CI deve vederlo.
+if (errors.length) process.exit(1);
