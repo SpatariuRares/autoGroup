@@ -3,7 +3,7 @@ import { createNanoGenerator, NANO_LABEL } from '../ai/nano-generator';
 import { createOpenAiGenerator } from '../ai/openai-generator';
 import { createSystemOneClassifier } from '../ai/systemone-classifier';
 import { ProviderError, type AiOption, type AiTab, type Classifier, type Generator } from '../ai/types';
-import { categoryKey, NANO_PRESET, providerLabel } from '../settings';
+import { categoryKey, isRulesOnly, NANO_PRESET, providerLabel } from '../settings';
 import type { ProposalWarning, ProposedGroup } from '../shared/types';
 import { buildOptions, cleanUrl, prepareTabs } from './ai-input';
 import { withClassificationCache } from './classification-cache';
@@ -179,7 +179,8 @@ function recordFailure(
  * | no             | sì         | Generatore in modalità "completo"                                |
  * | no             | no         | raggruppamento per dominio                                       |
  *
- * Se un provider va in errore si scende di un livello e si aggiunge un avviso.
+ * Se un provider va in errore si scende di un livello e si aggiunge un avviso. Con tutti e due su
+ * "Nessuno" (`isRulesOnly`) valgono solo le regole sui siti, senza il raggruppamento per dominio.
  *
  * Prima di tutto le regole sui siti: le tab che prendono non arrivano all'AI e i loro gruppi si uniscono per nome a quelli dell'AI (o del dominio, nel ripiego).
  */
@@ -191,6 +192,8 @@ export async function runPipeline(inputs: ProposalInputs, signal?: AbortSignal, 
   };
   // Modalità "solo dominio": nessuna AI, nessuna pagina letta, nessun avviso sui provider.
   if (inputs.settings.mode === 'domain') return byDomain([]);
+  // "Con regole": solo le regole sui siti, le altre tab restano libere.
+  if (isRulesOnly(inputs.settings)) return { groups: ruleGroups(inputs), warnings: [] };
   const warnings: ProposalWarning[] = [];
   const classifier = resolveClassifier(inputs, warnings);
   const generator = resolveGenerator(inputs, warnings);
@@ -308,6 +311,12 @@ function domainOf(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** Solo i gruppi delle regole sui siti (modalità "Con regole"), con minimo e gruppi aperti come per l'AI. */
+function ruleGroups(inputs: ProposalInputs): ProposedGroup[] {
+  const ctx = groupingContext(inputs);
+  return applyGroupRules(ctx.siteGroups, ctx.rules).groups;
 }
 
 /**

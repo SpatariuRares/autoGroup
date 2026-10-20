@@ -709,17 +709,32 @@
   "panelModeSiteSummary": {
     "message": "Tabs from the same site go together. No data is sent."
   },
-  "panelNoProvider": {
-    "message": "No AI provider set up: tabs are grouped by site."
+  "panelModeRules": {
+    "message": "With rules"
+  },
+  "panelModeRulesSummary": {
+    "message": "Only your site rules: other tabs stay ungrouped. No data is sent."
+  },
+  "panelEditRules": {
+    "message": "Edit rules"
   },
   "panelChangeProviders": {
     "message": "Change"
+  },
+  "panelOrganize": {
+    "message": "Organize"
   },
   "panelSectionNew": {
     "message": "New groups"
   },
   "panelSectionExisting": {
     "message": "Open groups"
+  },
+  "panelSortGroups": {
+    "message": "Sort groups A to Z"
+  },
+  "panelSortTabs": {
+    "message": "Sort tabs A to Z"
   },
   "panelReadOnly": {
     "message": "name and color can’t be changed"

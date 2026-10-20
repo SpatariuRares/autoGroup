@@ -1,6 +1,7 @@
 import { t } from '../../src/shared/i18n';
 import type { HeldReason, ProposalEdit, ProposedTab } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
+import { useTabDrag } from './drag';
 import { useLiveTabs } from './live-tabs';
 import { openTab, setMuted } from './tab-actions';
 
@@ -26,7 +27,8 @@ const REASON_KEY: Record<HeldReason, string> = {
  * Una riga di tab, sempre con il pulsante per andarci (anche Invio sulla riga o doppio clic). Con
  * `targets` mostra il menu per spostarla; con `onRemove` la −; con `onClose` la ✕; con `reason` il
  * motivo per cui è ferma. Dai dati dal vivo: la tab attiva è evidenziata, una tab che suona o muta ha
- * il suo pulsante audio, una tab inattiva mostra da quanti giorni.
+ * il suo pulsante audio, una tab inattiva mostra da quanti giorni. Con `drag` la riga si trascina
+ * (tab di un gruppo aperto o senza gruppo, vedi `useTabDrag`).
  */
 export function TabRow({
   tab,
@@ -36,6 +38,7 @@ export function TabRow({
   onClose,
   reason,
   added,
+  drag,
 }: {
   tab: ProposedTab;
   targets?: Target[];
@@ -44,8 +47,10 @@ export function TabRow({
   onClose?: () => void;
   reason?: HeldReason;
   added?: boolean;
+  drag?: { groupId: number | null; nextTabId: number | null };
 }) {
   const chrome = useLiveTabs()[tab.tabId];
+  const { className: dragClass, ...dragProps } = useTabDrag(tab.tabId, drag);
   const muted = chrome?.muted ?? false;
   const idleDays = chrome?.idleDays;
   // Il nome accessibile dei controlli dice anche quale tab: tra tante "Chiudi la tab" si sente quale si chiude.
@@ -53,19 +58,20 @@ export function TabRow({
   return (
     // tabIndex -1: la riga riceve il focus dalle frecce (row-navigation.ts) anche se non ha controlli.
     <li
-      className={`tab${added ? ' added' : ''}${reason ? ' held' : ''}${chrome?.active ? ' current' : ''}`}
+      className={`tab${added ? ' added' : ''}${reason ? ' held' : ''}${chrome?.active ? ' current' : ''}${dragClass}`}
       aria-current={chrome?.active ? 'true' : undefined}
       title={tab.url}
       tabIndex={-1}
       onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && openTab(tab.tabId)}
       onDoubleClick={(e) => !(e.target as HTMLElement).closest('button, label') && openTab(tab.tabId)}
+      {...dragProps}
     >
       {tab.favIconUrl ? <img src={tab.favIconUrl} alt="" /> : <span className="no-icon" />}
       <span className="tab-title">{tab.title}</span>
       {(chrome?.audible || muted) && (
         <button
           className={`icon small audio${muted ? ' muted' : ''}`}
-          title={t(muted ? 'panelUnmute' : 'panelMute')}
+          data-tooltip={t(muted ? 'panelUnmute' : 'panelMute')}
           // Niente aria-pressed: con un'etichetta che cambia ("Disattiva" / "Riattiva") direbbe il contrario.
           aria-label={named(muted ? 'panelUnmute' : 'panelMute')}
           onClick={() => setMuted(tab.tabId, !muted)}
@@ -86,7 +92,7 @@ export function TabRow({
       )}
       {reason && <span className="tab-chip muted">{t(REASON_KEY[reason])}</span>}
       {onMove && targets.length > 0 && (
-        <label className="move" title={t('popupMoveTab')}>
+        <label className="move" data-tooltip={t('popupMoveTab')}>
           <Icon name="driveFileMove" size={18} />
           <select value="" aria-label={named('popupMoveTab')} onChange={(e) => e.target.value && onMove(tab, e.target.value)}>
             <option value="">{t('popupMoveTo')}</option>
@@ -99,15 +105,15 @@ export function TabRow({
         </label>
       )}
       {onRemove && (
-        <button className="icon small" title={t('popupRemoveTab')} aria-label={named('popupRemoveTab')} onClick={onRemove}>
+        <button className="icon small" data-tooltip={t('popupRemoveTab')} aria-label={named('popupRemoveTab')} onClick={onRemove}>
           <Icon name="remove" size={16} />
         </button>
       )}
-      <button className="icon small open-tab" title={t('panelOpenTab')} aria-label={named('panelOpenTab')} onClick={() => openTab(tab.tabId)}>
+      <button className="icon small open-tab" data-tooltip={t('panelOpenTab')} aria-label={named('panelOpenTab')} onClick={() => openTab(tab.tabId)}>
         <Icon name="openInNew" size={16} />
       </button>
       {onClose && (
-        <button className="icon small danger close-tab" title={t('panelCloseTab')} aria-label={named('panelCloseTab')} onClick={onClose}>
+        <button className="icon small danger close-tab" data-tooltip={t('panelCloseTab')} aria-label={named('panelCloseTab')} onClick={onClose}>
           <Icon name="close" size={16} />
         </button>
       )}

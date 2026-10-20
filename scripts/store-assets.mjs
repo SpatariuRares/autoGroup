@@ -195,13 +195,15 @@ for (const locale of ['it', 'en']) {
     await light(panel);
     await panel.setViewport({ width: 400, height: 800, deviceScaleFactor: 2 });
     await panel.goto(`chrome-extension://${extId}/sidepanel.html`);
+    await panel.waitForSelector('footer button.recompute', { timeout: 15000 });
+    await panel.click('footer button.recompute');
     await panel.waitForSelector('.group:not(.existing)', { timeout: 15000 });
     await pause(800);
     const proposal = await panel.screenshot();
 
     // 2. Anteprima per sito mentre il Generatore non risponde.
     ai.hang = true;
-    await (await panel.$$('footer button.secondary:not(.undo)'))[0].click();
+    await (await panel.$$('footer button.recompute'))[0].click();
     await panel.mouse.move(0, 0);
     await panel.waitForSelector('.group.preview', { timeout: 10000 });
     await pause(500);

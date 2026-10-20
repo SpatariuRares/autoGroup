@@ -143,7 +143,8 @@ describe('anteprima per sito durante il calcolo', () => {
     const state = await organizer.propose(W);
 
     expect(announced.some((s) => s.preview)).toBe(false);
-    expect(names(state.proposal)).toEqual([['a.com', 'domain']]);
+    // Con Generatore e Classificatore su "Nessuno" valgono solo le regole sui siti: qui nessuna.
+    expect(names(state.proposal)).toEqual([]);
   });
 });
 

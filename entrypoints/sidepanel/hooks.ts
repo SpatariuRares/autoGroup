@@ -5,8 +5,9 @@ import { onOrganizerState, remoteOrganizer as organizer } from '../../src/shared
 import type { OrganizerState, ProposalEdit, WindowView } from '../../src/shared/types';
 
 /**
- * Lo stato dell'Organizzatore per la finestra del pannello. All'apertura chiede la proposta;
- * poi segue gli aggiornamenti del service worker, solo quelli di questa finestra.
+ * Lo stato dell'Organizzatore per la finestra del pannello. All'apertura lo legge soltanto, senza
+ * calcolare: una proposta già fatta per questa finestra si rivede, una nuova parte solo da
+ * "Organizza". Poi segue gli aggiornamenti del service worker, solo quelli di questa finestra.
  */
 export function useOrganizer() {
   const [state, setState] = useState<OrganizerState | null>(null);
@@ -28,10 +29,10 @@ export function useOrganizer() {
       const win = await browser.windows.getCurrent();
       currentWindow.current = win.id!;
       setWindowId(win.id!);
-      setState(await organizer.propose(win.id!));
+      setState(await organizer.state());
     })().catch((err) => {
       console.error(err);
-      setState({ phase: 'idle', error: 'errorPropose' });
+      setState({ phase: 'idle', error: 'errorUnexpected' });
     });
   }, []);
 

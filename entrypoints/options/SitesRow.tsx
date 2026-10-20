@@ -44,7 +44,7 @@ export function SitesRow({ category, categories, sites, onChange }: SitesRowProp
               <span>{site}</span>
               <button
                 className="icon danger"
-                title={t('optionsRemove')}
+                data-tooltip={t('optionsRemove')}
                 aria-label={`${t('optionsRemove')}: ${site}`}
                 onClick={() => onChange({ ...sites, [category.id]: own.filter((s) => s !== site) })}
               >

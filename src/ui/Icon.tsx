@@ -15,9 +15,12 @@ import lock from '@material-symbols/svg-400/rounded/lock.svg?raw';
 import openInNew from '@material-symbols/svg-400/rounded/open_in_new.svg?raw';
 import refresh from '@material-symbols/svg-400/rounded/refresh.svg?raw';
 import remove from '@material-symbols/svg-400/rounded/remove.svg?raw';
+import rule from '@material-symbols/svg-400/rounded/rule.svg?raw';
 import schedule from '@material-symbols/svg-400/rounded/schedule.svg?raw';
 import settings from '@material-symbols/svg-400/rounded/settings.svg?raw';
 import smartToy from '@material-symbols/svg-400/rounded/smart_toy.svg?raw';
+import sort from '@material-symbols/svg-400/rounded/sort.svg?raw';
+import sortByAlpha from '@material-symbols/svg-400/rounded/sort_by_alpha.svg?raw';
 import stop from '@material-symbols/svg-400/rounded/stop.svg?raw';
 import tab from '@material-symbols/svg-400/rounded/tab.svg?raw';
 import tune from '@material-symbols/svg-400/rounded/tune.svg?raw';
@@ -51,9 +54,12 @@ const ICONS = {
   openInNew,
   refresh,
   remove,
+  rule,
   schedule,
   settings,
   smartToy,
+  sort,
+  sortByAlpha,
   stop,
   tab,
   tune,

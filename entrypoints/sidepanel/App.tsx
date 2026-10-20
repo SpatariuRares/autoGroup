@@ -9,6 +9,7 @@ import { Icon } from '../../src/ui/Icon';
 import { CloseTabsBanner, ComputingStatus, ErrorBanner, InfoBanner, StaleBanner, WarningsBanner } from './Banners';
 import { ExistingCard, GroupCard } from './GroupCards';
 import { useSettings } from '../../src/ui/use-settings';
+import { DragContext, useDragState, useFreeDrop, type DragItem, type DropTarget } from './drag';
 import { useExpiring, useOrganizer, useWindowView } from './hooks';
 import { LiveTabsContext } from './live-tabs';
 import { ModePicker } from './ModePicker';
@@ -44,7 +45,8 @@ export function App() {
   async function chooseMode(mode: GroupingMode) {
     if (!settings || settings.mode === mode) return;
     await saveSettings({ mode });
-    recompute();
+    // Si ricalcola solo una proposta già mostrata, che con la modalità nuova sarebbe superata.
+    if (proposal) recompute();
   }
 
   // Destinazioni per "Sposta in…": gruppi della proposta e gruppi aperti non ancora toccati.
@@ -62,6 +64,31 @@ export function App() {
   const closeDuplicates = (tabIds: number[]) => windowId !== null && send(() => organizer.closeDuplicates(windowId, tabIds));
   const closeInactive = (tabIds: number[]) => windowId !== null && send(() => organizer.closeInactive(windowId, tabIds));
   const closeGroup = (groupId: number) => send(() => organizer.closeGroup(groupId));
+
+  // Riordinano la barra di Chrome; il pannello segue da solo (vedi `useWindowView`).
+  const sortButtons = (which: ('groups' | 'tabs')[]) =>
+    windowId !== null &&
+    which.map((kind) => (
+      <button
+        key={kind}
+        className="icon small"
+        disabled={busy || computing}
+        data-tooltip={t(kind === 'groups' ? 'panelSortGroups' : 'panelSortTabs')}
+        aria-label={t(kind === 'groups' ? 'panelSortGroups' : 'panelSortTabs')}
+        onClick={() => run(() => (kind === 'groups' ? organizer.sortGroups(windowId) : organizer.sortTabs(windowId)))}
+      >
+        <Icon name={kind === 'groups' ? 'sortByAlpha' : 'sort'} size={18} />
+      </button>
+    ));
+
+  // Drag and drop sui gruppi aperti e sulle tab senza gruppo: sposta davvero tab e gruppi nella barra.
+  const moveByDrag = (item: DragItem, target: DropTarget) => {
+    if (item.kind === 'tab' && target.kind === 'tab') send(() => organizer.moveTab(item.tabId, target.groupId, target.beforeTabId));
+    if (item.kind === 'group' && target.kind === 'group') send(() => organizer.moveGroup(item.groupId, target.beforeGroupId));
+  };
+  const drag = useDragState(!computing && !busy && !readOnly, moveByDrag);
+  // Il gruppo che segue ciascuno nella barra (`view.existing` è nell'ordine della barra).
+  const nextGroup = new Map(view.existing.map((e, i) => [e.group.id, view.existing[i + 1]?.group.id ?? null]));
 
   const duplicateTabs = view.duplicates;
   const inactiveTabs = view.inactive;
@@ -116,7 +143,7 @@ export function App() {
       </p>
       <header className="top-app-bar">
         <h1>{t('popupTitle')}</h1>
-        <button className="icon" title={t('popupOpenSettings')} aria-label={t('popupOpenSettings')} onClick={() => browser.runtime.openOptionsPage()}>
+        <button className="icon" data-tooltip={t('popupOpenSettings')} aria-label={t('popupOpenSettings')} onClick={() => browser.runtime.openOptionsPage()}>
           <Icon name="settings" />
         </button>
       </header>
@@ -132,6 +159,7 @@ export function App() {
         />
       )}
 
+      <DragContext.Provider value={drag}>
       <LiveTabsContext.Provider value={view.live}>
         <div className="content" onKeyDown={moveBetweenRows}>
           {message && <ErrorBanner messageKey={message} />}
@@ -185,7 +213,7 @@ export function App() {
           )}
 
           {view.existing.length > 0 && (
-            <Section title={t('panelSectionExisting')} count={view.existing.length}>
+            <Section title={t('panelSectionExisting')} count={view.existing.length} actions={sortButtons(view.existing.length > 1 ? ['groups', 'tabs'] : ['tabs'])}>
               <ul className="groups">
                 {[...touched, ...untouched].map((existing) => (
                   <ExistingCard
@@ -197,25 +225,34 @@ export function App() {
                     onEdit={edit}
                     onClose={closeTab}
                     onCloseGroup={() => closeGroup(existing.group.id)}
+                    nextGroupId={nextGroup.get(existing.group.id) ?? null}
                   />
                 ))}
               </ul>
             </Section>
           )}
 
-          {view.free.length > 0 && (
-            <Section title={t('panelSectionFree')} count={view.free.length} hint={freeTargets.length > 0 ? t('panelFreeHint') : undefined}>
-              <ul className="tabs card-list">
-                {view.free.map((tab) => (
+          {/* Trascinando una tab la sezione c'è anche vuota: lasciandola qui esce dal suo gruppo. */}
+          {(view.free.length > 0 || drag.item?.kind === 'tab') && (
+            <Section
+              title={t('panelSectionFree')}
+              count={view.free.length}
+              hint={freeTargets.length > 0 ? t('panelFreeHint') : undefined}
+              // Con gruppi aperti "Tab A-Z" sta già nella loro intestazione e ordina anche queste.
+              actions={view.existing.length === 0 && view.free.length > 1 && sortButtons(['tabs'])}
+            >
+              <FreeTabs>
+                {view.free.map((tab, i) => (
                   <TabRow
                     key={tab.tabId}
                     tab={tab}
                     targets={freeTargets}
                     onMove={proposal ? moveTab : groupTab}
                     onClose={() => closeTab(tab.tabId)}
+                    drag={{ groupId: null, nextTabId: view.free[i + 1]?.tabId ?? null }}
                   />
                 ))}
-              </ul>
+              </FreeTabs>
             </Section>
           )}
 
@@ -234,6 +271,7 @@ export function App() {
           )}
         </div>
       </LiveTabsContext.Provider>
+      </DragContext.Provider>
 
       {/* Regione live sempre presente: la snackbar che ci compare dentro viene letta. */}
       <div role="status">
@@ -274,9 +312,10 @@ export function App() {
         )}
         <span className="spacer" />
         {windowId !== null && !computing && (
-          <button className="secondary" disabled={busy} onClick={recompute}>
-            <Icon name="refresh" size={18} />
-            {t('popupRecompute')}
+          // Il calcolo parte solo da qui: senza proposta è l'azione principale, "Organizza".
+          <button className={`recompute${proposal ? ' secondary' : ''}`} disabled={busy} onClick={recompute}>
+            <Icon name={proposal ? 'refresh' : 'category'} size={18} />
+            {t(proposal ? 'popupRecompute' : 'panelOrganize')}
           </button>
         )}
         {proposal && proposal.groups.length > 0 && (
@@ -299,13 +338,26 @@ export function App() {
   );
 }
 
-function Section({ title, count, hint, children }: { title: string; count: number; hint?: string; children: React.ReactNode }) {
+/** L'elenco delle tab senza gruppo, che accoglie una tab trascinata fuori dal suo gruppo. */
+function FreeTabs({ children }: { children: React.ReactNode }) {
+  const { className, ...drop } = useFreeDrop();
+  return (
+    <ul className={`tabs card-list${className}`} {...drop}>
+      {children}
+    </ul>
+  );
+}
+
+function Section({ title, count, hint, actions, children }: { title: string; count: number; hint?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="section">
-      <h2>
-        <span className="section-title">{title}</span>
-        <span className="section-count">{count}</span>
-      </h2>
+      <div className="section-header">
+        <h2>
+          <span className="section-title">{title}</span>
+          <span className="section-count">{count}</span>
+        </h2>
+        {actions}
+      </div>
       {hint && <p className="section-hint">{hint}</p>}
       {children}
     </section>

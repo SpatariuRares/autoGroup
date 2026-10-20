@@ -709,17 +709,32 @@
   "panelModeSiteSummary": {
     "message": "Las pestañas del mismo sitio van juntas. No se envía ningún dato."
   },
-  "panelNoProvider": {
-    "message": "No hay ningún proveedor de IA configurado: las pestañas se agrupan por sitio."
+  "panelModeRules": {
+    "message": "Con reglas"
+  },
+  "panelModeRulesSummary": {
+    "message": "Solo tus reglas de sitios: las demás pestañas quedan sin grupo. No se envía ningún dato."
+  },
+  "panelEditRules": {
+    "message": "Editar reglas"
   },
   "panelChangeProviders": {
     "message": "Cambiar"
+  },
+  "panelOrganize": {
+    "message": "Organizar"
   },
   "panelSectionNew": {
     "message": "Grupos nuevos"
   },
   "panelSectionExisting": {
     "message": "Grupos abiertos"
+  },
+  "panelSortGroups": {
+    "message": "Ordenar grupos de la A a la Z"
+  },
+  "panelSortTabs": {
+    "message": "Ordenar pestañas de la A a la Z"
   },
   "panelReadOnly": {
     "message": "nombre y color no editables"

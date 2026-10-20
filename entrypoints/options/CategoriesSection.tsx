@@ -151,12 +151,12 @@ export function CategoriesSection({ categories, sites, onChange, onSitesChange, 
                     <SitesRow category={category} categories={draft} sites={sites} onChange={onSitesChange} />
                   </div>
                   <div className="category-actions">
-                    <button className="icon small" title={t('optionsMoveUp')} aria-label={t('optionsMoveUp')} disabled={index === 0} onClick={() => move(index, -1)}>
+                    <button className="icon small" data-tooltip={t('optionsMoveUp')} aria-label={t('optionsMoveUp')} disabled={index === 0} onClick={() => move(index, -1)}>
                       <Icon name="arrowUpward" size={18} />
                     </button>
                     <button
                       className="icon small"
-                      title={t('optionsMoveDown')}
+                      data-tooltip={t('optionsMoveDown')}
                       aria-label={t('optionsMoveDown')}
                       disabled={index === draft.length - 1}
                       onClick={() => move(index, 1)}
@@ -236,7 +236,8 @@ function ColorPicker({ color, onChange }: { color: GroupColor; onChange: (color:
       <button
         ref={swatch}
         className={`swatch color-${color}`}
-        title={`${t('optionsCategoryColor')}: ${t(`color_${color}`)}`}
+        data-tooltip={`${t('optionsCategoryColor')}: ${t(`color_${color}`)}`}
+        data-tooltip-align="start"
         aria-label={`${t('optionsCategoryColor')}: ${t(`color_${color}`)}`}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
@@ -252,7 +253,7 @@ function ColorPicker({ color, onChange }: { color: GroupColor; onChange: (color:
               autoFocus={c === color}
               tabIndex={c === color ? 0 : -1}
               className={`swatch color-${c}${c === color ? ' selected' : ''}`}
-              title={t(`color_${c}`)}
+              data-tooltip={t(`color_${c}`)}
               aria-label={t(`color_${c}`)}
               onClick={() => {
                 close();

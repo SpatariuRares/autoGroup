@@ -251,6 +251,43 @@ describe('regole sui siti, modalità AI', () => {
   });
 });
 
+const NONE = { preset: 'none', baseUrl: '', model: '' };
+
+describe('regole sui siti, modalità "Con regole" (nessun provider)', () => {
+  it('applica solo le regole: le altre tab restano libere anche se dello stesso dominio', async () => {
+    await saveSettings({ mode: 'ai', generator: NONE, classifier: NONE });
+    strip.addTab({ url: 'https://mail.google.com/mail/u/0', title: 'Posta' });
+    strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
+    strip.addTab({ url: 'https://calendar.google.com/r', title: 'Calendario' });
+    strip.addTab({ url: 'https://news.ycombinator.com/item?id=1', title: 'HN 2' });
+    const { requests } = installFakeFetch();
+
+    const state = await organizer.propose(W);
+
+    expect(summary(state)).toEqual([{ name: 'Google', provenance: 'list', color: 'green', tabs: ['Posta', 'Calendario'] }]);
+    expect(state.proposal!.warnings).toEqual([]);
+    expect(requests).toEqual([]);
+  });
+
+  it('una categoria sotto il minimo non forma il gruppo, ma una tab sola entra nel gruppo aperto con lo stesso nome', async () => {
+    await saveSettings({ mode: 'ai', generator: NONE, classifier: NONE });
+    const open = strip.addTab({ url: 'https://example.com/', title: 'Altro' });
+    await strip.addGroup('Dev', 'cyan', [open]);
+    strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
+    strip.addTab({ url: 'https://mail.google.com/', title: 'Posta' });
+
+    expect(summary(await organizer.propose(W))).toEqual([{ name: 'Dev', provenance: 'existing', color: 'cyan', tabs: ['Repo'] }]);
+  });
+
+  it('con Gemini Nano scelto resta il ripiego per dominio', async () => {
+    await saveSettings({ mode: 'ai', generator: { preset: 'nano', baseUrl: '', model: '' }, classifier: NONE });
+    strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
+    strip.addTab({ url: 'https://news.ycombinator.com/item?id=1', title: 'HN 2' });
+
+    expect(summary(await organizer.propose(W)).map((g) => g.provenance)).toEqual(['domain']);
+  });
+});
+
 describe('Metti sempre qui', () => {
   it('ricorda il dominio della tab nella categoria del suo gruppo, e la proposta resta attuale', async () => {
     strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });

@@ -26,7 +26,7 @@ To install it from source, see [Development](#development).
 
 ## How to use it
 
-1. Click the autoGroup icon (or press `Alt+Shift+G`): the **side panel** opens with a proposal for the current window.
+1. Click the autoGroup icon (or press `Alt+Shift+G`): the **side panel** opens on the current window. Nothing is computed until you press **Organize**, which builds a proposal.
 2. Review the groups: you can rename them, change their color, move or remove a tab, discard a whole group, or close a tab.
 3. Press **Apply**: the groups are created in Chrome.
 4. If something is off, **Undo last organization** puts every tab back where it was.
@@ -112,7 +112,7 @@ Full policy: [docs/store/privacy.md](docs/store/privacy.md).
 - Group new tabs on its own by topic while you browse: automatic grouping only covers the sites of your categories.
 - Reorganize tabs that are already grouped.
 - Work across several windows at once.
-- Drag and drop tabs in the preview.
+- Drag and drop tabs in the proposal preview (open groups and ungrouped tabs can be dragged).
 
 ## Development
 

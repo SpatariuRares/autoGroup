@@ -3,6 +3,7 @@ import { t } from '../../src/shared/i18n';
 import { GROUP_COLORS, type ExistingGroupView, type ProposalEdit, type ProposedGroup, type ProposedTab } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
 import { moveInRadioGroup } from '../../src/ui/radio-keys';
+import { useGroupDrag } from './drag';
 import { useExpiring } from './hooks';
 import { setCollapsed } from './tab-actions';
 import { addedCount, tabCount, TabRow, type Target } from './TabRow';
@@ -62,7 +63,8 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
         <button
           ref={swatch}
           className={`swatch color-${group.color}`}
-          title={t('popupChangeColor')}
+          data-tooltip={t('popupChangeColor')}
+          data-tooltip-align="start"
           aria-label={`${t('popupChangeColor')}: ${t(`color_${group.color}`)}`}
           aria-expanded={paletteOpen}
           onClick={() => setPaletteOpen(!paletteOpen)}
@@ -80,13 +82,13 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
         />
         <GroupMeta group={group} />
         {group.provenance === 'ai' && (
-          <button className="icon small save" disabled={saving} title={t('popupSaveToListHint')} aria-label={t('popupSaveToList')} onClick={onSave}>
+          <button className="icon small save" disabled={saving} data-tooltip={t('popupSaveToListHint')} aria-label={t('popupSaveToList')} onClick={onSave}>
             <Icon name="bookmarkAdd" size={18} />
           </button>
         )}
         <button
           className="icon small danger"
-          title={t('popupDiscardGroup')}
+          data-tooltip={t('popupDiscardGroup')}
           aria-label={t('popupDiscardGroup')}
           onClick={() => onEdit({ kind: 'discard-group', groupId: group.id })}
         >
@@ -104,7 +106,7 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
               autoFocus={color === group.color}
               tabIndex={color === group.color ? 0 : -1}
               className={`swatch color-${color}${color === group.color ? ' selected' : ''}`}
-              title={t(`color_${color}`)}
+              data-tooltip={t(`color_${color}`)}
               aria-label={t(`color_${color}`)}
               onClick={() => {
                 closePalette();
@@ -145,6 +147,8 @@ function GroupMeta({ group }: { group: ProposedGroup }) {
  * sono solo da vedere; quelle che la proposta gli aggiunge sono segnate come nuove e si possono togliere.
  * Un gruppo senza aggiunte resta chiuso, per non allungare l'elenco. Dall'intestazione si comprime o
  * espande il gruppo in Chrome e si chiudono tutte le sue tab (al secondo clic, entro qualche secondo).
+ * Dall'intestazione si trascina tutto il gruppo; le sue tab di adesso si trascinano una per una
+ * (`nextGroupId`: il gruppo che lo segue nella barra, vedi `useGroupDrag`).
  */
 export function ExistingCard({
   existing,
@@ -153,9 +157,11 @@ export function ExistingCard({
   onEdit,
   onClose,
   onCloseGroup,
+  nextGroupId,
   readOnly = false,
 }: {
   existing: ExistingGroupView;
+  nextGroupId: number | null;
   targets: Target[];
   onMove: GroupCardProps['onMove'];
   onEdit: GroupCardProps['onEdit'];
@@ -169,11 +175,13 @@ export function ExistingCard({
   const [open, setOpen] = useState(added.length > 0);
   useEffect(() => setOpen(added.length > 0), [added.length > 0]);
   const listId = `existing-group-${group.id}`;
+  const { card, header } = useGroupDrag(group.id, nextGroupId);
+  const { className: dropClass, ...cardProps } = card;
   return (
-    <li className={`group existing${added.length > 0 ? ' extended' : ''}`}>
+    <li className={`group existing${added.length > 0 ? ' extended' : ''}${dropClass}`} {...cardProps}>
       {/* I pulsanti stanno accanto all'intestazione, non dentro: un controllo dentro un altro (com'era nel
           <summary>) non è valido, e molti screen reader non leggono o non raggiungono quello interno. */}
-      <div className="group-header">
+      <div className="group-header" {...header}>
         <button className="group-toggle" aria-expanded={open} aria-controls={listId} onClick={() => setOpen(!open)}>
           {/* Un aria-label su uno <span> senza ruolo viene ignorato: colore e sola lettura sono testo nascosto. */}
           <span className={`swatch static color-${group.color}`} />
@@ -188,7 +196,7 @@ export function ExistingCard({
         </button>
         <button
           className="icon small"
-          title={t(collapsed ? 'panelExpandGroup' : 'panelCollapseGroup')}
+          data-tooltip={t(collapsed ? 'panelExpandGroup' : 'panelCollapseGroup')}
           aria-label={t(collapsed ? 'panelExpandGroup' : 'panelCollapseGroup')}
           onClick={() => setCollapsed(group.id, !collapsed)}
         >
@@ -206,7 +214,7 @@ export function ExistingCard({
               {current.length === 1 ? t('panelCloseGroupConfirmOne') : t('panelCloseGroupConfirm', String(current.length))}
             </button>
           ) : (
-            <button className="icon small danger" title={t('panelCloseGroup')} aria-label={t('panelCloseGroup')} onClick={() => setArmed(true)}>
+            <button className="icon small danger" data-tooltip={t('panelCloseGroup')} aria-label={t('panelCloseGroup')} onClick={() => setArmed(true)}>
               <Icon name="close" size={16} />
             </button>
           ))}
@@ -227,8 +235,13 @@ export function ExistingCard({
             />
           )
         ))}
-        {current.map((tab) => (
-          <TabRow key={tab.tabId} tab={tab} onClose={() => onClose(tab.tabId)} />
+        {current.map((tab, i) => (
+          <TabRow
+            key={tab.tabId}
+            tab={tab}
+            onClose={() => onClose(tab.tabId)}
+            drag={{ groupId: group.id, nextTabId: current[i + 1]?.tabId ?? null }}
+          />
         ))}
       </ul>
     </li>

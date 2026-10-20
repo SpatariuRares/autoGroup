@@ -230,6 +230,17 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
       if (props.collapsed !== undefined) group.collapsed = props.collapsed;
       return toGroup(group);
     },
+    /** Sposta tutte le tab del gruppo insieme: la prima finisce a `index`, come in Chrome. */
+    async move(id: number, props: Browser.tabGroups.MoveProperties) {
+      const group = groups.get(id);
+      if (!group) throw new Error(`No group with id: ${id}.`);
+      const list = strip(group.windowId);
+      const members = list.filter((tabId) => tabs.get(tabId)!.groupId === id);
+      for (const tabId of members) list.splice(list.indexOf(tabId), 1);
+      const at = props.index === -1 || props.index > list.length ? list.length : props.index;
+      list.splice(at, 0, ...members);
+      return toGroup(group);
+    },
   };
 
   Object.assign(fakeBrowser.tabs, fakeTabs);

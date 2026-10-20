@@ -709,17 +709,32 @@
   "panelModeSiteSummary": {
     "message": "Le tab dello stesso sito finiscono insieme. Nessun dato inviato."
   },
-  "panelNoProvider": {
-    "message": "Nessun provider AI configurato: si raggruppa per sito."
+  "panelModeRules": {
+    "message": "Con regole"
+  },
+  "panelModeRulesSummary": {
+    "message": "Solo le regole sui siti: le altre tab restano senza gruppo. Nessun dato inviato."
+  },
+  "panelEditRules": {
+    "message": "Modifica regole"
   },
   "panelChangeProviders": {
     "message": "Cambia"
+  },
+  "panelOrganize": {
+    "message": "Organizza"
   },
   "panelSectionNew": {
     "message": "Nuovi gruppi"
   },
   "panelSectionExisting": {
     "message": "Gruppi già aperti"
+  },
+  "panelSortGroups": {
+    "message": "Ordina i gruppi dalla A alla Z"
+  },
+  "panelSortTabs": {
+    "message": "Ordina le tab dalla A alla Z"
   },
   "panelReadOnly": {
     "message": "nome e colore non modificabili"

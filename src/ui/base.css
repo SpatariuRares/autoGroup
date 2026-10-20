@@ -181,6 +181,44 @@ button.icon:disabled {
   --btn-bg: transparent;
 }
 
+/*
+ * Tooltip semplice Material 3 per le icone: il testo di `data-tooltip` compare subito sotto,
+ * allineato a destra (a sinistra con `data-tooltip-align="start"`, per le icone sul bordo sinistro),
+ * al passaggio del mouse e con il focus da tastiera, anche su un controllo interno (il menu "Sposta in…").
+ * Al posto di `title`, che Chrome mostra solo dopo un attimo. Il nome accessibile resta `aria-label`.
+ * Il tooltip esiste solo mentre si vede: nascosto ma presente allungherebbe lo scorrimento dell'elenco.
+ */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]:is(:hover, :focus-visible, :has(:focus-visible))::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  width: max-content;
+  max-width: 240px;
+  padding: 4px 8px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font: var(--md-sys-typescale-body-small);
+  text-align: start;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+[data-tooltip-align='start']::after {
+  right: auto;
+  left: 0;
+}
+
 /* Pulsante con l'aspetto di un link, per le azioni dentro una frase (es. "Cambia" nel riepilogo). */
 button.link {
   display: inline;

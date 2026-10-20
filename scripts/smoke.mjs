@@ -127,6 +127,10 @@ try {
   popup.on('console', (m) => m.type() === 'error' && errors.push(`[popup] ${m.text()}`));
   popup.on('pageerror', (e) => errors.push(`[popup] ${e.message}`));
   await popup.goto(`chrome-extension://${extId}/sidepanel.html`);
+  // All'apertura il pannello non calcola: mostra la finestra e aspetta "Organizza".
+  await popup.waitForSelector('footer button.recompute', { timeout: 10000 });
+  console.log('All\'apertura, prima di Organizza:', await popup.$eval('footer button.recompute', (el) => el.textContent), '| gruppi proposti:', (await popup.$$('.group:not(.existing)')).length);
+  await popup.click('footer button.recompute');
   await popup.waitForSelector('.group:not(.existing)', { timeout: 10000 });
   const preview = await popup.$$eval('.group:not(.existing)', (els) =>
     els.map((el) => `${el.querySelector('.group-name').value} (${el.querySelector('.badge').textContent}): ${el.querySelectorAll('.tab').length} tab`),
@@ -166,7 +170,7 @@ try {
   console.log('Gruppi dopo Applica:', JSON.stringify(groups));
   // Dopo "Applica" il pannello mostra comunque tutta la finestra: i gruppi appena creati come gruppi aperti.
   await popup.waitForFunction(() => document.querySelectorAll('.group.existing').length === 2, { timeout: 5000 });
-  console.log('Sezioni del pannello dopo Applica:', await popup.$$eval('.section > h2, .section > summary', (els) => els.map((el) => el.textContent)));
+  console.log('Sezioni del pannello dopo Applica:', await popup.$$eval('.section-header > h2, .section > summary', (els) => els.map((el) => el.textContent)));
   console.log('Ordine dopo Applica:', (await order()).join(' | '));
 
   await popup.waitForSelector('footer .undo', { timeout: 10000 });
@@ -271,7 +275,7 @@ try {
   await popup.bringToFront();
   await popup.reload();
   await popup.waitForSelector('footer button');
-  const recompute = await popup.$$('footer button.secondary:not(.undo)');
+  const recompute = await popup.$$('footer button.recompute');
   await recompute[0].click();
   await popup.waitForFunction(() => document.querySelectorAll('.group:not(.existing)').length > 0 || document.querySelector('.status'), { timeout: 10000 });
   await new Promise((r) => setTimeout(r, 300));
@@ -303,12 +307,9 @@ try {
     await popup.bringToFront();
     await popup.reload();
     await popup.waitForSelector('footer button');
-    // All'apertura il popup calcola già una proposta se le impostazioni sono cambiate: si contano
-    // solo le richieste del calcolo forzato da "Ricalcola".
-    await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 15000 });
     ai.requests.length = 0;
     if (!keepCache) await sw.evaluate(() => chrome.storage.session.remove(['classifierCache', 'descriptionCache']));
-    await (await popup.$$('footer button.secondary:not(.undo)'))[0].click();
+    await (await popup.$$('footer button.recompute'))[0].click();
     // Aspetta la fine del calcolo (con l'eventuale nuovo tentativo dopo un errore temporaneo).
     await new Promise((r) => setTimeout(r, 200));
     await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 15000 });
@@ -336,7 +337,7 @@ try {
   ai.hang = true;
   await popup.reload();
   await popup.waitForSelector('footer button');
-  await (await popup.$$('footer button.secondary:not(.undo)'))[0].click();
+  await (await popup.$$('footer button.recompute'))[0].click();
   await popup.waitForSelector('.status.computing button.abort', { timeout: 10000 });
   await popup.click('.status.computing button.abort');
   await popup.waitForFunction(() => !document.querySelector('.status.computing'), { timeout: 10000 });
@@ -344,7 +345,7 @@ try {
 
   // Anteprima per sito: mentre il finto Generatore non risponde il pannello mostra già i gruppi per sito;
   // "Usa questa" ferma l'AI e li rende la proposta corrente.
-  await (await popup.$$('footer button.secondary:not(.undo)'))[0].click();
+  await (await popup.$$('footer button.recompute'))[0].click();
   await popup.waitForSelector('.group.preview', { timeout: 10000 });
   console.log('Anteprima durante il calcolo:', await popup.$eval('.status.computing span', (el) => el.textContent), '|', await popup.$$eval('.group.preview', (els) => els.map((el) => `${el.querySelector('.group-name').textContent} (${el.querySelector('.badge').textContent}): ${el.querySelectorAll('.tab').length} tab`)), '| modificabile:', (await popup.$$('.group.preview input, .group.preview select')).length > 0);
   await popup.screenshot({ path: 'scripts/smoke-popup-preview.png' });

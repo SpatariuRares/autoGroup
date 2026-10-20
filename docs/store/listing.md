@@ -22,7 +22,7 @@ Texts to paste into the developer dashboard ("Store listing" tab), per language.
 Troppe tab aperte? autoGroup le divide in gruppi di Chrome, per sito o per argomento, e ti mostra la proposta prima di spostare le tab (tranne quelle dei siti che metti in una categoria, che puoi far raggruppare in automatico).
 
 COME FUNZIONA
-• Clicchi l'icona (o premi Alt+Shift+G) e si apre il pannello laterale con la proposta per la finestra.
+• Clicchi l'icona (o premi Alt+Shift+G) e si apre il pannello laterale con la tua finestra; premi Organizza per avere la proposta.
 • Controlli e modifichi i gruppi: rinomina, colore, sposta o togli una tab, scarta un gruppo.
 • Premi «Applica» e i gruppi vengono creati. «Annulla» rimette tutto com'era.
 Nessuna tab si muove senza la tua conferma, tranne quelle dei siti che metti tu in una categoria: vanno subito nel loro gruppo (si può spegnere).
@@ -45,7 +45,7 @@ PRIVACY
 • La lettura della descrizione delle pagine è facoltativa e chiede il permesso solo quando la accendi.
 • Le chiavi API restano su questo computer.
 
-Segnala le tab aperte due volte e quelle che non apri da una settimana, mostra quali chiuderebbe e chiude quelle che confermi. Dal pannello vai a una tab, ne togli l'audio, comprimi o chiudi un gruppo. Esporta e importa le impostazioni in un file.
+Segnala le tab aperte due volte e quelle che non apri da una settimana, mostra quali chiuderebbe e chiude quelle che confermi. Dal pannello vai a una tab, ne togli l'audio, comprimi o chiudi un gruppo, trascini tab e gruppi per riordinarli e li metti in ordine dalla A alla Z. Esporta e importa le impostazioni in un file.
 
 Una guida al primo avvio ti aiuta a scegliere modalità e provider. Interfaccia in italiano, inglese, spagnolo, francese e tedesco.
 ```
@@ -62,7 +62,7 @@ Una guida al primo avvio ti aiuta a scegliere modalità e provider. Interfaccia 
 Too many open tabs? autoGroup sorts them into Chrome tab groups, by site or by topic, and shows you the proposal before moving your tabs (except tabs from sites you add to a category, which you can have grouped automatically).
 
 HOW IT WORKS
-• Click the icon (or press Alt+Shift+G) and the side panel opens with a proposal for your window.
+• Click the icon (or press Alt+Shift+G) and the side panel opens on your window; press Organize to get a proposal.
 • Review and edit the groups: rename, recolor, move or remove a tab, discard a group.
 • Press "Apply" and the groups are created. "Undo" puts everything back.
 No tab moves without your confirmation, except tabs from sites you add to a category: they go straight into their group (you can turn this off).
@@ -85,7 +85,7 @@ PRIVACY
 • Reading page descriptions is optional and asks for permission only when you turn it on.
 • API keys stay on this computer.
 
-It spots tabs open twice and tabs you haven't opened in a week, shows which ones it would close and closes the ones you confirm. From the panel you can jump to a tab, mute it, or collapse or close a group. Export and import your settings as a file.
+It spots tabs open twice and tabs you haven't opened in a week, shows which ones it would close and closes the ones you confirm. From the panel you can jump to a tab, mute it, collapse or close a group, drag tabs and groups to reorder them, and sort them A to Z. Export and import your settings as a file.
 
 A first-run guide helps you choose the mode and the provider. Interface in English, Italian, Spanish, French and German.
 ```
@@ -102,7 +102,7 @@ A first-run guide helps you choose the mode and the provider. Interface in Engli
 ¿Demasiadas pestañas abiertas? autoGroup las reparte en grupos de Chrome, por sitio o por tema, y te enseña la propuesta antes de mover las pestañas (salvo las de los sitios que añadas a una categoría, que puedes agrupar automáticamente).
 
 CÓMO FUNCIONA
-• Haces clic en el icono (o pulsas Alt+Shift+G) y se abre el panel lateral con la propuesta para la ventana.
+• Haces clic en el icono (o pulsas Alt+Shift+G) y se abre el panel lateral con tu ventana; pulsas Organizar para tener la propuesta.
 • Revisas y editas los grupos: cambia el nombre o el color, mueve o quita una pestaña, descarta un grupo.
 • Pulsas «Aplicar» y se crean los grupos. «Deshacer» lo deja todo como estaba.
 Ninguna pestaña se mueve sin tu confirmación, salvo las de los sitios que añadas a una categoría: van directamente a su grupo (se puede desactivar).
@@ -125,7 +125,7 @@ PRIVACIDAD
 • La lectura de la descripción de las páginas es opcional y pide permiso solo cuando la activas.
 • Las claves de API se quedan en este ordenador.
 
-Detecta las pestañas abiertas dos veces y las que no abres desde hace una semana, te muestra cuáles cerraría y cierra las que confirmes. Desde el panel vas a una pestaña, le quitas el sonido, contraes o cierras un grupo. Exporta e importa los ajustes en un archivo.
+Detecta las pestañas abiertas dos veces y las que no abres desde hace una semana, te muestra cuáles cerraría y cierra las que confirmes. Desde el panel vas a una pestaña, le quitas el sonido, contraes o cierras un grupo, arrastras pestañas y grupos para reordenarlos y los ordenas de la A a la Z. Exporta e importa los ajustes en un archivo.
 
 Una guía de inicio te ayuda a elegir el modo y el proveedor. Interfaz en español, inglés, italiano, francés y alemán.
 ```
@@ -142,7 +142,7 @@ Una guía de inicio te ayuda a elegir el modo y el proveedor. Interfaz en españ
 Trop d'onglets ouverts ? autoGroup les répartit en groupes Chrome, par site ou par thème, et vous montre la proposition avant de déplacer vos onglets (sauf ceux des sites que vous ajoutez à une catégorie, que vous pouvez faire regrouper automatiquement).
 
 COMMENT ÇA MARCHE
-• Cliquez sur l'icône (ou appuyez sur Alt+Shift+G) : le panneau latéral s'ouvre avec une proposition pour votre fenêtre.
+• Cliquez sur l'icône (ou appuyez sur Alt+Shift+G) : le panneau latéral s'ouvre sur votre fenêtre ; appuyez sur Organiser pour obtenir une proposition.
 • Vérifiez et modifiez les groupes : renommer, changer la couleur, déplacer ou retirer un onglet, écarter un groupe.
 • Appuyez sur « Appliquer » et les groupes sont créés. « Annuler » remet tout comme avant.
 Aucun onglet ne bouge sans votre confirmation, sauf ceux des sites que vous ajoutez à une catégorie : ils vont directement dans leur groupe (désactivable).
@@ -165,7 +165,7 @@ CONFIDENTIALITÉ
 • La lecture de la description des pages est facultative et ne demande l'autorisation que lorsque vous l'activez.
 • Les clés API restent sur cet ordinateur.
 
-Il repère les onglets ouverts en double et ceux que vous n'avez pas ouverts depuis une semaine, vous montre ceux qu'il fermerait et ferme ceux que vous confirmez. Depuis le panneau, vous pouvez aller à un onglet, couper son son, réduire ou fermer un groupe. Exportez et importez vos paramètres dans un fichier.
+Il repère les onglets ouverts en double et ceux que vous n'avez pas ouverts depuis une semaine, vous montre ceux qu'il fermerait et ferme ceux que vous confirmez. Depuis le panneau, vous pouvez aller à un onglet, couper son son, réduire ou fermer un groupe, faire glisser onglets et groupes pour les réorganiser et les trier de A à Z. Exportez et importez vos paramètres dans un fichier.
 
 Un guide au premier lancement vous aide à choisir le mode et le fournisseur. Interface en français, anglais, italien, espagnol et allemand.
 ```
@@ -182,7 +182,7 @@ Un guide au premier lancement vous aide à choisir le mode et le fournisseur. In
 Zu viele offene Tabs? autoGroup sortiert sie in Chrome-Tabgruppen, nach Website oder nach Thema, und zeigt dir den Vorschlag, bevor Tabs verschoben werden (außer Tabs von Websites, die du einer Kategorie hinzufügst – die können automatisch gruppiert werden).
 
 SO FUNKTIONIERT ES
-• Klick auf das Symbol (oder drück Alt+Shift+G), und die Seitenleiste öffnet sich mit einem Vorschlag für dein Fenster.
+• Klick auf das Symbol (oder drück Alt+Shift+G), und die Seitenleiste öffnet sich mit deinem Fenster; drück Organisieren für einen Vorschlag.
 • Prüf und bearbeite die Gruppen: umbenennen, Farbe ändern, einen Tab verschieben oder entfernen, eine Gruppe verwerfen.
 • Drück „Anwenden“, und die Gruppen werden erstellt. „Rückgängig“ stellt alles wieder her.
 Kein Tab bewegt sich ohne deine Bestätigung – außer Tabs von Websites, die du einer Kategorie hinzufügst: Sie kommen direkt in ihre Gruppe (abschaltbar).
@@ -205,7 +205,7 @@ DATENSCHUTZ
 • Das Lesen der Seitenbeschreibungen ist optional und fragt erst nach der Berechtigung, wenn du es einschaltest.
 • API-Schlüssel bleiben auf diesem Computer.
 
-autoGroup erkennt doppelt geöffnete Tabs und Tabs, die du seit einer Woche nicht geöffnet hast, zeigt, welche es schließen würde, und schließt die, die du bestätigst. In der Seitenleiste springst du zu einem Tab, schaltest ihn stumm, klappst eine Gruppe ein oder schließt sie. Exportier und importier deine Einstellungen als Datei.
+autoGroup erkennt doppelt geöffnete Tabs und Tabs, die du seit einer Woche nicht geöffnet hast, zeigt, welche es schließen würde, und schließt die, die du bestätigst. In der Seitenleiste springst du zu einem Tab, schaltest ihn stumm, klappst eine Gruppe ein oder schließt sie, ziehst Tabs und Gruppen an eine neue Stelle und sortierst sie von A bis Z. Exportier und importier deine Einstellungen als Datei.
 
 Eine Anleitung beim ersten Start hilft dir, Modus und Anbieter zu wählen. Oberfläche auf Deutsch, Englisch, Italienisch, Spanisch und Französisch.
 ```

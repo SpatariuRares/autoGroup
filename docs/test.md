@@ -219,7 +219,7 @@ The script also reads the Gemini Nano status shown in the settings. In headless 
 
 After the settings, the script configures the Generator from the interface (Custom preset pointing to a fake OpenAI-compatible server inside the script itself), saves it, presses "Test connection", checks that the key is in `storage.local` and not in `sync`, recomputes the proposal ("new AI" group), presses "Save to list" and checks the category saved in `storage.sync`, checks that the requests contain no query, fragments or excluded tabs, then makes the server fail (500) and verifies the retry (2 requests) and the fallback to domain with the warning, then leaves the server without a response and presses "Stop" (no proposal, computation-stopped warning) (screenshot in `scripts/smoke-popup-warning.png`).
 
-At the end the script tests the four rows of the fallback table with all the tabs, turning the providers on and off in `storage.sync`. The fake System One answers with low confidence for the `/c` and `/d` pages. Expected and obtained results: both → "Work" (list, 3 tabs) + "Nuovo Tema" (new AI, 2 tabs), 5 System One requests and 1 to the Generator; Classifier only → "Work" (3 tabs), the other 2 ungrouped, no request to the Generator; Generator only → one group of 5 tabs; neither → two groups by domain. `repropose` counts only the requests of the computation forced by "Recompute", not those of the computation the panel makes on its own when it opens. The `/e` page has an empty meta description and an `og:description`, which must reach the AI.
+At the end the script tests the four rows of the fallback table with all the tabs, turning the providers on and off in `storage.sync`. The fake System One answers with low confidence for the `/c` and `/d` pages. Expected and obtained results: both → "Work" (list, 3 tabs) + "Nuovo Tema" (new AI, 2 tabs), 5 System One requests and 1 to the Generator; Classifier only → "Work" (3 tabs), the other 2 ungrouped, no request to the Generator; Generator only → one group of 5 tabs; neither → no group (rules only, and the smoke categories have no sites). The panel computes nothing when it opens, so `repropose` counts exactly the requests of "Organize"/"Recompute". The `/e` page has an empty meta description and an `og:description`, which must reach the AI.
 
 `scripts/permissions-check.mjs` (separately, on the normal build) checks that permission requests start inside the user gesture: clicking the Generator's "Save" and the descriptions switch leave Chrome's dialog open, while a request from the service worker is rejected. A request from `page.evaluate` is no use as a counter-check, because Puppeteer runs it as a user gesture. Mutation test: moving `permissions.request` after a 6 s wait, saving fails with "must be called during a user gesture".
 
@@ -228,6 +228,22 @@ At startup the script also checks with `chrome.commands.getAll()` that the short
 `npm run smoke` builds with `AUTOGROUP_SMOKE=1`, which adds `<all_urls>` to the host permissions: in headless mode Chrome's permission dialog cannot be accepted. At the end it rebuilds the normal build.
 
 Stable Chrome ignores `--load-extension` since version 137, so the script uses Chrome for Testing downloaded by Puppeteer.
+
+In a throwaway Puppeteer script, `mouse.down`/`mouse.up` starts a native drag but never drops it: use `page.setDragInterception(true)` and `mouse.dragAndDrop(from, to)`.
+
+### Checking a panel change by hand (chrome-devtools MCP)
+
+For a quick look at a UI change in real Chrome, use the `chrome-devtools-ext` MCP tools instead of writing a Puppeteer script:
+
+1. `npm run build`, then `install_extension` with the absolute path of `.output/chrome-mv3` (it returns the extension ID). After a rebuild, `reload_extension`.
+2. Serve pages with distinct titles from a tiny local HTTP server: only `http`, `https` and `file` tabs are candidates (`tab-selection.ts`), a `data:` page counts as a browser page.
+3. `new_page` on `chrome-extension://<id>/sidepanel.html`, then set up tabs and groups with `evaluate_script` **on that page** (`pageId`): extension pages have `chrome.tabs` and `chrome.tabGroups`. Read the strip back the same way.
+4. Work from `take_snapshot` (accessibility tree, with `uid`s for `click` and `drag`). The UI follows the browser language, often English: use the labels the snapshot shows.
+5. `drag` performs a real native drag and drop and drops on the centre of the target, which on a tab row or group card means "after" it.
+
+Keep `evaluate_script` off the service worker (`serviceWorkerId`): it leaves the worker half started, its listeners missing, and every panel call answers nothing ("An unexpected error occurred", console "Nessuna risposta dal service worker"). If that happens, `uninstall_extension` and `install_extension` again.
+
+A Chrome API the fake strip did not model yet (as `tabGroups.move` was) gets added to `fake-tab-strip.ts` and the same scenario confirmed in real Chrome, through the MCP or a Puppeteer script.
 
 ## Scenarios covered (automatic grouping), in `tests/auto-group.test.ts`
 
@@ -279,3 +295,9 @@ The smoke test goes through the pages from the menu: the four entries visible at
 - `remoteOrganizer` reaches the Organizer served by `serveOrganizer` and returns its results (state, view); an error in the service worker becomes an exception in the page; methods reserved to the service worker (`checkStale`) get no answer; announced states reach `onOrganizerState`.
 - `saveProvider`: provider and API key saved (the key only in `storage.local`); permission granted → `ready`, denied → `no-permission`; changing server removes the previous host's permission, unless the other role still uses it; Gemini Nano and "none" ask for nothing and release the previous host; a Generator without model is `incomplete`; a non-http(s) URL has no origin to request.
 
+## Scenarios covered (rules only, sorting, drag and drop), in `tests/site-rules-pipeline.test.ts`, `tests/sort.test.ts`, `tests/moves.test.ts`
+
+- Rules only (AI mode, Generator and Classifier on *None*): only the site-rule groups, the other tabs stay ungrouped even when they share a domain; no request and no notice. A category below the minimum forms no group, but a single tab joins an open group with the same name. With Gemini Nano chosen the fallback to domain stays.
+- Sort groups A-Z: groups in alphabetical order after the pinned tabs, unnamed groups last, ungrouped tabs after them in their order; other windows untouched.
+- Sort tabs A-Z: by title (case-insensitive, numeric) inside each group and among the ungrouped tabs, which keep their slots between groups; pinned tabs, groups and group membership unchanged, including a single-tab group. Sorting does not make the proposal stale.
+- Drag and drop, in `tests/moves.test.ts`: a tab reordered inside its group (left, right, to the end), moved into another group (before a tab or at the end), taken out of its group (before an ungrouped tab or after the last one), an ungrouped tab moved into a group or to the end of the ungrouped tabs; pinned tabs, a target tab outside the target group, groups of other windows and a tab dropped on itself are ignored. A whole group moved before another (leftwards and rightwards) and after the last group, never entering another group; before itself or before the group that follows it nothing changes.

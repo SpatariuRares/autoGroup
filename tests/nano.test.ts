@@ -99,7 +99,8 @@ describe('Gemini Nano come Generatore integrato', () => {
 
     expect(nano.created.count).toBe(0);
     expect(LanguageModel.availability).not.toHaveBeenCalled();
-    expect(summary(state).map(([, provenance]) => provenance)).toEqual(['domain', 'domain']);
+    // Senza nessun provider valgono solo le regole sui siti: qui nessuna.
+    expect(summary(state)).toEqual([]);
     expect(state.proposal!.warnings).toEqual([]);
   });
 

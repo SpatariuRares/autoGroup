@@ -9,7 +9,9 @@ import { willAskAi } from './pipeline';
 import { buildPreview, buildProposal, collectInputs, keepCurrent, signatureOf } from './proposal-builder';
 import { editProposal } from './proposal-edits';
 import { rememberOffer, rememberTabSite } from './remember-site';
+import { moveGroup, moveTab } from './moves';
 import { saveGroupToList } from './save-to-list';
+import { sortGroups, sortTabs } from './sort';
 import { createStopwatch } from './stopwatch';
 import { selectCandidateTabs } from './tab-selection';
 import { restoreSnapshot } from './undo';
@@ -109,6 +111,21 @@ export interface Organizer {
    * Si accetta solo una tab che la selezione prenderebbe (non fissata, non interna, non esclusa).
    */
   groupTab(tabId: number, groupId: number): Promise<OrganizerState>;
+  /**
+   * "Gruppi A-Z": mette in ordine alfabetico i gruppi della finestra nella barra (vedi `sortGroups`).
+   * Non tocca la proposta: l'ordine delle tab non fa parte della sua impronta.
+   */
+  sortGroups(windowId: number): Promise<OrganizerState>;
+  /** "Tab A-Z": ordina per titolo le tab di ogni gruppo e quelle libere (vedi `sortTabs`). Come `sortGroups`. */
+  sortTabs(windowId: number): Promise<OrganizerState>;
+  /**
+   * Drag and drop di una tab: la sposta in un gruppo aperto della sua finestra (o fuori da ogni gruppo
+   * con `groupId` null), prima di `beforeTabId` o in fondo (vedi `moveTab`). Le tab fissate non si
+   * spostano. Come per "Sposta in…" senza proposta, una proposta che ne dipende diventa superata.
+   */
+  moveTab(tabId: number, groupId: number | null, beforeTabId: number | null): Promise<OrganizerState>;
+  /** Drag and drop di un gruppo aperto, intero: prima di `beforeGroupId` o dopo l'ultimo gruppo (vedi `moveGroup`). */
+  moveGroup(groupId: number, beforeGroupId: number | null): Promise<OrganizerState>;
   /**
    * Raggruppamento automatico di una tab che ha appena cambiato URL, con le sole regole sui siti
    * (vedi `autoGroupTab`). Non cambia lo stato: una proposta che conteneva la tab diventa superata.
@@ -354,6 +371,34 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         if (!selectCandidateTabs(tabs, excludedDomains).some((t) => t.tabId === tabId)) return current;
         await browser.tabs.group({ tabIds: [tabId], groupId });
         return current;
+      });
+    },
+
+    sortGroups(windowId) {
+      return exclusive(async () => {
+        await sortGroups(windowId);
+        return load();
+      });
+    },
+
+    sortTabs(windowId) {
+      return exclusive(async () => {
+        await sortTabs(windowId);
+        return load();
+      });
+    },
+
+    moveTab(tabId, groupId, beforeTabId) {
+      return exclusive(async () => {
+        await moveTab(tabId, groupId, beforeTabId);
+        return load();
+      });
+    },
+
+    moveGroup(groupId, beforeGroupId) {
+      return exclusive(async () => {
+        await moveGroup(groupId, beforeGroupId);
+        return load();
       });
     },
 

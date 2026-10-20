@@ -34,6 +34,7 @@ src/
     window-view.ts       the panel's view of the whole window (`Organizer.view`): proposal overlaid on tabs and open groups
     duplicates.ts        duplicate tabs: which copies "Close duplicates" closes
     inactive.ts          inactive tabs: which tabs "Close inactive" closes
+    sort.ts              "Sort groups A-Z" and "Sort tabs A-Z": reorder the window's strip
   settings/              preferences in chrome.storage.sync
     index.ts             loading and saving, validation, excluded domains, category sites, saving a provider (saveProvider)
     categories.ts        default categories (from chrome.i18n), list validation
@@ -90,6 +91,8 @@ It is the main module and **the only entry point called by the panel**. Interfac
 | `closeInactive(windowId, tabIds)` | "Close inactive": closes the chosen tabs that are still inactive (see "Inactive tabs"). The proposal stays current. |
 | `closeGroup(groupId)` | Closes every tab of an open Chrome group. The tabs the proposal was adding to it go back to ungrouped; the proposal stays current. |
 | `closeTab(tabId)` | Closes one tab from the panel and removes it from the proposal, through the same step as `closeGroup` (see below). |
+| `sortGroups(windowId)`, `sortTabs(windowId)` | "Sort groups A to Z" and "Sort tabs A to Z" on the Chrome strip (see "Sorting"). They do not touch the proposal. |
+| `moveTab(tabId, groupId, beforeTabId)`, `moveGroup(groupId, beforeGroupId)` | Drag and drop in the panel: moves a tab into an open group or out of every group, or a whole open group (see "Drag and drop"). |
 | `checkStale()` | Compares the current proposal's signature with the live inputs and writes the result to `state.stale` (see "Stale proposal"). Goes through the queue. |
 | `view(windowId)` | The whole window as the panel shows it (see "The whole window"). Read-only; does not wait for the queue, so the panel can ask while the AI computes. |
 | `state()` | Returns the current state. |
@@ -166,7 +169,7 @@ Each `propose` that actually computes measures its phases with a stopwatch: `inp
 
 ### Proposal signature
 
-Each proposal has a `signature`: IDs and URLs of the candidate tabs, open groups (ID, name, color), settings used, availability of the providers and of Gemini Nano, and whether description reading is on. When the panel reopens, `propose` rereads the inputs and compares the signature: if it matches it returns the saved proposal (with the user's edits), otherwise it computes a new one. The title is not part of the signature, because it often changes by itself (counters like "(3) Mail"); neither is the order of the tabs (candidates are sorted by ID), because moving a tab does not change the groups. The same signature decides the "Your tabs changed" notice (`checkStale`), so the notice and the reuse on reopening never disagree.
+Each proposal has a `signature`: IDs and URLs of the candidate tabs, open groups (ID, name, color), settings used, availability of the providers and of Gemini Nano, and whether description reading is on. When the panel reopens it only reads the state (`state()`), so the saved proposal comes back with the user's edits and nothing is computed; the signature decides whether it shows the "Your tabs changed" notice. `propose` without `force` still reuses a proposal whose signature matches. The title is not part of the signature, because it often changes by itself (counters like "(3) Mail"); neither is the order of the tabs (candidates are sorted by ID), because moving a tab does not change the groups. The same signature decides the "Your tabs changed" notice (`checkStale`), so the notice and the reuse on reopening never disagree.
 
 ### AI pipeline (`pipeline.ts`)
 
@@ -177,7 +180,7 @@ Implements the whole fallback table of the PRD:
 | yes | yes | step 1 (Classifier), then step 2 (Generator "new only") on the remaining tabs |
 | yes | no | step 1 only: the remaining tabs stay ungrouped |
 | no | yes | Generator in "full" mode |
-| no | no | grouping by domain |
+| no | no | grouping by domain; with both set to *None*, site rules only (see "Rules only") |
 
 **Always a proposal**: except with "Stop", every provider error is recorded as a notice (`recordFailure`) and the pipeline drops one level; an unexpected error, which is not a `ProviderError`, is recorded as "invalid response" instead of interrupting the computation. Only an aborted signal is rethrown.
 
@@ -194,6 +197,8 @@ If there are no options (no category and no open group) the Classifier is not qu
 **Site rules** (`site-rules.ts`): before any level, the candidate tabs whose URL matches a site of a category (`settings.categorySites`, category ID → `domain[/path]`) are taken out. A domain matches its subdomains, a path matches by whole segments, case-insensitively; with several matches the most specific site wins (host labels + path segments, then the longer path). The other tabs follow the normal path: only they are read by the Description reader and sent to the Classifier or Generator. Rule groups are `ValidGroup`s with the same short IDs and are merged by name with the groups of the AI or of the domain grouping before `applyGroupRules`, so they follow the same minimum: a rule tab below the minimum stays ungrouped and is never passed to step 2. If every candidate is taken by a rule, no AI is queried and there is no preview. Tabs placed by a rule carry `rule` (the site) in the proposal; moving them clears it.
 
 **Mode** (`settings.mode`): with `domain` (*By site*) `runPipeline` immediately returns the groups by domain, without notices, without reading pages or querying providers. With `ai` (default) it follows the fallback table.
+
+**Rules only** (`isRulesOnly` in `src/settings`): in `ai` mode with Generator **and** Classifier both set to *None*, `runPipeline` returns only the site-rule groups (`ruleGroups`), through `applyGroupRules` like the other levels (minimum, open groups with the same name, category colors); every other tab stays ungrouped, with no grouping by domain, no notice, no page read. The saved value stays `mode: 'ai'`: the panel just labels the button *With rules*. Gemini Nano chosen but unavailable is not "rules only": the user chose an AI, so the usual fallback to domain applies, with its notice.
 
 **Choice of the Generator** (`resolveGenerator`): it is the user's choice, with no substitutions.
 
@@ -356,7 +361,7 @@ interface OrganizerState {
 
 The state always has the `windowId` it refers to: it is unique for all windows, and the panel shows only the updates of its own window. Opening the panel in another window replaces the previous proposal.
 
-It survives closing the panel and restarting the service worker, but not closing Chrome. If the panel closes during the computation, the service worker finishes anyway and saves the proposal; when the panel reopens, `propose` finds the proposal ready and returns it.
+It survives closing the panel and restarting the service worker, but not closing Chrome. If the panel closes during the computation, the service worker finishes anyway and saves the proposal; when the panel reopens it reads the state and finds the proposal ready.
 
 Storage split required by the PRD: `sync` for categories and preferences, `local` for API keys, `session` for the Organizer's state. `session` also holds the pipeline's two caches, `classifierCache` and `descriptionCache` (`session-cache.ts`, at most 1000 entries each, the oldest are evicted): like the state, they disappear when Chrome closes, so titles and URLs do not stay on disk.
 
@@ -473,9 +478,9 @@ Defined in `src/shared/organizer-remote.ts`. The pages do not build messages: th
 
 `entrypoints/sidepanel`: WXT declares it as `side_panel.default_path` and adds the `sidePanel` permission. The service worker calls `sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`, so clicking the icon (and `_execute_action`, that is `Alt+Shift+G`) opens the panel instead of a popup. **Why:** a popup closes at the first click outside, while with local providers the computation can last tens of seconds; the panel stays open while the user switches tabs and while the AI works.
 
-On opening it reads the current window and requests `organizer/propose` with the saved mode.
+On opening it reads the current window and only the Organizer's state (`state()`): **no computation starts by itself**. The window view (open groups, ungrouped tabs, duplicates, inactive tabs) is there at once; a proposal already made for this window comes back as it was, with the stale notice if the tabs changed. The computation starts only from the bottom bar: without a proposal the main (filled) button is **Organize**, with a proposal it becomes the outlined **Recompute** (both have the class `recompute`, which the scripts use).
 
-**Mode choice in the panel.** Below the top bar there is a segmented button *By site* / *With AI*: changing it saves `settings.mode` and recomputes immediately, so the user chooses the type of classification before applying. Below the selector there is a summary of what will be used: the active providers (e.g. "Rizzo Flow → Unsloth Studio" or "Gemini Nano") with the link to change them, or "No AI provider set up". The settings are read live (`storage.onChanged`), so the panel also updates if the user changes them in the options page.
+**Mode choice in the panel.** Below the top bar there is a segmented button *By site* / *With AI*: changing it saves `settings.mode` and recomputes immediately only if a proposal is shown (it would be stale with the new mode); otherwise it waits for "Organize". When Generator and Classifier are both *None* (`isRulesOnly`) the second button reads *With rules* (icon `rule`). Below the selector there is a summary of what will be used: the active providers (e.g. "Rizzo Flow → Unsloth Studio" or "Gemini Nano") with the link to change them, or, with rules only, "Only your site rules: other tabs stay ungrouped" with "Edit rules" (opens Categories). The settings are read live (`storage.onChanged`), so the panel also updates if the user changes them in the options page.
 
 **The whole window, not just the proposal** (`Organizer.view`, built by `src/organizer/window-view.ts`). The service worker reads the window's tabs and groups live, with the excluded domains, and overlays the current proposal (or, during a computation, the by-site preview) on them. The panel asks for it again (`useWindowView`, `organizer/view`) after every tab or group event of its window, every state change and every settings change, and drops a response that arrives after a newer one. The panel imports nothing from `src/organizer/`. The view also carries the duplicates, the inactive tabs, the inactivity threshold and the live details of every tab. It splits the window into four sections:
 - **New groups**: the proposal's groups that do not exist yet, editable as before.
@@ -487,7 +492,16 @@ On opening it reads the current window and requests `organizer/propose` with the
 
 **Live details and direct actions** (`live-tabs.ts`, `tab-actions.ts`). `App` puts `view.live` (active, audible, muted, days idle, by tab ID) in a React context, so every row reads what the proposal does not carry; open group cards get `collapsed` from the view. The row of the active tab has a bar on the left and a bold title (`aria-current`); `tabs.onActivated` refreshes it. A tab that plays sound, or is muted, has an audio chip that mutes or unmutes it. Each row has "Go to tab" (↗, also Enter on the focused row or a double click), which activates the tab. Each open group card has, in its header, collapse/expand in Chrome and "Close all tabs in the group": the first click turns ✕ into "Close N tabs", which stays armed for 4 seconds. Going to a tab, muting and collapsing call `chrome.tabs`/`chrome.tabGroups` straight from the panel, like opening the settings, because they do not touch the proposal: collapsing a group is not counted as a change that makes the proposal stale (only a new name or color is). Closing a group goes through `organizer/close-group`.
 
+**Sorting** (`sort.ts`, `Organizer.sortGroups` / `sortTabs`). The *Open groups* header has "Sort groups A to Z" (only with at least two groups) and "Sort tabs A to Z" icon buttons; without open groups, "Sort tabs A to Z" sits in the *Ungrouped* header. Both act on the Chrome strip of the window, in the operation queue, and leave pinned tabs where they are. `sortGroups` places the groups right after the pinned tabs in alphabetical order (case-insensitive, numbers in numeric order, unnamed groups last), then the ungrouped tabs in their current order. `sortTabs` sorts by title the tabs inside each group and the ungrouped tabs among themselves, which take the same free slots between groups; groups do not move. No tab changes group: groups move as a whole (`tabGroups.move`), every move goes leftwards from the start, and a tab already at its place is not moved (moved onto itself, the only tab of a group could leave it). Sorting does not touch the proposal, and since tab order is not part of the signature it does not make it stale.
+
+**Drag and drop** (`drag.ts`, `src/organizer/moves.ts`). Only on what already exists in Chrome: open groups and ungrouped tabs. Proposal groups, the tabs a proposal adds ("new"), pinned and not organized tabs are not draggable, and nothing is draggable while computing or in the read-only preview. Native browser drag and drop, no library; keyboard users keep "Move to…" and the A-Z buttons.
+- A whole **group** is dragged from its card header and dropped on another open group card: before or after it (top or bottom half), never inside. `moveGroup(groupId, beforeGroupId)` moves it before that group or, with `null`, after the last group. Leftwards it is one `tabGroups.move`; rightwards the blocks it jumps over (whole groups and ungrouped tabs) are moved leftwards before it, so every move has an unambiguous index.
+- A **tab** of an open group (its current tabs, in an expanded card) or an ungrouped tab is dropped on a row (before or after it), on a group card outside the rows (end of that group, also for a collapsed card), or on the *Ungrouped* list outside the rows (out of its group, after the last ungrouped tab). While a tab is dragged the *Ungrouped* section shows up even if empty. `moveTab(tabId, groupId, beforeTabId)` first puts the tab in the right group (`tabs.group` appends it at the end, `tabs.ungroup` places it after its old group), then moves it just before the target tab, whose position keeps it in that group (or out of every group); at the end of a group, if Chrome took it out, it is grouped again.
+- Feedback: a primary-colored line before or after the row or card, the target group or the *Ungrouped* list highlighted, the dragged element at 38% opacity. The panel follows by itself (`useWindowView`). Like "Move to…" without a proposal, a move that changes the candidate tabs makes a shown proposal stale.
+
 **`add-tab` edit.** "Move to…" and "Add to…" use the new edit `{ kind: 'add-tab', tab, to }`, where `to` is a group of the proposal or an open group that the proposal does not touch yet. In this second case the proposal receives a new `existing` group (`id: e<idChrome>`). The Organizer (`checkAddTab`) accepts only a tab already in the proposal or still ungrouped in the window, with the same rules as the selection, and only towards a group of that window. The tab's data is reread from the browser, not taken from the message.
+
+**Tooltips.** Every icon-only control, in the panel and in the options page, shows its name in a Material 3 plain tooltip as soon as the pointer is over it or it has keyboard focus (also the native menu inside "Move to…"): `data-tooltip` in `src/ui/base.css`, aligned to the right, or to the left with `data-tooltip-align="start"` for controls on the left edge (group and category color). It replaces the native `title`, which Chrome shows only after a delay; the accessible name stays `aria-label`. The tooltip exists only while it is shown, so it never lengthens the scrolling list. Text elements (tab URL, chips, buttons with a label) keep the native `title`.
 
 Material 3 structure:
 - top bar with the title and ⚙ for the settings;
@@ -524,7 +538,7 @@ Some keys are composed at runtime: `warning_<causa>` (via `warningKey`, which re
 
 ## Keyboard shortcut
 
-`manifest.commands._execute_action` with `suggested_key` `Alt+Shift+G` opens the panel like a click on the icon, so the proposal computation starts immediately. It requires no permissions and no code: Chrome handles the command by itself. Without `description`, which Chrome ignores for `_execute_action` (in `chrome://extensions/shortcuts` it shows the action title). The shortcut is only suggested: it can be changed from `chrome://extensions/shortcuts` and Chrome does not assign it if another extension already uses it.
+`manifest.commands._execute_action` with `suggested_key` `Alt+Shift+G` opens the panel like a click on the icon (the computation then starts from "Organize"). It requires no permissions and no code: Chrome handles the command by itself. Without `description`, which Chrome ignores for `_execute_action` (in `chrome://extensions/shortcuts` it shows the action title). The shortcut is only suggested: it can be changed from `chrome://extensions/shortcuts` and Chrome does not assign it if another extension already uses it.
 
 ## Permissions
 

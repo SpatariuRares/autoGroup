@@ -33,6 +33,14 @@ export const SYNC_ITEM_QUOTA = 8192;
  */
 export type GroupingMode = 'ai' | 'domain';
 
+/**
+ * Modalità AI con Generatore e Classificatore tutti e due su "Nessuno": il pannello la chiama "Con
+ * regole" e si applicano solo le regole sui siti, senza il ripiego per dominio.
+ */
+export function isRulesOnly(settings: Pick<Settings, 'mode' | 'generator' | 'classifier'>): boolean {
+  return settings.mode === 'ai' && settings.generator.preset === 'none' && settings.classifier.preset === 'none';
+}
+
 /** Preferenze sincronizzate tra i Chrome dell'utente (chrome.storage.sync). */
 export interface Settings {
   mode: GroupingMode;

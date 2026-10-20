@@ -709,17 +709,32 @@
   "panelModeSiteSummary": {
     "message": "Tabs derselben Website kommen zusammen. Keine Daten werden gesendet."
   },
-  "panelNoProvider": {
-    "message": "Kein KI-Anbieter eingerichtet: Tabs werden nach Website gruppiert."
+  "panelModeRules": {
+    "message": "Mit Regeln"
+  },
+  "panelModeRulesSummary": {
+    "message": "Nur deine Website-Regeln: andere Tabs bleiben ohne Gruppe. Es werden keine Daten gesendet."
+  },
+  "panelEditRules": {
+    "message": "Regeln bearbeiten"
   },
   "panelChangeProviders": {
     "message": "Ändern"
+  },
+  "panelOrganize": {
+    "message": "Organisieren"
   },
   "panelSectionNew": {
     "message": "Neue Gruppen"
   },
   "panelSectionExisting": {
     "message": "Offene Gruppen"
+  },
+  "panelSortGroups": {
+    "message": "Gruppen von A bis Z sortieren"
+  },
+  "panelSortTabs": {
+    "message": "Tabs von A bis Z sortieren"
   },
   "panelReadOnly": {
     "message": "Name und Farbe nicht änderbar"

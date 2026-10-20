@@ -146,7 +146,7 @@ describe('descrizione delle pagine', () => {
     expect(read).not.toContain(bank);
   });
 
-  it('senza AI (raggruppamento per dominio) non legge nessuna pagina', async () => {
+  it('senza AI (solo regole sui siti) non legge nessuna pagina', async () => {
     await saveSettings({ generator: { preset: 'none', baseUrl: '', model: '' } });
     open('A1', 'https://a.com/1');
     open('A2', 'https://a.com/2');
@@ -155,6 +155,6 @@ describe('descrizione delle pagine', () => {
     const state = await organizer.propose(W);
 
     expect(read).toEqual([]);
-    expect(state.proposal!.groups.map((g) => g.provenance)).toEqual(['domain']);
+    expect(state.proposal!.groups).toEqual([]);
   });
 });

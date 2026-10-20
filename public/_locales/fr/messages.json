@@ -709,17 +709,32 @@
   "panelModeSiteSummary": {
     "message": "Les onglets d'un même site vont ensemble. Aucune donnée envoyée."
   },
-  "panelNoProvider": {
-    "message": "Aucun fournisseur d'IA configuré : les onglets sont regroupés par site."
+  "panelModeRules": {
+    "message": "Avec règles"
+  },
+  "panelModeRulesSummary": {
+    "message": "Seulement vos règles de sites : les autres onglets restent sans groupe. Aucune donnée envoyée."
+  },
+  "panelEditRules": {
+    "message": "Modifier les règles"
   },
   "panelChangeProviders": {
     "message": "Modifier"
+  },
+  "panelOrganize": {
+    "message": "Organiser"
   },
   "panelSectionNew": {
     "message": "Nouveaux groupes"
   },
   "panelSectionExisting": {
     "message": "Groupes ouverts"
+  },
+  "panelSortGroups": {
+    "message": "Trier les groupes de A à Z"
+  },
+  "panelSortTabs": {
+    "message": "Trier les onglets de A à Z"
   },
   "panelReadOnly": {
     "message": "nom et couleur non modifiables"

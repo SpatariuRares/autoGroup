@@ -98,7 +98,7 @@ export function TabsSection({ minTabs, onMinTabs, excludedDomains, onExcludedDom
                 <span>{domain}</span>
                 <button
                   className="icon danger"
-                  title={t('optionsRemove')}
+                  data-tooltip={t('optionsRemove')}
                   aria-label={`${t('optionsRemove')}: ${domain}`}
                   onClick={() => onExcludedDomains(excludedDomains.filter((d) => d !== domain))}
                 >
