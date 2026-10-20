@@ -3,7 +3,7 @@ import { browser } from 'wxt/browser';
 import { saveSettings, type GroupingMode } from '../../src/settings';
 import { t } from '../../src/shared/i18n';
 import { remoteOrganizer as organizer } from '../../src/shared/organizer-remote';
-import { proposalIn, type RememberOffer } from '../../src/shared/types';
+import type { RememberOffer } from '../../src/shared/types';
 import { useFocusRecovery } from '../../src/ui/focus-recovery';
 import { Icon } from '../../src/ui/Icon';
 import { CloseTabsBanner, ComputingStatus, ErrorBanner, InfoBanner, StaleBanner, WarningsBanner } from './Banners';
@@ -15,6 +15,7 @@ import { LiveTabsContext } from './live-tabs';
 import { ModePicker } from './ModePicker';
 import { moveTargets, reorderAt } from './move-targets';
 import { PanelActionsContext, type PanelActions } from './panel-actions';
+import { panelModel, type Banner } from './panel-model';
 import { moveBetweenRows } from './row-navigation';
 import { Snackbar } from './Snackbar';
 import { TabRow } from './TabRow';
@@ -25,14 +26,8 @@ export function App() {
   const [notice, setNotice] = useState<'popupApplied' | 'popupUndone' | null>(null);
   const [offer, setOffer, pauseOffer] = useExpiring<RememberOffer>(SNACKBAR_MS);
 
-  const proposal = proposalIn(state, windowId);
-  const canUndo = state?.undo !== undefined && state.undo.windowId === windowId;
-  const computing = !state || state.phase === 'computing';
-  // Proposta per sito mostrata in sola lettura mentre l'AI calcola.
-  const preview = state?.phase === 'computing' && state.windowId === windowId ? state.preview : undefined;
-  const readOnly = !proposal && preview !== undefined;
-
   const view = useWindowView(windowId, state, settings);
+  const { proposal, preview, computing, readOnly, canUndo, notice: panelNotice, banners, announcement } = panelModel({ state, windowId, view, failure, done: notice });
   const categories = useSaveToCategories(run, view);
 
   function recompute() {
@@ -106,37 +101,26 @@ export function App() {
   const groupIds = view.existing.map((e) => e.group.id);
   const freeIds = view.free.map((tab) => tab.tabId);
 
-  const message = failure ?? state?.error;
   const touched = view.existing.filter((e) => e.added.length > 0);
   const untouched = view.existing.filter((e) => e.added.length === 0);
   const rememberFocus = useFocusRecovery('.tab, .group');
 
-  // "Applica" e "Annulla" tolgono la proposta: nessun avviso nemmeno se le tab cambiano.
-  const showStale = proposal !== undefined && state?.stale === true && !computing;
-  // L'esito di "Aggiungi alle categorie" sta nella sua snackbar, non nel pannello.
-  const panelNotice = state?.notice?.snackbar ? undefined : state?.notice;
-  const info = !proposal && !computing && (panelNotice || notice) ? (panelNotice ? t(panelNotice.key, panelNotice.arg) : t(notice!)) : null;
-  const noGroups = proposal !== undefined && view.created.length === 0 && touched.length === 0;
-
-  // I banner, nell'ordine in cui compaiono. Compaiono già pieni, e una regione live nuova di solito non
-  // viene letta: il loro testo (`announce`) passa da `announcement`, sempre presente. Errori e avvisi
-  // dell'AI hanno già role="alert".
-  const banners: { key: string; announce?: string; node: React.ReactNode }[] = [];
-  if (message) banners.push({ key: 'error', node: <ErrorBanner messageKey={message} /> });
-  if (showStale) banners.push({ key: 'stale', announce: t('panelStale'), node: <StaleBanner onRecompute={recompute} /> });
-  if (proposal && proposal.warnings.length > 0) banners.push({ key: 'warnings', node: <WarningsBanner warnings={proposal.warnings} /> });
-  if (view.duplicates.length > 0 && !computing) {
-    const text = view.duplicates.length === 1 ? t('panelDuplicatesOne') : t('panelDuplicates', String(view.duplicates.length));
-    banners.push({ key: 'duplicates', announce: text, node: <CloseTabsBanner icon="tab" text={text} tabs={view.duplicates} disabled={busy} onClose={closeDuplicates} /> });
-  }
-  if (view.inactive.length > 0 && !computing) {
-    const text =
-      view.inactive.length === 1 ? t('panelInactiveOne', String(view.inactiveDays)) : t('panelInactive', [String(view.inactive.length), String(view.inactiveDays)]);
-    banners.push({ key: 'inactive', announce: text, node: <CloseTabsBanner icon="schedule" text={text} tabs={view.inactive} disabled={busy} onClose={closeInactive} /> });
-  }
-  if (info) banners.push({ key: 'info', announce: info, node: <InfoBanner text={info} /> });
-  if (noGroups) banners.push({ key: 'no-groups', announce: t('popupNoGroups'), node: <InfoBanner text={t('popupNoGroups')} /> });
-  const announcement = [computing && t(preview ? 'panelPreviewComputing' : 'popupComputing'), ...banners.map((b) => b.announce)].filter(Boolean).join(' ');
+  const bannerNode = (b: Banner) => {
+    switch (b.kind) {
+      case 'error':
+        return <ErrorBanner messageKey={b.messageKey} />;
+      case 'stale':
+        return <StaleBanner onRecompute={recompute} />;
+      case 'warnings':
+        return <WarningsBanner warnings={b.warnings} />;
+      case 'duplicates':
+        return <CloseTabsBanner icon="tab" text={b.text} tabs={b.tabs} disabled={busy} onClose={closeDuplicates} />;
+      case 'inactive':
+        return <CloseTabsBanner icon="schedule" text={b.text} tabs={b.tabs} disabled={busy} onClose={closeInactive} />;
+      default:
+        return <InfoBanner text={b.text} />;
+    }
+  };
 
   return (
     <div className="panel" onClickCapture={rememberFocus} onChangeCapture={rememberFocus}>
@@ -166,7 +150,7 @@ export function App() {
       <LiveTabsContext.Provider value={view.live}>
         <div className="content" onKeyDown={moveBetweenRows}>
           {banners.map((b) => (
-            <Fragment key={b.key}>{b.node}</Fragment>
+            <Fragment key={b.kind}>{bannerNode(b)}</Fragment>
           ))}
 
           {view.created.length > 0 && (
