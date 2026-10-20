@@ -49,6 +49,9 @@
   "provenance_domain": {
     "message": "site"
   },
+  "provenance_manual": {
+    "message": "le vôtre"
+  },
   "color_grey": {
     "message": "gris"
   },
@@ -97,6 +100,9 @@
   "popupGroupName": {
     "message": "Nom du groupe"
   },
+  "panelRenameGroup": {
+    "message": "Renommer le groupe"
+  },
   "popupDiscardGroup": {
     "message": "Ignorer le groupe (les onglets restent libres)"
   },
@@ -105,6 +111,30 @@
   },
   "popupMoveTo": {
     "message": "Déplacer vers…"
+  },
+  "panelMoveTabAnywhere": {
+    "message": "Déplacer l'onglet"
+  },
+  "panelUngroupTab": {
+    "message": "Retirer du groupe"
+  },
+  "panelPosition": {
+    "message": "Position"
+  },
+  "panelMoveUp": {
+    "message": "Monter"
+  },
+  "panelMoveDown": {
+    "message": "Descendre"
+  },
+  "panelMoveGroup": {
+    "message": "Déplacer le groupe"
+  },
+  "panelNewGroup": {
+    "message": "+ Nouveau groupe"
+  },
+  "panelNewGroupDrop": {
+    "message": "Déposez ici pour un nouveau groupe"
   },
   "popupRemoveTab": {
     "message": "Retirer du groupe (l'onglet reste ouvert, hors groupe)"
@@ -301,6 +331,9 @@
   },
   "optionsCategoryDescription": {
     "message": "Description"
+  },
+  "optionsDescribing": {
+    "message": "Rédaction de la description avec l'IA…"
   },
   "optionsCategoryColor": {
     "message": "Couleur"
@@ -570,10 +603,21 @@
     "message": "La configuration du fournisseur n'est pas valide."
   },
   "popupSaveToList": {
-    "message": "Enregistrer dans la liste"
+    "message": "Ajouter aux catégories"
   },
   "popupSaveToListHint": {
-    "message": "Ajoute ce groupe aux catégories, avec une description générée par l'IA"
+    "message": "Ajoute ce groupe aux catégories de l'extension"
+  },
+  "panelSavingToList": {
+    "message": "Ajout de « $NAME$ » aux catégories…",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInCategories": {
+    "message": "Déjà dans les catégories"
   },
   "panelSiteRemembered": {
     "message": "Les onglets de $SITE$ iront toujours dans $CATEGORY$.",
@@ -735,9 +779,6 @@
   },
   "panelSortTabs": {
     "message": "Trier les onglets de A à Z"
-  },
-  "panelReadOnly": {
-    "message": "nom et couleur non modifiables"
   },
   "panelSectionFree": {
     "message": "Hors groupe"

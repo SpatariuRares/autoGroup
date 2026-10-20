@@ -83,6 +83,27 @@ describe('drag and drop di una tab', () => {
   });
 });
 
+describe('una tab che esce dal suo gruppo, come in Chrome', () => {
+  // Visto in Chrome vero: la prima tab resta prima del gruppo, le altre finiscono subito dopo.
+  it('"Nuovo gruppo" sulla prima tab la lascia prima del gruppo, su un\'altra la mette dopo', async () => {
+    const { ids } = await setup();
+
+    await organizer.newGroup(ids.a1!);
+    await organizer.newGroup(ids.a3!);
+
+    expect(strip.layout()).toEqual(['P', 'a1 [a1.com]', 'a2 [A]', 'a3 [a3.com]', 'x', 'b1 [B]', 'b2 [B]', 'y']);
+  });
+
+  it('l\'unica tab di un gruppo resta dov\'è', async () => {
+    const { ids } = await setup();
+    await organizer.newGroup(ids.b1!);
+
+    await organizer.newGroup(ids.b2!);
+
+    expect(strip.layout()).toEqual(['P', 'a1 [A]', 'a2 [A]', 'a3 [A]', 'x', 'b1 [b1.com]', 'b2 [b2.com]', 'y']);
+  });
+});
+
 describe('drag and drop di un gruppo', () => {
   it('lo sposta intero prima di un altro gruppo, verso sinistra', async () => {
     const { B, A } = await setup();

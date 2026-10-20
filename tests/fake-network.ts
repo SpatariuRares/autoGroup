@@ -1,5 +1,55 @@
 import { vi } from 'vitest';
+import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { cleanUrl } from '../src/organizer/ai-input';
+import { isExcluded, isInternalUrl } from '../src/organizer/tab-selection';
+import { loadSettings } from '../src/settings';
+
+/**
+ * Pagine del browser o di domini esclusi trovate in una richiesta a un provider: `privacy.md` promette
+ * che non escono mai. Ogni richiesta di `installFakeFetch` viene controllata; `tests/setup.ts` fa
+ * fallire il test che ne lascia una qui (un errore dentro `fetch` sembrerebbe un provider che non
+ * risponde, e il test passerebbe).
+ */
+export const privacyViolations: string[] = [];
+
+/** Ogni indirizzo nel corpo (con il titolo, se c'è), anche dentro i messaggi che sono testo JSON. */
+function sentTabs(value: unknown, found: { title?: string; url: string }[] = []) {
+  if (typeof value === 'string') {
+    if (/^\s*[[{]/.test(value)) {
+      try {
+        sentTabs(JSON.parse(value), found);
+      } catch {
+        // Testo che sembra JSON ma non lo è: nessuna tab dentro.
+      }
+    }
+  } else if (Array.isArray(value)) {
+    for (const item of value) sentTabs(item, found);
+  } else if (value && typeof value === 'object') {
+    const { title, url } = value as Record<string, unknown>;
+    if (typeof url === 'string') found.push({ url, ...(typeof title === 'string' ? { title } : {}) });
+    for (const item of Object.values(value)) sentTabs(item, found);
+  }
+  return found;
+}
+
+async function checkPrivacy(request: RecordedRequest) {
+  const tabs = await browser.tabs.query({}).catch(() => []);
+  const { excludedDomains } = await loadSettings();
+  const forbidden = new Set(
+    tabs.filter((t) => isInternalUrl(t.url) || isExcluded(t.url!, excludedDomains)).map((t) => `${t.title}\n${cleanUrl(t.url ?? '')}`),
+  );
+  const found = (what: string) => privacyViolations.push(`${request.url}: ${what}`);
+  for (const tab of sentTabs(request.body)) {
+    // Una pagina del browser ridotta da `cleanUrl` non ha più lo schema: la si riconosce con il titolo.
+    if (tab.title !== undefined && forbidden.has(`${tab.title}\n${tab.url}`)) found(`«${tab.title}» (${tab.url})`);
+    // Un dominio escluso si riconosce dall'indirizzo, anche senza titolo.
+    else if (isExcluded(tab.url.includes('://') ? tab.url : `https://${tab.url}`, excludedDomains)) found(`dominio escluso (${tab.url})`);
+  }
+  // Un indirizzo interno scritto per intero, in qualunque punto del corpo.
+  const scheme = JSON.stringify(request.body).match(/(chrome|chrome-extension):\/\/[^\s"\\]*|about:(blank|newtab|srcdoc)/);
+  if (scheme) found(`pagina del browser (${scheme[0]})`);
+}
 
 /** Permessi host opzionali: `granted` contiene i pattern concessi, es. "https://openrouter.ai/*". */
 export function installFakePermissions(granted: string[] = []) {
@@ -47,6 +97,7 @@ export function installFakeFetch(...replies: Reply[]) {
       signal: init?.signal ?? undefined,
     };
     requests.push(request);
+    await checkPrivacy(request);
     const next = queue.length > 1 ? queue.shift()! : queue[0];
     if (!next) throw new Error('fetch inatteso');
     // Come il fetch vero: un segnale interrotto fa fallire subito la richiesta.

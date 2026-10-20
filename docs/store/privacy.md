@@ -16,16 +16,16 @@ autoGroup is a Chrome extension that suggests groups for the tabs in your window
 
 ### Data sent to the AI provider you choose
 
-This only happens in "With AI" mode, when you have configured a provider that runs on a server (for example OpenRouter, Ollama, LM Studio, Unsloth Studio, or a System One classifier such as Jev, Kev or Rizzo Flow), and only when a proposal is computed. For each ungrouped tab that can be organized:
+This only happens in "With AI" mode, when you have configured a provider that runs on a server (for example OpenRouter, Ollama, LM Studio, Unsloth Studio, or a System One classifier such as Jev, Kev or Rizzo Flow), and only when a proposal is computed or when you use "Add to categories" (see below). For each ungrouped tab that can be organized:
 
 - the **title**;
 - the **address reduced to host and path**: no query string, no fragment, no username or password (for example `www.google.com/search` instead of `https://www.google.com/search?q=…`);
 - the **page description** (the `meta description`, at most 300 characters) **only if** you turn on "Read page descriptions" and grant Chrome's permission;
 - a short identifier (`t1`, `t2`, …), never Chrome's internal tab IDs.
 
-The request also contains the names and descriptions of your categories and the names of your open tab groups. When you use "Save to list", up to 8 example tabs (title and cleaned address) of that group are sent to describe the new category.
+The request also contains the names and descriptions of your categories and the names of your open tab groups. When you click "Add to categories" in AI mode, up to 8 example tabs (title and cleaned address) of that group, new or already open, are sent to describe the new category; in by-site mode nothing is sent.
 
-The extension never sends: pinned tabs, tabs already in a group, browser pages (`chrome://`, the new tab page, extension pages), or tabs from the **excluded domains** you list in the settings, including their subdomains.
+When a proposal is computed, the extension never sends pinned tabs or tabs already in a group. The only tabs of a group that can be sent are the examples of "Add to categories" for a group you already have open. Browser pages (`chrome://`, the new tab page, extension pages) and tabs from the **excluded domains** you list in the settings, including their subdomains, are never sent.
 
 What the provider does with this data is governed by **its own** privacy policy. Local providers (Ollama, LM Studio, Unsloth Studio, a local System One server) run on your computer.
 
@@ -73,16 +73,16 @@ autoGroup è un'estensione di Chrome che propone dei gruppi per le tab della fin
 
 ### Dati inviati al provider AI che scegli
 
-Succede solo in modalità "Con l'AI", se hai configurato un provider che gira su un server (per esempio OpenRouter, Ollama, LM Studio, Unsloth Studio, o un classificatore System One come Jev, Kev o Rizzo Flow), e solo quando si calcola una proposta. Per ogni tab libera che si può organizzare:
+Succede solo in modalità "Con l'AI", se hai configurato un provider che gira su un server (per esempio OpenRouter, Ollama, LM Studio, Unsloth Studio, o un classificatore System One come Jev, Kev o Rizzo Flow), e solo quando si calcola una proposta o quando usi "Aggiungi alle categorie" (vedi sotto). Per ogni tab libera che si può organizzare:
 
 - il **titolo**;
 - l'**indirizzo ridotto a host e percorso**: senza parametri, frammento, nome utente o password (per esempio `www.google.com/search` invece di `https://www.google.com/search?q=…`);
 - la **descrizione della pagina** (la `meta description`, al massimo 300 caratteri) **solo se** accendi "Leggi la descrizione delle pagine" e concedi il permesso di Chrome;
 - un identificativo breve (`t1`, `t2`, …), mai gli ID interni delle tab di Chrome.
 
-La richiesta contiene anche nomi e descrizioni delle tue categorie e i nomi dei gruppi di tab aperti. Con "Salva nella lista" vengono inviate fino a 8 tab di esempio (titolo e indirizzo ripulito) del gruppo, per descrivere la categoria nuova.
+La richiesta contiene anche nomi e descrizioni delle tue categorie e i nomi dei gruppi di tab aperti. Quando premi "Aggiungi alle categorie" in modalità AI vengono inviate fino a 8 tab di esempio (titolo e indirizzo ripulito) del gruppo, nuovo o già aperto, per descrivere la categoria nuova; nella modalità per sito non viene inviato nulla.
 
-L'estensione non invia mai: tab fissate, tab già in un gruppo, pagine del browser (`chrome://`, nuova scheda, pagine di estensioni) e tab dei **domini esclusi** che indichi nelle impostazioni, compresi i sottodomini.
+Quando si calcola una proposta l'estensione non invia mai tab fissate o tab già in un gruppo. Le sole tab di un gruppo che possono essere inviate sono gli esempi di "Aggiungi alle categorie" per un gruppo che hai già aperto. Pagine del browser (`chrome://`, nuova scheda, pagine di estensioni) e tab dei **domini esclusi** che indichi nelle impostazioni, compresi i sottodomini, non vengono mai inviate.
 
 Cosa fa il provider con questi dati dipende dalla **sua** informativa privacy. I provider locali (Ollama, LM Studio, Unsloth Studio, un server System One locale) girano sul tuo computer.
 

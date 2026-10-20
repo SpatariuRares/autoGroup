@@ -19,10 +19,11 @@ For the requirements see [PRD.md](../PRD.md); for usage see the [README](../READ
 | `npm test` | Runs the Vitest tests. |
 | `npm run compile` | Typecheck with `tsc --noEmit`. |
 | `npm run check` | Typecheck, tests and build in sequence. |
-| `npm run smoke` | Build, then automated test in Chrome for Testing (Puppeteer). |
+| `npm run smoke` | Build, then automated test in Chrome for Testing (Puppeteer). Runs in CI (job `chrome`). |
 | `npm run store-assets` | Screenshots, tiles and icon for the Chrome Web Store in `docs/store/`. |
 | `npm run zip` | Zip of the normal build to upload to the store. |
 | `node scripts/permissions-check.mjs` | After `npm run build`: checks that the optional permissions are requested inside the user gesture. |
+| `node scripts/drag-check.mjs` | After `npm run build`: drags tabs in the panel with the real mouse; exits with 1 if a case fails. Runs in CI (job `chrome`). |
 
 To load the extension by hand: `npm run build`, then `chrome://extensions` → "Developer mode" → "Load unpacked" → folder `.output/chrome-mv3`.
 

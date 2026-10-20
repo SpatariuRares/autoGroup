@@ -2,12 +2,14 @@ import add from '@material-symbols/svg-400/rounded/add.svg?raw';
 import arrowDownward from '@material-symbols/svg-400/rounded/arrow_downward.svg?raw';
 import arrowUpward from '@material-symbols/svg-400/rounded/arrow_upward.svg?raw';
 import bookmarkAdd from '@material-symbols/svg-400/rounded/bookmark_add.svg?raw';
+import bookmarkAdded from '@material-symbols/svg-400/rounded/bookmark_added-fill.svg?raw';
 import category from '@material-symbols/svg-400/rounded/category.svg?raw';
 import check from '@material-symbols/svg-400/rounded/check.svg?raw';
 import chevronRight from '@material-symbols/svg-400/rounded/chevron_right.svg?raw';
 import close from '@material-symbols/svg-400/rounded/close.svg?raw';
 import deleteIcon from '@material-symbols/svg-400/rounded/delete.svg?raw';
 import download from '@material-symbols/svg-400/rounded/download.svg?raw';
+import edit from '@material-symbols/svg-400/rounded/edit.svg?raw';
 import driveFileMove from '@material-symbols/svg-400/rounded/drive_file_move.svg?raw';
 import info from '@material-symbols/svg-400/rounded/info.svg?raw';
 import language from '@material-symbols/svg-400/rounded/language.svg?raw';
@@ -22,6 +24,7 @@ import smartToy from '@material-symbols/svg-400/rounded/smart_toy.svg?raw';
 import sort from '@material-symbols/svg-400/rounded/sort.svg?raw';
 import sortByAlpha from '@material-symbols/svg-400/rounded/sort_by_alpha.svg?raw';
 import stop from '@material-symbols/svg-400/rounded/stop.svg?raw';
+import swapVert from '@material-symbols/svg-400/rounded/swap_vert.svg?raw';
 import tab from '@material-symbols/svg-400/rounded/tab.svg?raw';
 import tune from '@material-symbols/svg-400/rounded/tune.svg?raw';
 import undo from '@material-symbols/svg-400/rounded/undo.svg?raw';
@@ -41,6 +44,7 @@ const ICONS = {
   arrowDownward,
   arrowUpward,
   bookmarkAdd,
+  bookmarkAdded,
   category,
   check,
   chevronRight,
@@ -48,6 +52,7 @@ const ICONS = {
   delete: deleteIcon,
   download,
   driveFileMove,
+  edit,
   info,
   language,
   lock,
@@ -61,6 +66,7 @@ const ICONS = {
   sort,
   sortByAlpha,
   stop,
+  swapVert,
   tab,
   tune,
   undo,

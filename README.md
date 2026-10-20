@@ -62,7 +62,7 @@ The settings (⚙ in the panel) have two roles. The first one is enough.
 
 When you save a provider, Chrome asks for permission to contact **that server only**. **Test connection** checks the address, key and model.
 
-**Categories**: the options the AI picks from. There are ten default categories (Work, Dev, News, Travel…) that you can edit, reorder or restore. Each one has a name, a description that tells the AI what belongs there, and a color. A group made up by the AI can be added to the list with **Save to list**.
+**Categories**: the options the AI picks from. There are ten default categories (Work, Dev, News, Travel…) that you can edit, reorder or restore. Each one has a name, a description that tells the AI what belongs there, and a color. A group that is not a category yet (made up by the AI, by site, or one you created, also already open in Chrome) can be added with **Add to categories**; open groups can also be renamed from the panel.
 
 **Sites**: each category can also have sites, such as `github.com` or `github.com/my-org`. Tabs from those sites (subdomains included) always go to that category, before any AI, also when grouping *By site*: the AI only receives the other tabs. If two sites match, the more specific one wins. In the panel, after you move a tab into a category, autoGroup offers to **always put** that site there.
 

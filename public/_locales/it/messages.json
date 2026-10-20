@@ -49,6 +49,9 @@
   "provenance_domain": {
     "message": "sito"
   },
+  "provenance_manual": {
+    "message": "tuo"
+  },
   "color_grey": {
     "message": "grigio"
   },
@@ -97,6 +100,9 @@
   "popupGroupName": {
     "message": "Nome del gruppo"
   },
+  "panelRenameGroup": {
+    "message": "Rinomina il gruppo"
+  },
   "popupDiscardGroup": {
     "message": "Scarta il gruppo (le tab restano libere)"
   },
@@ -105,6 +111,30 @@
   },
   "popupMoveTo": {
     "message": "Sposta in…"
+  },
+  "panelMoveTabAnywhere": {
+    "message": "Sposta la tab"
+  },
+  "panelUngroupTab": {
+    "message": "Togli dal gruppo"
+  },
+  "panelPosition": {
+    "message": "Posizione"
+  },
+  "panelMoveUp": {
+    "message": "Sposta su"
+  },
+  "panelMoveDown": {
+    "message": "Sposta giù"
+  },
+  "panelMoveGroup": {
+    "message": "Sposta il gruppo"
+  },
+  "panelNewGroup": {
+    "message": "+ Nuovo gruppo"
+  },
+  "panelNewGroupDrop": {
+    "message": "Lascia qui per un nuovo gruppo"
   },
   "popupRemoveTab": {
     "message": "Togli dal gruppo (la tab resta aperta e libera)"
@@ -301,6 +331,9 @@
   },
   "optionsCategoryDescription": {
     "message": "Descrizione"
+  },
+  "optionsDescribing": {
+    "message": "Scrivo la descrizione con l'AI…"
   },
   "optionsCategoryColor": {
     "message": "Colore"
@@ -570,10 +603,21 @@
     "message": "La configurazione del provider non è valida."
   },
   "popupSaveToList": {
-    "message": "Salva nella lista"
+    "message": "Aggiungi alle categorie"
   },
   "popupSaveToListHint": {
-    "message": "Aggiunge questo gruppo alle categorie, con una descrizione generata dall'AI"
+    "message": "Aggiunge questo gruppo alle categorie dell'estensione"
+  },
+  "panelSavingToList": {
+    "message": "Aggiungo «$NAME$» alle categorie…",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInCategories": {
+    "message": "Già tra le categorie"
   },
   "panelSiteRemembered": {
     "message": "Le tab di $SITE$ andranno sempre in $CATEGORY$.",
@@ -735,9 +779,6 @@
   },
   "panelSortTabs": {
     "message": "Ordina le tab dalla A alla Z"
-  },
-  "panelReadOnly": {
-    "message": "nome e colore non modificabili"
   },
   "panelSectionFree": {
     "message": "Senza gruppo"

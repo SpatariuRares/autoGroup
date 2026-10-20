@@ -125,6 +125,73 @@ describe('"add-tab": mettere una tab libera in un gruppo', () => {
   });
 });
 
+describe('"Nuovo gruppo" da "Sposta in…"', () => {
+  it('con la proposta crea un gruppo nuovo col nome del sito e un colore non ancora usato', async () => {
+    const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
+    await strip.addGroup('Lavoro', 'grey', [d1]);
+    strip.addTab({ url: 'https://a.com/1', title: 'A1' });
+    strip.addTab({ url: 'https://a.com/2', title: 'A2' });
+    const solo = strip.addTab({ url: 'https://www.solo.com/', title: 'Solo' });
+    const proposed = await organizer.propose(W);
+    const used = [proposed.proposal!.groups[0]!.color, 'grey'];
+
+    const state = await organizer.edit({ kind: 'add-tab', tab: { tabId: solo, title: 'Solo', url: 'https://www.solo.com/' }, to: { newGroup: true } });
+
+    const created = state.proposal!.groups.at(-1)!;
+    expect(created).toMatchObject({ name: 'solo.com', provenance: 'manual', tabs: [{ title: 'Solo' }] });
+    expect(used).not.toContain(created.color);
+    await organizer.apply();
+    expect(strip.groupsIn().map((g) => [g.title, g.tabs])).toContainEqual(['solo.com', ['Solo']]);
+  });
+
+  it('sposta in un gruppo nuovo anche una tab già nella proposta; due gruppi nuovi restano distinti', async () => {
+    const a1 = strip.addTab({ url: 'https://a.com/1', title: 'A1' });
+    const a2 = strip.addTab({ url: 'https://a.com/2', title: 'A2' });
+    strip.addTab({ url: 'https://a.com/3', title: 'A3' });
+    await organizer.propose(W);
+
+    await organizer.edit({ kind: 'add-tab', tab: { tabId: a1, title: 'A1', url: 'https://a.com/1' }, to: { newGroup: true } });
+    const state = await organizer.edit({ kind: 'add-tab', tab: { tabId: a2, title: 'A2', url: 'https://a.com/2' }, to: { newGroup: true } });
+
+    expect(state.proposal!.groups.map((g) => g.tabs.map((t) => t.title))).toEqual([['A3'], ['A1'], ['A2']]);
+    expect(new Set(state.proposal!.groups.map((g) => g.id)).size).toBe(3);
+  });
+
+  it('senza proposta crea subito in Chrome un gruppo col nome del sito, senza toccare lo stato', async () => {
+    const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
+    await strip.addGroup('Lavoro', 'grey', [d1]);
+    const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
+    const before = await organizer.state();
+
+    const state = await organizer.newGroup(solo);
+
+    expect(strip.layout()).toEqual(['Doc 1 [Lavoro]', 'Solo [solo.com]']);
+    expect(strip.groupsIn().find((g) => g.title === 'solo.com')!.color).not.toBe('grey');
+    expect(state).toEqual(before);
+  });
+
+  it('senza proposta non tocca tab fissate o escluse senza gruppo', async () => {
+    const pinned = strip.addTab({ url: 'https://p.com/', title: 'Fissata', pinned: true });
+    const excluded = strip.addTab({ url: 'https://banca.it/', title: 'Banca' });
+
+    for (const tabId of [pinned, excluded]) await organizer.newGroup(tabId);
+
+    expect(strip.layout()).toEqual(['Fissata', 'Banca']);
+  });
+
+  it('trascinata fuori da un gruppo aperto, la tab finisce in un gruppo nuovo subito dopo', async () => {
+    const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
+    const d2 = strip.addTab({ url: 'https://docs.com/2', title: 'Doc 2' });
+    const d3 = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
+    await strip.addGroup('Lavoro', 'blue', [d1, d2, d3]);
+    strip.addTab({ url: 'https://x.com/', title: 'X' });
+
+    await organizer.newGroup(d2);
+
+    expect(strip.layout()).toEqual(['Doc 1 [Lavoro]', 'Solo [Lavoro]', 'Doc 2 [docs.com]', 'X']);
+  });
+});
+
 describe('"Chiudi tab" dal pannello', () => {
   it('chiude una tab della proposta e la toglie; la proposta resta valida senza ricalcolo', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });

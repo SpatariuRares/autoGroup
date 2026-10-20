@@ -6,6 +6,7 @@ import { t } from '../../src/shared/i18n';
 import { useFocusRecovery } from '../../src/ui/focus-recovery';
 import { Icon } from '../../src/ui/Icon';
 import { useExpiring } from '../../src/ui/use-expiring';
+import { useDescribing } from '../../src/ui/use-describing';
 import { useSettings } from '../../src/ui/use-settings';
 import { Card } from './Card';
 import { BackupSection } from './BackupSection';
@@ -48,6 +49,7 @@ function useView() {
 export function App() {
   // Lette dal vivo: anche il pannello le cambia (es. "Metti sempre qui" aggiunge un sito), e "Annulla" deve ripartire da quelle vere.
   const [settings, setSettings] = useSettings();
+  const describing = useDescribing();
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -151,6 +153,7 @@ export function App() {
           <>
             <CategoriesSection
               categories={settings.categories}
+              describing={describing}
               sites={settings.categorySites}
               onChange={(categories) => update({ categories })}
               onSitesChange={(categorySites) => update({ categorySites })}

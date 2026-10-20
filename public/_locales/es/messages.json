@@ -49,6 +49,9 @@
   "provenance_domain": {
     "message": "sitio"
   },
+  "provenance_manual": {
+    "message": "tuyo"
+  },
   "color_grey": {
     "message": "gris"
   },
@@ -97,6 +100,9 @@
   "popupGroupName": {
     "message": "Nombre del grupo"
   },
+  "panelRenameGroup": {
+    "message": "Cambiar nombre del grupo"
+  },
   "popupDiscardGroup": {
     "message": "Descartar grupo (las pestañas quedan libres)"
   },
@@ -105,6 +111,30 @@
   },
   "popupMoveTo": {
     "message": "Mover a…"
+  },
+  "panelMoveTabAnywhere": {
+    "message": "Mover la pestaña"
+  },
+  "panelUngroupTab": {
+    "message": "Quitar del grupo"
+  },
+  "panelPosition": {
+    "message": "Posición"
+  },
+  "panelMoveUp": {
+    "message": "Subir"
+  },
+  "panelMoveDown": {
+    "message": "Bajar"
+  },
+  "panelMoveGroup": {
+    "message": "Mover el grupo"
+  },
+  "panelNewGroup": {
+    "message": "+ Nuevo grupo"
+  },
+  "panelNewGroupDrop": {
+    "message": "Suelta aquí para un grupo nuevo"
   },
   "popupRemoveTab": {
     "message": "Quitar del grupo (la pestaña sigue abierta y sin grupo)"
@@ -301,6 +331,9 @@
   },
   "optionsCategoryDescription": {
     "message": "Descripción"
+  },
+  "optionsDescribing": {
+    "message": "Escribiendo la descripción con la IA…"
   },
   "optionsCategoryColor": {
     "message": "Color"
@@ -570,10 +603,21 @@
     "message": "La configuración del proveedor no es válida."
   },
   "popupSaveToList": {
-    "message": "Guardar en la lista"
+    "message": "Añadir a las categorías"
   },
   "popupSaveToListHint": {
-    "message": "Añade este grupo a las categorías, con una descripción generada por la IA"
+    "message": "Añade este grupo a las categorías de la extensión"
+  },
+  "panelSavingToList": {
+    "message": "Añadiendo «$NAME$» a las categorías…",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInCategories": {
+    "message": "Ya está en las categorías"
   },
   "panelSiteRemembered": {
     "message": "Las pestañas de $SITE$ irán siempre a $CATEGORY$.",
@@ -735,9 +779,6 @@
   },
   "panelSortTabs": {
     "message": "Ordenar pestañas de la A a la Z"
-  },
-  "panelReadOnly": {
-    "message": "nombre y color no editables"
   },
   "panelSectionFree": {
     "message": "Sin grupo"

@@ -219,6 +219,11 @@ button.icon:disabled {
   left: 0;
 }
 
+/* Nascosto con Esc (tooltip-dismiss.ts) finché focus o puntatore non vanno altrove. */
+[data-tooltip][data-tooltip-hidden]::after {
+  display: none;
+}
+
 /* Pulsante con l'aspetto di un link, per le azioni dentro una frase (es. "Cambia" nel riepilogo). */
 button.link {
   display: inline;

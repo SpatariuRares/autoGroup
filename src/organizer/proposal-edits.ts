@@ -1,4 +1,6 @@
 import type { Proposal, ProposalEdit, ProposedTab } from '../shared/types';
+import { createColorAssigner } from './colors';
+import { domainOf } from './pipeline';
 
 /** Una tab spostata dall'utente non è più lì per una regola. */
 const moved = ({ rule: _rule, ...tab }: ProposedTab): ProposedTab => tab;
@@ -7,8 +9,10 @@ const moved = ({ rule: _rule, ...tab }: ProposedTab): ProposedTab => tab;
  * Applica una modifica dell'utente alla proposta e restituisce la nuova proposta.
  * Le tab tolte o i gruppi scartati lasciano le tab libere; un gruppo rimasto senza tab sparisce.
  * Le modifiche che si riferiscono a gruppi o tab inesistenti vengono ignorate.
+ * Un gruppo nuovo prende il nome del sito della tab e un colore non ancora usato né dalla proposta né
+ * da `usedColors` (i gruppi aperti nella finestra).
  */
-export function editProposal(proposal: Proposal, edit: ProposalEdit): Proposal {
+export function editProposal(proposal: Proposal, edit: ProposalEdit, usedColors: Iterable<string> = []): Proposal {
   let groups = proposal.groups;
   switch (edit.kind) {
     case 'rename':
@@ -25,7 +29,13 @@ export function editProposal(proposal: Proposal, edit: ProposalEdit): Proposal {
       break;
     case 'add-tab': {
       const without = groups.map((g) => ({ ...g, tabs: g.tabs.filter((t) => t.tabId !== edit.tab.tabId) }));
-      if ('groupId' in edit.to) {
+      if ('newGroup' in edit.to) {
+        const ids = new Set(groups.map((g) => g.id));
+        let n = 1;
+        while (ids.has(`n${n}`)) n++;
+        const color = createColorAssigner([...usedColors, ...groups.filter((g) => g.existingGroupId === undefined).map((g) => g.color)]).next();
+        groups = [...without, { id: `n${n}`, name: domainOf(edit.tab.url) ?? '', color, provenance: 'manual', tabs: [moved(edit.tab)] }];
+      } else if ('groupId' in edit.to) {
         const { groupId } = edit.to;
         if (!groups.some((g) => g.id === groupId)) return proposal;
         groups = without.map((g) => (g.id === groupId ? { ...g, tabs: [...g.tabs, moved(edit.tab)] } : g));

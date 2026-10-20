@@ -14,7 +14,7 @@ src/
   organizer/             the Organizer and its internal modules
     index.ts             public interface: createOrganizer() → propose / edit / apply / undo / state …; the state in chrome.storage.session
     proposal-builder.ts  reading of the inputs (tabs, open groups, settings, Generator) and signature
-    pipeline.ts          fallback table: choice of the Generator, call, fallback to domain; domain of a URL; category description for "Save to list"
+    pipeline.ts          fallback table: choice of the Generator, call, fallback to domain; domain of a URL; category description for "Add to categories"
     ai-input.ts          data for the AI (short IDs, cleaned URL) and options (categories + open groups)
     validator.ts         validation of the Generator's response
     group-rules.ts       rules on groups and colors, shared by all AI levels
@@ -26,7 +26,8 @@ src/
     applier.ts           creates the groups in Chrome, after saving the undo snapshot
     undo.ts              state snapshot and restore
     proposal-edits.ts    user edits to the proposal (pure function)
-    save-to-list.ts      "Save to list": new category from a group invented by the AI
+    save-to-list.ts      "Add to categories": new category from a new group of the proposal or an open group
+    rename-category.ts   renaming a group that is a category renames the category (id, description, color, sites stay)
     description-reader.ts  Description reader: pages' meta description, with optional permission
     stopwatch.ts         stopwatch for the phases of a computation (proposal.timings)
     session-cache.ts     key → value cache in chrome.storage.session, with a maximum number of entries
@@ -67,6 +68,7 @@ tests/
 scripts/
   smoke.mjs              test in Chrome for Testing
   permissions-check.mjs  checks that the optional permission requests open Chrome's prompt
+  drag-check.mjs         drags tabs in the panel with the real mouse (native drag and drop)
   measure-classifier.mjs measures the Classifier's request strategies on a real server
   store-assets.mjs       store screenshots
   generate-theme.mjs     generates src/ui/md3-tokens.css
@@ -80,7 +82,9 @@ It is the main module and **the only entry point called by the panel**. Interfac
 |---|---|
 | `propose(windowId, { force? })` | Computes a proposal for the window and saves it in the state. Reuses the saved proposal (with the user's edits) if it is for the same window and its signature matches the current one, unless `force`; if a computation is in progress it returns that one, without starting a second one. |
 | `edit(edit)` | Applies a user edit to the current proposal and saves it in the state. After an `add-tab` towards a category, the returned state carries `offer` ("Always put here", see `rememberOffer`); the next operation drops it. |
-| `saveToList(groupId)` | "Save to list": adds a "new AI" group to the category list. |
+| `saveToList(groupId)` | "Add to categories": adds a new group of the proposal that is not a category yet (new AI, by site, made by the user). |
+| `saveOpenGroupToList(groupId)` | "Add to categories" for a group already open in Chrome, with its Chrome name, color and tabs. |
+| `renameGroup(groupId, name)` | Renames a group open in Chrome; if it is a category, the category is renamed too (`rename-category.ts`: same id, description, color and sites). A rejected name (empty, too long, another category's) changes nothing and comes back as `notice`. |
 | `apply()` | Saves the undo snapshot, creates the groups of the current proposal in Chrome, then clears the proposal. |
 | `undo()` | Undoes the last applied organization and clears the proposal. |
 | `abort()` | "Stop": cancels the requests of the computation in progress; the computation ends without a proposal. |
@@ -135,13 +139,14 @@ The panel does not edit the proposal by itself: it sends a `ProposalEdit` and re
 
 A group left without tabs disappears from the proposal. Edits to nonexistent groups or tabs are ignored. Since the edited proposal is saved in `storage.session`, the edits survive closing the panel, and "Apply" always uses the edited version.
 
-### Save to list (`save-to-list.ts`)
+### Add to categories (`save-to-list.ts`)
 
-Only for groups with provenance `ai`. The new category takes the group's **current name and color** in the proposal (so also those changed by the user) and a description from `describeCategory` in `pipeline.ts`, which asks the same Generator as the pipeline (`describe`); the choice of the Generator stays private to the pipeline. The Generator receives the name and up to 8 example tabs, with title and cleaned URL.
+For new groups of the proposal that are not a category yet (provenance `ai`, `domain`, `manual`), and for groups already open in Chrome whose name is not a category (`ExistingGroupView.isCategory`, case-insensitive) and not empty. The new category takes the group's **current name and color** (in the proposal, so also those changed by the user; for an open group, Chrome's) and, **only in AI mode**, a description from `describeCategory` in `pipeline.ts`, which asks the same Generator as the pipeline (`describe`); the choice of the Generator stays private to the pipeline. The Generator receives the name and up to 8 example tabs of the group, with title and cleaned URL, never browser pages or tabs of excluded domains (an open group can contain them). In by-site mode nothing is sent and the category is saved without a description.
 
-- Generator missing or in error: the category is saved with an empty description and the notice invites the user to complete it in the settings (with a link to the Categories section).
+- The category is saved at once with an empty description; the description is added when the Generator answers. Meanwhile its ID is in `storage.session` (`describingCategories`, `src/shared/describing.ts`), and the settings page shows "Writing the description with AI…" with a linear progress bar on that category. A description the user writes meanwhile is kept.
+- Generator missing or in error: the category keeps the empty description and the notice invites the user to complete it in the settings (with a link to the Categories section).
 - A category with the same name already exists (case-insensitive): no duplicate, notice.
-- After saving, the group becomes `list` and, through `keepCurrent`, the proposal stays current with the new list (the categories changed, but the proposal already takes them into account), so reopening the panel does not lose the edits. Currency is checked after the description arrives: a tab opened during the description (up to 30 s) makes the proposal stale.
+- After saving, a proposal group becomes `list` (an open group is simply shown as a category from then on) and, through `keepCurrent`, the proposal stays current with the new list (the categories changed, but the proposal already takes them into account), so reopening the panel does not lose the edits. Currency is checked after the description arrives: a tab opened during the description (up to 30 s) makes the proposal stale.
 - The outcome goes in the state's `notice` field (i18n key and name), shown in the panel; the next edit removes it.
 
 ### Queued operations
@@ -335,7 +340,7 @@ The snapshot (`UndoSnapshot`) contains, for each tab involved, window, position 
 
 1. ignores tabs that are no longer open;
 2. removes from the groups the tabs that the operation grouped (`tabs.ungroup`);
-3. puts each tab back in its original position with `tabs.move`, from left to right, so each index refers to the already rebuilt strip (indices beyond the end are clamped to the last position);
+3. moves the tabs to the end of the window, in their original order, then puts each one back in its original position with `tabs.move`, from left to right, so each index refers to the already rebuilt strip (indices beyond the end are clamped to the last position). The first pass keeps every tab still to be placed to the right of the target: without it, a tab left on the wrong side by `tabs.ungroup` (Chrome leaves the first tab of a group before the group) shifted the others by one;
 4. puts back into their original groups the tabs that had one, if the group still exists (needed from AG-06, when tabs can join existing groups);
 5. if a moved tab ended up in the middle of someone else's group (in that case Chrome adds it to the group) it removes it.
 
@@ -354,7 +359,7 @@ interface OrganizerState {
   proposal?: Proposal;   // groups + warnings (+ timings, diagnostics only)
   preview?: Proposal;    // only in "computing" with AI: read-only by-site proposal
   undo?: UndoSnapshot;   // present while "Undo" is available
-  notice?: { key, arg }; // outcome of the last operation, e.g. "Save to list"
+  notice?: { key, arg }; // outcome of the last operation, e.g. "Add to categories"
   error?: string;        // i18n key of the last error
 }
 ```
@@ -509,18 +514,18 @@ Material 3 structure:
 - scrolling content;
 - action bar fixed at the bottom: "Undo last organization", "Recompute" (outlined button), "Apply" (filled button).
 
-The outcomes ("Groups created.", "Save to list") appear in a *snackbar*. Without a proposal there is an empty state with the message of the last operation.
+The outcomes ("Groups created.", "Add to categories") appear in a *snackbar*. Without a proposal there is an empty state with the message of the last operation.
 
 Each group is an outlined card, with everything but the tabs on the title row to keep cards short:
 - color dot, which opens the palette of the 9 colors;
-- editable name: confirmed with Enter or by leaving the field, Esc cancels; existing groups are locked and have the lock icon;
+- editable name: confirmed with Enter or by leaving the field, Esc cancels; an open group is renamed from its pencil button (`renameGroup`, the name changes in Chrome), its color stays Chrome's. Renaming a group that is a category (`list`, or an open group with `isCategory`) renames the category too;
 - provenance label, colored for "list" and "new AI", and number of tabs;
-- "Save to list" (bookmark icon) for "new AI" groups;
+- "Add to categories" (bookmark icon) for groups that are not a category yet, new or already open; a group that is one shows instead the filled "already in the categories" icon, with no action;
 - ✕ to discard the group.
 
 Each tab has favicon and title, with the URL in the tooltip. Up and down arrows move between tab rows across the panel, onto the same control of the next row (e.g. from ✕ to ✕), Home and End to the first and last row (`row-navigation.ts`); in the "Move to…" menus the arrows stay the native ones. "Move to…" (icon with the transparent native menu on top) is always visible, dimmed, so it is clear that tabs can be moved; − and ✕ appear on hover or keyboard focus. The name of a new group shows a border on hover, to show it can be renamed.
 
-**Stale proposal** (`Organizer.checkStale`, `state.stale`). The service worker listens to tab events (created, closed, moved between windows; URL, pinning, group or finished loading), group events, `storage.onChanged` (not `session`, where the state lives) and permission changes, and after 150 ms of quiet calls `checkStale()`. It compares the proposal's signature with the live inputs, so what counts is exactly what `propose` would recompute for: moving a tab, collapsing a group, titles and favicons do not count, settings changes do. The panel shows "Your tabs changed after this proposal." with "Recompute" while `state.stale` is true. It does not recompute by itself: each computation can cost AI calls. Closes, "Always put here" and "Save to list" go through the same queue and keep the proposal current, so they never trigger the notice; after "Apply" and "Undo" there is no proposal to be stale.
+**Stale proposal** (`Organizer.checkStale`, `state.stale`). The service worker listens to tab events (created, closed, moved between windows; URL, pinning, group or finished loading), group events, `storage.onChanged` (not `session`, where the state lives) and permission changes, and after 150 ms of quiet calls `checkStale()`. It compares the proposal's signature with the live inputs, so what counts is exactly what `propose` would recompute for: moving a tab, collapsing a group, titles and favicons do not count, settings changes do. The panel shows "Your tabs changed after this proposal." with "Recompute" while `state.stale` is true. It does not recompute by itself: each computation can cost AI calls. Closes, "Always put here" and "Add to categories" go through the same queue and keep the proposal current, so they never trigger the notice; after "Apply" and "Undo" there is no proposal to be stale.
 
 The style follows Material Design 3 in CSS, without `@material/web`, which is in maintenance only and has no Expressive version on the web:
 - **colors:** `--md-sys-color-*` roles generated with `@material/material-color-utilities` (Tonal Spot scheme from Chrome blue `#1a73e8`) in `src/ui/md3-tokens.css`, for light and dark theme. They are regenerated with `npm run theme`;

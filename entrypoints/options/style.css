@@ -408,6 +408,11 @@ input[type='number'] {
   border-bottom: none;
 }
 
+/* La descrizione sta arrivando dall'AI: la barra sta sotto la riga, allineata al suo contenuto. */
+.category-progress {
+  margin: 0 16px 8px;
+}
+
 .category-summary {
   display: flex;
   align-items: center;

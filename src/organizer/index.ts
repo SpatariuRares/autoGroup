@@ -1,19 +1,21 @@
 import { browser } from 'wxt/browser';
-import { loadSettings } from '../settings';
-import type { OrganizerState, Proposal, ProposalEdit, WindowView } from '../shared/types';
+import { loadSettings, SettingsError } from '../settings';
+import type { GroupColor, OrganizerState, Proposal, ProposalEdit, WindowView } from '../shared/types';
 import { applyProposal } from './applier';
 import { autoGroupTab } from './auto-group';
+import { createColorAssigner } from './colors';
 import { findDuplicates } from './duplicates';
 import { findInactive } from './inactive';
-import { willAskAi } from './pipeline';
+import { domainOf, willAskAi } from './pipeline';
 import { buildPreview, buildProposal, collectInputs, keepCurrent, signatureOf } from './proposal-builder';
 import { editProposal } from './proposal-edits';
 import { rememberOffer, rememberTabSite } from './remember-site';
+import { renameCategory } from './rename-category';
 import { moveGroup, moveTab } from './moves';
-import { saveGroupToList } from './save-to-list';
+import { saveGroupToList, saveOpenGroupToList } from './save-to-list';
 import { sortGroups, sortTabs } from './sort';
 import { createStopwatch } from './stopwatch';
-import { selectCandidateTabs } from './tab-selection';
+import { selectCandidateTabs, TAB_GROUP_ID_NONE } from './tab-selection';
 import { restoreSnapshot } from './undo';
 import { buildWindowView } from './window-view';
 
@@ -68,13 +70,25 @@ export interface Organizer {
    */
   propose(windowId: number, options?: { force?: boolean }): Promise<OrganizerState>;
   /**
-   * Modifica la proposta corrente (rinomina, colore, togli o sposta tab, scarta gruppo). Dopo "add-tab"
+   * Modifica la proposta corrente (rinomina, colore, togli o sposta tab, scarta gruppo). Rinominare un
+   * gruppo "lista" rinomina anche la sua categoria, come `renameGroup`. Dopo "add-tab"
    * verso una categoria lo stato restituito porta l'offerta "Metti sempre qui" (vedi `rememberOffer`),
    * che sparisce alla prossima operazione.
    */
   edit(edit: ProposalEdit): Promise<OrganizerState>;
-  /** "Salva nella lista": aggiunge un gruppo inventato dall'AI alla lista delle categorie. */
+  /** "Aggiungi alle categorie": aggiunge alla lista un gruppo nuovo della proposta che non è già una categoria. */
   saveToList(groupId: string): Promise<OrganizerState>;
+  /**
+   * "Aggiungi alle categorie" per un gruppo già aperto in Chrome (nome, colore e tab di Chrome); una
+   * proposta della sua finestra resta attuale se lo era. Lo stato restituito porta l'esito (`notice`).
+   */
+  saveOpenGroupToList(groupId: number): Promise<OrganizerState>;
+  /**
+   * Rinomina un gruppo aperto in Chrome. Se è una categoria rinomina anche la categoria (vedi
+   * `renameCategory`); un nome rifiutato lascia tutto com'è e torna come avviso (`notice`). Il gruppo
+   * della proposta che lo estende prende il nome nuovo; una proposta attuale resta attuale.
+   */
+  renameGroup(groupId: number, name: string): Promise<OrganizerState>;
   /**
    * "Metti sempre qui": la tab andrà sempre nella categoria del suo gruppo nella proposta (vedi
    * `rememberTabSite`). Non fa nulla per i gruppi che non sono una categoria.
@@ -111,6 +125,12 @@ export interface Organizer {
    * Si accetta solo una tab che la selezione prenderebbe (non fissata, non interna, non esclusa).
    */
   groupTab(tabId: number, groupId: number): Promise<OrganizerState>;
+  /**
+   * "Nuovo gruppo" senza proposta, o con il drag and drop: mette subito la tab in un gruppo nuovo, col
+   * nome del suo sito e un colore non ancora usato nella finestra, accanto al gruppo da cui esce.
+   * Accetta le tab libere che prende `groupTab` e, come `moveTab`, quelle già in un gruppo; mai le fissate.
+   */
+  newGroup(tabId: number): Promise<OrganizerState>;
   /**
    * "Gruppi A-Z": mette in ordine alfabetico i gruppi della finestra nella barra (vedi `sortGroups`).
    * Non tocca la proposta: l'ordine delle tab non fa parte della sua impronta.
@@ -272,7 +292,23 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         const checked = edit.kind === 'add-tab' ? await checkAddTab(current.proposal, edit) : edit;
         if (!checked) return current;
         const { notice: _done, ...rest } = current;
-        const proposal = editProposal(current.proposal, checked);
+        // Rinominare un gruppo che è una categoria rinomina anche la categoria (vedi `renameCategory`).
+        const target = checked.kind === 'rename' ? current.proposal.groups.find((g) => g.id === checked.groupId) : undefined;
+        if (checked.kind === 'rename' && target?.provenance === 'list') {
+          try {
+            const proposal = await keepCurrent(current.proposal, async () => {
+              await renameCategory(target.name, checked.name);
+              return editProposal(current.proposal!, checked);
+            });
+            return setState({ ...rest, proposal });
+          } catch (err) {
+            if (err instanceof SettingsError) return setState({ ...rest, notice: { key: err.messageKey } });
+            throw err;
+          }
+        }
+        // Un gruppo nuovo prende un colore che i gruppi aperti nella finestra non usano ancora.
+        const used = checked.kind === 'add-tab' && 'newGroup' in checked.to ? (await browser.tabGroups.query({ windowId: current.proposal.windowId })).map((g) => g.color) : [];
+        const proposal = editProposal(current.proposal, checked, used);
         const offer = checked.kind === 'add-tab' ? rememberOffer(proposal, checked.tab.tabId, await loadSettings()) : null;
         return setState({ ...rest, proposal, ...(offer ? { offer } : {}) });
       });
@@ -285,6 +321,49 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         const result = await saveGroupToList(current.proposal, groupId);
         if (!result) return current;
         return setState({ ...current, proposal: result.proposal, notice: result.notice });
+      });
+    },
+
+    saveOpenGroupToList(groupId) {
+      return exclusive(async () => {
+        const current = await load();
+        const group = await browser.tabGroups.get(groupId).catch(() => null);
+        if (!group) return current;
+        const tabs = (await browser.tabs.query({ windowId: group.windowId, groupId })).map((t) => ({ title: t.title ?? '', url: t.url ?? '' }));
+        const proposal = current.phase === 'ready' && current.proposal?.windowId === group.windowId ? current.proposal : undefined;
+        const result = await saveOpenGroupToList({ windowId: group.windowId, name: group.title ?? '', color: group.color as GroupColor, tabs }, proposal);
+        if (!result) return current;
+        const { notice: _done, ...rest } = current;
+        return setState({ ...rest, ...(result.proposal ? { proposal: result.proposal } : {}), notice: result.notice });
+      });
+    },
+
+    renameGroup(groupId, name) {
+      return exclusive(async () => {
+        const current = await load();
+        const group = await browser.tabGroups.get(groupId).catch(() => null);
+        if (!group) return current;
+        const title = name.trim();
+        // Prima la categoria: se il nome nuovo è rifiutato, anche il gruppo resta com'è.
+        const rename = async () => {
+          await renameCategory(group.title ?? '', title);
+          await browser.tabGroups.update(groupId, { title });
+        };
+        const proposal = current.phase === 'ready' && current.proposal?.windowId === group.windowId ? current.proposal : undefined;
+        try {
+          if (!proposal) {
+            await rename();
+            return current;
+          }
+          const next = await keepCurrent(proposal, async () => {
+            await rename();
+            return { ...proposal, groups: proposal.groups.map((g) => (g.existingGroupId === groupId ? { ...g, name: title } : g)) };
+          });
+          return setState({ ...current, proposal: next });
+        } catch (err) {
+          if (err instanceof SettingsError) return setState({ ...current, notice: { key: err.messageKey } });
+          throw err;
+        }
       });
     },
 
@@ -374,6 +453,25 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
       });
     },
 
+    newGroup(tabId) {
+      return exclusive(async () => {
+        const current = await load();
+        const tab = await browser.tabs.get(tabId).catch(() => null);
+        if (!tab) return current;
+        const { excludedDomains } = await loadSettings();
+        const [tabs, groups] = await Promise.all([browser.tabs.query({ windowId: tab.windowId }), browser.tabGroups.query({ windowId: tab.windowId })]);
+        // Dal drag and drop arriva anche una tab di un gruppo aperto, come per `moveTab`.
+        const free = selectCandidateTabs(tabs, excludedDomains).some((t) => t.tabId === tabId);
+        if (tab.pinned || (!free && (tab.groupId ?? TAB_GROUP_ID_NONE) === TAB_GROUP_ID_NONE)) return current;
+        const color = createColorAssigner(groups.map((g) => g.color)).next();
+        // Prima fuori dal suo gruppo (Chrome la mette subito dopo, o la lascia prima se era la prima), così il gruppo nuovo non lo spezza.
+        if ((tab.groupId ?? TAB_GROUP_ID_NONE) !== TAB_GROUP_ID_NONE) await browser.tabs.ungroup([tabId]);
+        const groupId = await browser.tabs.group({ tabIds: [tabId], createProperties: { windowId: tab.windowId } });
+        await browser.tabGroups.update(groupId, { title: domainOf(tab.url ?? '') ?? '', color });
+        return current;
+      });
+    },
+
     sortGroups(windowId) {
       return exclusive(async () => {
         await sortGroups(windowId);
@@ -425,7 +523,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     },
 
     async view(windowId) {
-      const [current, tabs, groups, { excludedDomains }] = await Promise.all([
+      const [current, tabs, groups, { excludedDomains, categories }] = await Promise.all([
         load(),
         browser.tabs.query({ windowId }),
         browser.tabGroups.query({ windowId }),
@@ -433,7 +531,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
       ]);
       const mine = current.windowId === windowId;
       const proposal = mine && current.phase === 'ready' ? current.proposal : mine && current.phase === 'computing' ? current.preview : undefined;
-      return buildWindowView(tabs, groups, proposal, excludedDomains, Date.now());
+      return buildWindowView(tabs, groups, proposal, excludedDomains, Date.now(), categories.map((c) => c.name));
     },
 
     async abort() {

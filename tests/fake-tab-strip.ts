@@ -175,12 +175,15 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
         const tab = getTab(id);
         if (tab.groupId === NONE) continue;
         const groupId = tab.groupId;
-        removeFromStrip(tab);
-        tab.groupId = NONE;
-        const end = endOfGroup(groupId, tab.windowId);
         const list = strip(tab.windowId);
-        // Se il gruppo è rimasto vuoto la tab torna dov'era la fine del gruppo.
-        list.splice(end === 0 ? list.length : end, 0, tab.id);
+        const index = list.indexOf(tab.id);
+        tab.groupId = NONE;
+        // Come Chrome: la prima tab del gruppo (o l'unica) resta dov'è, prima del gruppo; le altre
+        // escono subito dopo il gruppo.
+        const first = list.findIndex((id) => tabs.get(id)!.groupId === groupId);
+        if (first === -1 || index < first) continue;
+        removeFromStrip(tab);
+        list.splice(endOfGroup(groupId, tab.windowId), 0, tab.id);
       }
       dropEmptyGroups();
     },

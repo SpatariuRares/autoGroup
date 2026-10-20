@@ -27,7 +27,7 @@ Answers to paste into the **"Privacy practices"** tab of the developer dashboard
 
 | Type in the dashboard | Proposal | Why |
 |---|---|---|
-| Web history | **Yes** | Titles and URLs (host and path) of open tabs are sent to the AI provider chosen by the user, in AI mode with a provider on a server. |
+| Web history | **Yes** | Titles and URLs (host and path) of open tabs are sent to the AI provider chosen by the user, in AI mode with a provider on a server: when computing a proposal, and up to 8 example tabs of a group when the user clicks "Add to categories". |
 | Website content | **Yes** | Page titles and, if the user turns on the option, the meta description are sent to the same provider. |
 | Authentication information | To be evaluated | The API keys entered by the user stay in `storage.local` and are sent only to the provider they belong to. The developer does not receive them. Declaring them is the most cautious choice. |
 | Personally identifiable information, Health, Financial and payment, Personal communications, Location, User activity | No | The extension does not collect them. Tab titles may contain them by chance (e.g. the subject of an email), which is why the user can exclude domains and use Gemini Nano or a local provider. |

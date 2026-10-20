@@ -23,8 +23,8 @@ export interface Category {
   color: GroupColor;
 }
 
-/** Da dove viene un gruppo proposto. */
-export type Provenance = 'list' | 'existing' | 'ai' | 'domain';
+/** Da dove viene un gruppo proposto. `manual`: creato dall'utente con "Nuovo gruppo". */
+export type Provenance = 'list' | 'existing' | 'ai' | 'domain' | 'manual';
 
 /** Una tab dentro la proposta. `tabId` è l'ID di Chrome: resta nell'estensione, non va mai all'AI. */
 export interface ProposedTab {
@@ -90,11 +90,12 @@ export type ProposalEdit =
   | { kind: 'remove-tab'; tabId: number }
   | { kind: 'move-tab'; tabId: number; toGroupId: string }
   /**
-   * Mette una tab (libera o già in un gruppo proposto) in un gruppo della proposta oppure in un gruppo
-   * già aperto in Chrome che la proposta non tocca ancora. Il pannello manda i dati della tab perché
-   * una tab libera non è nella proposta; l'Organizzatore controlla che sia davvero libera.
+   * Mette una tab (libera o già in un gruppo proposto) in un gruppo della proposta, in un gruppo
+   * già aperto in Chrome che la proposta non tocca ancora oppure in un gruppo nuovo, tutto suo. Il
+   * pannello manda i dati della tab perché una tab libera non è nella proposta; l'Organizzatore
+   * controlla che sia davvero libera.
    */
-  | { kind: 'add-tab'; tab: ProposedTab; to: { groupId: string } | { existingGroup: ExistingGroupRef } };
+  | { kind: 'add-tab'; tab: ProposedTab; to: { groupId: string } | { existingGroup: ExistingGroupRef } | { newGroup: true } };
 
 /** Un gruppo già aperto in Chrome, come lo vede il pannello. */
 export interface ExistingGroupRef {
@@ -129,6 +130,8 @@ export interface ExistingGroupView {
   /** Il gruppo della proposta che lo estende, se c'è. */
   proposedGroupId?: string;
   collapsed: boolean;
+  /** Vero se il nome è quello di una categoria (senza distinguere maiuscole e minuscole). */
+  isCategory: boolean;
 }
 
 /** Dettagli dal vivo di una tab che la proposta non porta. */

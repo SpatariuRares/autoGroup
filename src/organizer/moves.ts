@@ -37,7 +37,8 @@ export async function moveTab(tabId: number, groupId: number | null, beforeTabId
   const before = beforeTabId === null ? null : await browser.tabs.get(beforeTabId).catch(() => null);
   if (beforeTabId !== null && (!before || before.windowId !== windowId || before.pinned || before.groupId !== target)) return;
 
-  // Prima nel gruppo giusto: `tabs.group` la mette in fondo al gruppo, `tabs.ungroup` subito dopo il suo vecchio gruppo.
+  // Prima nel gruppo giusto: `tabs.group` la mette in fondo al gruppo, `tabs.ungroup` subito dopo il suo vecchio
+  // gruppo (la prima tab del gruppo, o l'unica, resta invece dov'è, subito prima). Dopo la si mette al suo posto.
   if (tab.groupId !== target) {
     if (groupId !== null) await browser.tabs.group({ tabIds: [tabId], groupId });
     else await browser.tabs.ungroup([tabId]);

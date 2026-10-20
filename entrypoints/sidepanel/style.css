@@ -50,8 +50,9 @@ body {
   gap: 4px;
 }
 
-/* Anteprima per sito durante il calcolo: in sola lettura, un po' attenuata. */
-.group.preview {
+/* Anteprima per sito durante il calcolo: in sola lettura, righe un po' attenuate. Solo le righe: attenuato,
+   il badge di provenienza scenderebbe sotto 4.5:1. */
+.group.preview .tabs {
   opacity: 0.8;
 }
 
@@ -233,12 +234,52 @@ body {
   gap: 8px;
 }
 
+/* Fine dell'intestazione: azioni secondarie e ✕ (o "Chiudi N tab"). Come nelle righe delle tab: fuori dal
+   flusso, sopra la fine del nome, con una sfumatura dello sfondo della scheda; compaiono al passaggio o
+   con il focus nell'intestazione, così a riposo il nome ha tutto lo spazio. Non mentre si scrive il nome
+   (coprirebbero il testo), sempre mentre "Chiudi N tab" aspetta la conferma. */
+.group-header {
+  position: relative;
+}
+
+.group-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.group-end {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 16px;
+  background: linear-gradient(to right, transparent, var(--md-sys-color-surface) 16px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+}
+
+.group-header:is(:hover, :focus-within):not(:has(input.group-name:focus)) .group-end,
+.group-end.armed {
+  opacity: 1;
+}
+
+/* Prendono il clic solo i controlli: tra un'icona e l'altra e sulla sfumatura il clic arriva al nome e apre il gruppo. */
+.group-header:is(:hover, :focus-within):not(:has(input.group-name:focus)) .group-end :is(button, label, .in-categories),
+.group-end.armed :is(button, label, .in-categories) {
+  pointer-events: auto;
+}
+
 .group-name {
   flex: 1;
   min-width: 0;
   min-height: 36px;
   padding: 4px 8px;
   font: var(--md-sys-typescale-title-medium);
+  text-overflow: ellipsis;
   border-color: transparent;
   border-radius: var(--md-sys-shape-corner-small);
   background: transparent;
@@ -313,6 +354,9 @@ input.group-name:not(:read-only) {
 }
 
 .tab {
+  /* Lo sfondo della riga, pieno: lo riprende la sfumatura delle azioni che compaiono sopra il titolo. */
+  --row-bg: var(--md-sys-color-surface);
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -327,7 +371,8 @@ input.group-name:not(:read-only) {
 }
 
 .tab:hover {
-  background: color-mix(in srgb, var(--md-sys-color-on-surface) var(--md-sys-state-hover), transparent);
+  --row-bg: color-mix(in srgb, var(--md-sys-color-surface), var(--md-sys-color-on-surface) var(--md-sys-state-hover));
+  background: var(--row-bg);
 }
 
 .tab img,
@@ -350,25 +395,29 @@ input.group-name:not(:read-only) {
   white-space: nowrap;
 }
 
-/* "Sposta in…" si vede sempre, attenuato, così si capisce che le tab si possono spostare; vai, ✕ e − solo al passaggio o con la riga selezionata. */
-/* Attenuato col colore del contorno, non con l'opacità: resta sopra 3:1 sullo sfondo. */
-.tab .move {
-  color: var(--md-sys-color-outline);
-}
-
-.tab>.icon {
+/* "Sposta in…", −, vai e ✕: fuori dal flusso, sopra la fine del titolo, con una sfumatura dello sfondo
+   della riga. Compaiono al passaggio o con il focus nella riga; nascosti non occupano spazio, così nel
+   pannello stretto il titolo si legge. */
+.tab-actions {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+  background: linear-gradient(to right, transparent, var(--row-bg) 16px);
   opacity: 0;
-  transition: opacity var(--md-sys-motion-duration-short);
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
 
-.tab:hover>.icon,
-.tab:focus-within>.icon {
+/* Visibili, prendono il clic solo i controlli: tra un'icona e l'altra e sulla sfumatura il clic passa sotto. */
+.tab:is(:hover, :focus-within) .tab-actions {
   opacity: 1;
 }
 
-.tab:hover .move,
-.tab:focus-within .move {
-  color: var(--md-sys-color-on-surface-variant);
+.tab:is(:hover, :focus-within) .tab-actions > * {
+  pointer-events: auto;
 }
 
 /* "Sposta in…": icona cliccabile con il menu nativo sopra, trasparente. */
@@ -524,12 +573,14 @@ input.group-name:not(:read-only) {
   display: none;
 }
 
-.section>summary::before {
-  content: '▸';
-  transition: transform var(--md-sys-motion-duration-short);
+/* Freccia di apertura, come per i gruppi aperti (.group-toggle): punta in giù quando l'elenco è aperto. */
+.section>summary>.md-icon,
+.group-toggle>.md-icon {
+  transition: transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
 
-.section[open]>summary::before {
+.section[open]>summary>.md-icon,
+.group-toggle[aria-expanded='true']>.md-icon {
   transform: rotate(90deg);
 }
 
@@ -614,7 +665,8 @@ input.group-name:not(:read-only) {
 
 /* Tab aggiunte dalla proposta ed etichette delle tab. */
 .tab.added {
-  background: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
+  --row-bg: color-mix(in srgb, var(--md-sys-color-surface), var(--md-sys-color-primary) 8%);
+  background: var(--row-bg);
 }
 
 .tab.held {
@@ -637,19 +689,21 @@ input.group-name:not(:read-only) {
 
 /* La tab che si sta guardando: elemento di lista selezionato di Material 3 (secondary container). */
 .tab.current {
-  background: var(--md-sys-color-secondary-container);
+  --row-bg: var(--md-sys-color-secondary-container);
+  background: var(--row-bg);
   color: var(--md-sys-color-on-secondary-container);
 }
 
 .tab.current:hover {
-  background: color-mix(in srgb, var(--md-sys-color-secondary-container), var(--md-sys-color-on-secondary-container) var(--md-sys-state-hover));
+  --row-bg: color-mix(in srgb, var(--md-sys-color-secondary-container), var(--md-sys-color-on-secondary-container) var(--md-sys-state-hover));
+}
+
+/* Sulla tab attiva "Sposta in…" prende il colore del testo della riga. */
+.tab.current .move {
+  color: var(--md-sys-color-on-secondary-container);
 }
 
 /* Audio: pulsante icona a due stati di Material 3, sempre visibile finché la tab suona o è muta. */
-.tab>.icon.audio {
-  opacity: 1;
-}
-
 .tab>.icon.audio.muted {
   --btn-fg: var(--md-sys-color-primary);
 }
@@ -695,6 +749,33 @@ button.text.close-group {
 .card-list.drop-into {
   border-color: var(--md-sys-color-primary);
   background: color-mix(in srgb, var(--md-sys-color-surface), var(--md-sys-color-primary) var(--md-sys-state-hover));
+}
+
+/* "Già tra le categorie": stessa misura dei pulsanti icona piccoli, ma è solo un segno. */
+.in-categories {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  color: var(--md-sys-color-primary);
+}
+
+/* La zona "Nuovo gruppo", solo durante il trascinamento di una tab. Resta in fondo all'area visibile
+   anche con un elenco lungo, sopra le righe ma senza spostarle (vedi App.tsx). */
+.new-group-drop {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin: 0 0 16px;
+  padding: 0 12px;
+  font: var(--md-sys-typescale-label-large);
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 /* Trascinando una tab la sezione "Senza gruppo" compare anche vuota, con lo spazio per lasciarla. */

@@ -12,6 +12,7 @@ import { applyGroupRules, type RulesContext } from './group-rules';
 import type { ProposalInputs } from './proposal-builder';
 import { createSiteMatcher, type SiteMatch } from './site-rules';
 import type { Stopwatch } from './stopwatch';
+import { isExcluded, isInternalUrl } from './tab-selection';
 import { validateGroups, type ValidGroup } from './validator';
 
 interface PipelineResult {
@@ -76,9 +77,9 @@ function languageName(): string {
 const MAX_EXAMPLES = 8;
 
 /**
- * La descrizione di una categoria nuova ("Salva nella lista"), chiesta allo stesso Generatore della
- * pipeline con alcune tab di esempio, dagli URL ripuliti. Stringa vuota se non c'è un Generatore o se
- * non risponde.
+ * La descrizione di una categoria nuova ("Aggiungi alle categorie"), chiesta allo stesso Generatore
+ * della pipeline con alcune tab di esempio, dagli URL ripuliti: mai pagine del browser o di domini
+ * esclusi. Stringa vuota se non c'è un Generatore o se non risponde.
  */
 export async function describeCategory(
   inputs: ProposalInputs,
@@ -88,7 +89,9 @@ export async function describeCategory(
 ): Promise<string> {
   const generator = resolveGenerator(inputs);
   if (!generator) return '';
-  const examples = tabs.slice(0, MAX_EXAMPLES).map((t, i) => ({ id: `t${i + 1}`, title: t.title, url: cleanUrl(t.url) }));
+  // Gli esempi di un gruppo aperto possono essere pagine del browser o di domini esclusi: non escono mai.
+  const allowed = tabs.filter((t) => !isInternalUrl(t.url) && !isExcluded(t.url, inputs.settings.excludedDomains));
+  const examples = allowed.slice(0, MAX_EXAMPLES).map((t, i) => ({ id: `t${i + 1}`, title: t.title, url: cleanUrl(t.url) }));
   try {
     return await generator.describe({ name, examples, language: languageName() }, signal);
   } catch (err) {
@@ -303,7 +306,7 @@ function mergeByName(groups: ValidGroup[]): ValidGroup[] {
 }
 
 /** Dominio di una tab senza "www.", oppure null se l'URL non ha un host (es. file://). */
-function domainOf(url: string): string | null {
+export function domainOf(url: string): string | null {
   try {
     const host = new URL(url).hostname.toLowerCase();
     if (!host) return null;

@@ -71,7 +71,7 @@ const WARNING_CAUSES: ProposalWarning['cause'][] = [
   'downloading',
   'not-supported',
 ];
-const PROVENANCES: Provenance[] = ['list', 'existing', 'ai', 'domain'];
+const PROVENANCES: Provenance[] = ['list', 'existing', 'ai', 'domain', 'manual'];
 const NANO_STATUSES: NanoAvailability[] = ['available', 'downloadable', 'downloading', 'unavailable'];
 
 describe('chiavi usate nel codice', () => {

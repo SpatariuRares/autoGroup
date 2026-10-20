@@ -1,5 +1,6 @@
 import type { Browser } from 'wxt/browser';
 import type { ExistingGroupView, GroupColor, HeldReason, LiveTab, Proposal, ProposedTab, WindowView } from '../shared/types';
+import { categoryKey } from '../settings';
 import { findDuplicates } from './duplicates';
 import { daysSinceAccess, findInactive, INACTIVE_DAYS } from './inactive';
 import { hasRealTitle, isExcluded, isInternalUrl, TAB_GROUP_ID_NONE } from './tab-selection';
@@ -17,7 +18,8 @@ function heldReason(tab: Browser.tabs.Tab, excludedDomains: string[]): HeldReaso
 /**
  * Unisce le tab e i gruppi della finestra (letti dal vivo) con la proposta: i gruppi aperti con le
  * loro tab e quelle aggiunte, i gruppi nuovi, le tab libere rimaste fuori e quelle mai toccate.
- * I gruppi aperti seguono l'ordine della barra; le tab l'ordine della finestra.
+ * I gruppi aperti seguono l'ordine della barra; le tab l'ordine della finestra. `categoryNames` dice
+ * quali gruppi aperti sono già una categoria.
  */
 export function buildWindowView(
   tabs: Browser.tabs.Tab[],
@@ -25,7 +27,9 @@ export function buildWindowView(
   proposal: Proposal | undefined,
   excludedDomains: string[],
   now: number,
+  categoryNames: string[] = [],
 ): WindowView {
+  const categories = new Set(categoryNames.map(categoryKey));
   const ordered = [...tabs].filter((t) => t.id !== undefined).sort((a, b) => a.index - b.index);
   const byId = new Map(ordered.map((t) => [t.id!, t]));
   const proposed = new Set((proposal?.groups ?? []).flatMap((g) => g.tabs.map((t) => t.tabId)));
@@ -45,6 +49,7 @@ export function buildWindowView(
         added: extension?.tabs ?? [],
         proposedGroupId: extension?.id,
         collapsed: chrome?.collapsed ?? false,
+        isCategory: categories.has(categoryKey(chrome?.title ?? '')),
       };
       existing.push(view);
     }

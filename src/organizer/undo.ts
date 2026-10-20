@@ -33,7 +33,11 @@ export async function restoreSnapshot(snapshot: UndoSnapshot): Promise<void> {
   const toUngroup = entries.filter((t) => current.get(t.tabId)!.groupId !== t.groupId).map((t) => t.tabId);
   if (toUngroup.length > 0) await browser.tabs.ungroup(toUngroup as [number, ...number[]]);
 
-  // 2. Nelle posizioni originali, da sinistra a destra, così ogni indice si riferisce alla barra già ricostruita.
+  // 2. Prima tutte in fondo, nell'ordine originale; poi nelle posizioni originali, da sinistra a destra. Così
+  //    a sinistra di ogni destinazione ci sono solo tab già sistemate o non toccate, e ogni indice si riferisce
+  //    alla barra già ricostruita. Senza il primo giro una tab ancora da sistemare (es. la prima di un gruppo,
+  //    che Chrome lascia prima del gruppo quando esce) sposterebbe di uno le altre.
+  for (const entry of entries) await browser.tabs.move(entry.tabId, { windowId: entry.windowId, index: -1 });
   for (const entry of entries) {
     const windowTabs = await browser.tabs.query({ windowId: entry.windowId });
     const index = Math.min(entry.index, windowTabs.length - 1);

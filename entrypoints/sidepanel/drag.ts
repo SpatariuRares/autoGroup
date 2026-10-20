@@ -3,14 +3,20 @@ import { createContext, useContext, useState, type DragEvent } from 'react';
 /*
  * Drag and drop del pannello (nativo del browser), solo sui gruppi già aperti e sulle tab senza
  * gruppo. Le righe e le schede dicono dove andrebbe ciò che si trascina; lo spostamento vero lo fa
- * l'Organizzatore (`moveTab`, `moveGroup`). Da tastiera restano "Sposta in…" e i pulsanti A-Z.
+ * l'Organizzatore (`moveTab`, `moveGroup`, `newGroup`). Da tastiera restano "Sposta in…" e i pulsanti A-Z.
  */
 
 /** Cosa si sta trascinando. */
 export type DragItem = { kind: 'tab'; tabId: number } | { kind: 'group'; groupId: number };
 
-/** Dove va lasciandolo: una tab in un gruppo (o senza gruppo, `null`) prima di un'altra tab o in fondo; un gruppo prima di un altro o in fondo. */
-export type DropTarget = { kind: 'tab'; groupId: number | null; beforeTabId: number | null } | { kind: 'group'; beforeGroupId: number | null };
+/**
+ * Dove va lasciandolo: una tab in un gruppo (o senza gruppo, `null`) prima di un'altra tab o in fondo,
+ * oppure in un gruppo nuovo; un gruppo prima di un altro o in fondo.
+ */
+export type DropTarget =
+  | { kind: 'tab'; groupId: number | null; beforeTabId: number | null }
+  | { kind: 'new-group' }
+  | { kind: 'group'; beforeGroupId: number | null };
 
 /** Il segno mostrato durante il trascinamento: una linea prima o dopo, o l'evidenza di un gruppo o della sezione. */
 interface Indicator {
@@ -172,6 +178,28 @@ export function useFreeDrop() {
       if (!takes) return;
       e.preventDefault();
       state.drop({ kind: 'tab', groupId: null, beforeTabId: null });
+    },
+  };
+}
+
+/** La zona "Nuovo gruppo", che compare trascinando una tab: lasciata qui, la tab va in un gruppo tutto suo. */
+export function useNewGroupDrop() {
+  const state = useContext(DragContext);
+  if (!state.enabled) return { className: '' };
+  const key = 'new-group';
+  const takes = state.item?.kind === 'tab';
+  return {
+    className: classes(state, key, false),
+    onDragOver: (e: DragEvent<HTMLElement>) => {
+      if (!takes) return;
+      accept(e);
+      state.show({ key, edge: 'into' });
+    },
+    onDragLeave: leave(state, key),
+    onDrop: (e: DragEvent<HTMLElement>) => {
+      if (!takes) return;
+      e.preventDefault();
+      state.drop({ kind: 'new-group' });
     },
   };
 }

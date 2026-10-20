@@ -19,6 +19,8 @@ const VISIBLE_SITES = 2;
 
 interface CategoriesSectionProps {
   categories: Category[];
+  /** Categorie di cui l'AI sta scrivendo la descrizione ("Aggiungi alle categorie" dal pannello). */
+  describing: Set<string>;
   /** Salva la lista; restituisce false se è stata rifiutata. */
   onChange: (categories: Category[]) => Promise<boolean>;
   sites: CategorySites;
@@ -33,7 +35,7 @@ interface CategoriesSectionProps {
  * Elenco delle categorie in righe compatte (colore, nome, siti o descrizione): un clic apre la riga
  * per modificare nome, descrizione, siti, ordine ed eliminazione.
  */
-export function CategoriesSection({ categories, sites, onChange, onSitesChange, onReset, onDeleted }: CategoriesSectionProps) {
+export function CategoriesSection({ categories, describing, sites, onChange, onSitesChange, onReset, onDeleted }: CategoriesSectionProps) {
   // Bozza locale: un nome duplicato resta visibile (con l'errore) finché l'utente non lo corregge.
   const [draft, setDraft] = useState(categories);
   const [invalid, setInvalid] = useState<string | null>(null);
@@ -95,6 +97,8 @@ export function CategoriesSection({ categories, sites, onChange, onSitesChange, 
         {draft.map((category, index) => {
           const expanded = open.has(category.id);
           const own = sites[category.id] ?? [];
+          // Aggiunta dal pannello: la descrizione sta arrivando dall'AI.
+          const waiting = describing.has(category.id) && !category.description;
           return (
             <li key={category.id} className={`category${expanded ? ' open' : ''}`} data-category={category.id}>
               <div className="category-summary">
@@ -106,7 +110,9 @@ export function CategoriesSection({ categories, sites, onChange, onSitesChange, 
                 >
                   <span className="category-title">{category.name || t('optionsCategoryName')}</span>
                   {!expanded &&
-                    (own.length > 0 ? (
+                    (waiting ? (
+                      <span className="category-preview">{t('optionsDescribing')}</span>
+                    ) : own.length > 0 ? (
                       <span className="category-chips">
                         {own.slice(0, VISIBLE_SITES).map((site) => (
                           <span key={site} className="site-chip">
@@ -121,6 +127,7 @@ export function CategoriesSection({ categories, sites, onChange, onSitesChange, 
                   <Icon name="chevronRight" size={20} />
                 </button>
               </div>
+              {waiting && <div className="md-linear-progress category-progress" role="progressbar" aria-label={t('optionsDescribing')} />}
               {expanded && (
                 <div className="category-editor">
                   <label className="field">
@@ -139,6 +146,7 @@ export function CategoriesSection({ categories, sites, onChange, onSitesChange, 
                     <textarea
                       className="category-description"
                       value={category.description}
+                      placeholder={waiting ? t('optionsDescribing') : undefined}
                       maxLength={MAX_DESCRIPTION_LENGTH}
                       rows={2}
                       onChange={(e) => setDraft(update(category.id, { description: e.target.value }))}

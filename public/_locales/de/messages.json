@@ -49,6 +49,9 @@
   "provenance_domain": {
     "message": "Website"
   },
+  "provenance_manual": {
+    "message": "eigener"
+  },
   "color_grey": {
     "message": "grau"
   },
@@ -97,6 +100,9 @@
   "popupGroupName": {
     "message": "Gruppenname"
   },
+  "panelRenameGroup": {
+    "message": "Gruppe umbenennen"
+  },
   "popupDiscardGroup": {
     "message": "Gruppe verwerfen (Tabs bleiben frei)"
   },
@@ -105,6 +111,30 @@
   },
   "popupMoveTo": {
     "message": "Verschieben nach…"
+  },
+  "panelMoveTabAnywhere": {
+    "message": "Tab verschieben"
+  },
+  "panelUngroupTab": {
+    "message": "Aus der Gruppe nehmen"
+  },
+  "panelPosition": {
+    "message": "Position"
+  },
+  "panelMoveUp": {
+    "message": "Nach oben"
+  },
+  "panelMoveDown": {
+    "message": "Nach unten"
+  },
+  "panelMoveGroup": {
+    "message": "Gruppe verschieben"
+  },
+  "panelNewGroup": {
+    "message": "+ Neue Gruppe"
+  },
+  "panelNewGroupDrop": {
+    "message": "Hier ablegen für eine neue Gruppe"
   },
   "popupRemoveTab": {
     "message": "Aus der Gruppe entfernen (der Tab bleibt offen und ohne Gruppe)"
@@ -301,6 +331,9 @@
   },
   "optionsCategoryDescription": {
     "message": "Beschreibung"
+  },
+  "optionsDescribing": {
+    "message": "Beschreibung wird mit KI geschrieben…"
   },
   "optionsCategoryColor": {
     "message": "Farbe"
@@ -570,10 +603,21 @@
     "message": "Die Anbieterkonfiguration ist ungültig."
   },
   "popupSaveToList": {
-    "message": "In Liste speichern"
+    "message": "Zu Kategorien hinzufügen"
   },
   "popupSaveToListHint": {
-    "message": "Fügt diese Gruppe den Kategorien hinzu, mit einer von der KI erstellten Beschreibung"
+    "message": "Fügt diese Gruppe den Kategorien der Erweiterung hinzu"
+  },
+  "panelSavingToList": {
+    "message": "„$NAME$“ wird zu den Kategorien hinzugefügt…",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "panelInCategories": {
+    "message": "Schon in den Kategorien"
   },
   "panelSiteRemembered": {
     "message": "Tabs von $SITE$ kommen immer in $CATEGORY$.",
@@ -735,9 +779,6 @@
   },
   "panelSortTabs": {
     "message": "Tabs von A bis Z sortieren"
-  },
-  "panelReadOnly": {
-    "message": "Name und Farbe nicht änderbar"
   },
   "panelSectionFree": {
     "message": "Ohne Gruppe"
