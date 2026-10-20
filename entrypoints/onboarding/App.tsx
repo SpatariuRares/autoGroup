@@ -6,10 +6,10 @@ import { t } from '../../src/shared/i18n';
 import { onboardingSteps, type OnboardingStep } from '../../src/shared/onboarding';
 import { Icon } from '../../src/ui/Icon';
 import { providerName } from '../../src/ui/provider-name';
-import { ModeSection } from '../options/ModeSection';
-import { NanoStatus } from '../options/NanoStatus';
-import { ProviderSection } from '../options/ProviderSection';
-import { ThresholdField } from '../options/ThresholdField';
+import { ModeSection } from '../../src/ui/settings/ModeSection';
+import { NanoStatus } from '../../src/ui/settings/NanoStatus';
+import { ProviderSection } from '../../src/ui/settings/ProviderSection';
+import { ThresholdField } from '../../src/ui/settings/ThresholdField';
 
 /**
  * Guida al primo avvio: cosa fa autoGroup, la modalità, il Generatore, il Classificatore facoltativo

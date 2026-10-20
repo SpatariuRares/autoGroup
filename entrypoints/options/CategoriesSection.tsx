@@ -11,7 +11,7 @@ import { t } from '../../src/shared/i18n';
 import { GROUP_COLORS, type Category, type GroupColor } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
 import { moveInRadioGroup } from '../../src/ui/radio-keys';
-import { Card } from './Card';
+import { Card } from '../../src/ui/settings/Card';
 import { SitesRow } from './SitesRow';
 
 /** Quanti siti si vedono nella riga chiusa di una categoria; gli altri diventano "+N". */

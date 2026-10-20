@@ -8,7 +8,7 @@ Manifest V3 extension built with WXT, TypeScript and React. All the logic lives 
 entrypoints/
   background.ts          service worker: creates the Organizer, answers the panel's messages, opens the panel when the icon is clicked and the guide on install
   sidepanel/             React side panel: App.tsx composes the components (GroupCards, TabRow, ModePicker, Banners, Snackbar); hooks.ts holds the Organizer state, the window view and "Add to categories"; move-targets.ts the "Move to…" entries; panel-actions.ts the actions context
-  options/               React settings page in four pages (views.ts), opened in a full tab; ModeSection, ProviderSection, NanoStatus and ThresholdField are also used by the guide
+  options/               React settings page in four pages (views.ts), opened in a full tab
   onboarding/            first-run guide (onboarding.html), in steps
 src/
   organizer/             the Organizer and its internal modules
@@ -37,7 +37,7 @@ src/
     inactive.ts          inactive tabs: which tabs "Close inactive" closes
     sort.ts              "Sort groups A-Z" and "Sort tabs A-Z": reorder the window's strip
   settings/              preferences in chrome.storage.sync
-    index.ts             loading and saving, validation, excluded domains, category sites, saving a provider (saveProvider)
+    index.ts             the field table (FIELDS), loading and saving, excluded domains, category sites, saving a provider (saveProvider)
     categories.ts        default categories (from chrome.i18n), list validation
     providers.ts         presets of the two roles, configuration, API keys, host permissions
     backup.ts            export and import of the transferable preferences (no providers, no API keys)
@@ -46,6 +46,7 @@ src/
   ui/Icon.tsx            Material Symbols icons included as SVG
   ui/provider-name.ts    short name of the chosen provider, for panel, settings and guide
   ui/use-settings.ts     useSettings(): settings read live (storage.onChanged), for panel and settings page
+  ui/settings/           settings parts shared by the options page and the guide: Card, ModeSection, ProviderSection, NanoStatus, ThresholdField and their styles (settings.css)
   ai/                    AI provider adapters, with no dependencies on the Organizer
     types.ts             contracts of Generator and Classifier, AiTab, AiOption, ProviderError
     http.ts              shared JSON POST: Bearer, timeout, one retry, error classification; times (TIMINGS)
@@ -378,7 +379,7 @@ Module `src/settings`, used by the Organizer (reading) and by the options page (
 |---|---|---|---|
 | `mode` | `'ai' \| 'domain'` | `'ai'` | *With AI* or *By site*; any other value is read as `'ai'`. |
 | `minTabs` | integer ≥ 1 | 2 | `saveSettings` rejects invalid values; `loadSettings` ignores corrupted values and uses the default. |
-| `excludedDomains` | `string[]` | `[]` | Normalized domains: lowercase, without scheme, path, port or `www.`. |
+| `excludedDomains` | `string[]` | `[]` | Normalized domains: lowercase, without scheme, path, port or `www.`. `saveSettings` rejects a domain that is not normalized. |
 | `classifier` | `{ preset, baseUrl, model }` | preset `none` | URL normalized without trailing `/`. |
 | `threshold` | number between 0 and 1 | 0.7 | Confidence threshold of the Classifier. |
 | `autoGroupSites` | boolean | `true` | Automatic grouping with the site rules; only `false` turns it off. Not part of the proposal's signature. |
@@ -387,7 +388,9 @@ Module `src/settings`, used by the Organizer (reading) and by the options page (
 | `categories` | `Category[]` | the 10 defaults | Absent until the user edits the list: in that case `loadSettings` returns the defaults in the browser's language. A saved but invalid list is ignored. |
 | `categorySites` | `Record<categoryId, string[]>` | `{}` | Site rules (`domain[/path]`) of each category, in a separate key so they don't take space from the categories. |
 
-`saveSettings` rejects invalid values with a `SettingsError`, which carries the i18n key of the message to show.
+Each row of the table is an entry of `FIELDS` in `src/settings/index.ts`: default (`fallback`), check, optional cleanup (`normalize`) and whether it goes into the backup file. `loadSettings`, `saveSettings`, `DEFAULT_SETTINGS` and the export keys (`BACKUP_KEYS`) are derived from it, and TypeScript requires an entry for every field of `Settings`. Adding a preference means adding the field to `Settings` and an entry to `FIELDS`; only rules that span several fields (removing the sites of deleted categories) are written by hand in `saveSettings`.
+
+`saveSettings` rejects invalid values with a `SettingsError`, which carries the i18n key of the message to show; if one value is invalid nothing of the patch is saved. A value without a message of its own (mode, switches) uses `errorSaveSettings`.
 
 API keys are in `storage.local` (`classifierApiKey`, `generatorApiKey`), never in `sync`.
 
@@ -434,7 +437,7 @@ Functions: `loadSettings`, `saveSettings(patch)`, `isValidMinTabs`, `normalizeDo
 
 ### Options page
 
-`entrypoints/options`, declared with `open_in_tab`: it opens in a full tab from `chrome://extensions` and from the panel's "⚙ Settings" button (`runtime.openOptionsPage`). It is split into **four pages**, shown one at a time, with a side menu that highlights the current one (`aria-current="page"`). Below 900 px the menu becomes a bar at the top with the four pages side by side, icon above the label. Each page is a column of cards (`Card.tsx`: title, subtitle, optional label on the right).
+`entrypoints/options`, declared with `open_in_tab`: it opens in a full tab from `chrome://extensions` and from the panel's "⚙ Settings" button (`runtime.openOptionsPage`). It is split into **four pages**, shown one at a time, with a side menu that highlights the current one (`aria-current="page"`). Below 900 px the menu becomes a bar at the top with the four pages side by side, icon above the label. Each page is a column of cards (`src/ui/settings/Card.tsx`: title, subtitle, optional label on the right).
 
 The page comes from the address (`views.ts`, `resolveHash`): `#general`, `#categories`, `#ai`, `#about`. The panel's notices open a section (`#generator`, `#classifier`, `#categories`, `#mode`): the page that contains it opens and scrolls to it. The section names of the old single page (`#behavior`, `#privacy`) still lead to where those settings are now. An unknown address opens *General*.
 

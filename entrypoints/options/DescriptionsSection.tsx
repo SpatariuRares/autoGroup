@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { ALL_URLS, hasDescriptionPermission, removeDescriptionPermission } from '../../src/settings';
 import { t } from '../../src/shared/i18n';
-import { Card } from './Card';
+import { Card } from '../../src/ui/settings/Card';
 
 /** "Leggi la descrizione delle pagine": serve solo all'AI, quindi sta nella sua pagina. */
 export function DescriptionsSection({ enabled, onChange }: { enabled: boolean; onChange: (value: boolean) => unknown }) {

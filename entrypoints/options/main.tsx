@@ -4,6 +4,7 @@ import { t } from '../../src/shared/i18n';
 import { dismissTooltipsOnEscape } from '../../src/ui/tooltip-dismiss';
 import '../../src/ui/md3-tokens.css';
 import '../../src/ui/base.css';
+import '../../src/ui/settings/settings.css';
 import { App } from './App';
 import './style.css';
 

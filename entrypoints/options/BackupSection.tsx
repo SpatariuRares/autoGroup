@@ -3,7 +3,7 @@ import { SettingsError, type Settings } from '../../src/settings';
 import { exportSettings } from '../../src/settings/backup';
 import { t } from '../../src/shared/i18n';
 import { Icon } from '../../src/ui/Icon';
-import { Card } from './Card';
+import { Card } from '../../src/ui/settings/Card';
 
 /**
  * "Esporta" scarica un file JSON con le preferenze (senza provider né chiavi); "Importa" lo rilegge.

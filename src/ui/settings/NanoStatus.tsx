@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { downloadNano, nanoAvailability, type NanoAvailability } from '../../src/ai/nano-generator';
-import { t } from '../../src/shared/i18n';
+import { downloadNano, nanoAvailability, type NanoAvailability } from '../../ai/nano-generator';
+import { t } from '../../shared/i18n';
 
 /** Stato di Gemini Nano, con il download avviato da un clic e il suo avanzamento. */
 export function NanoStatus() {

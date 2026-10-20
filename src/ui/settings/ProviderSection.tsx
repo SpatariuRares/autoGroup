@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { browser } from 'wxt/browser';
-import { testOpenAiConnection } from '../../src/ai/openai-generator';
-import { testSystemOneConnection } from '../../src/ai/systemone-classifier';
-import { ProviderError } from '../../src/ai/types';
+import { testOpenAiConnection } from '../../ai/openai-generator';
+import { testSystemOneConnection } from '../../ai/systemone-classifier';
+import { ProviderError } from '../../ai/types';
 import {
   hasHostPermission,
   isLocalOnly,
@@ -17,9 +17,9 @@ import {
   type ProviderRole,
   type ProviderSaveResult,
   type ProviderSettings,
-} from '../../src/settings';
-import { t, warningKey } from '../../src/shared/i18n';
-import { providerName } from '../../src/ui/provider-name';
+} from '../../settings';
+import { t, warningKey } from '../../shared/i18n';
+import { providerName } from '../provider-name';
 import { Card } from './Card';
 
 type Status = { kind: 'ok' | 'error' | 'info'; key: string; sub?: string } | null;

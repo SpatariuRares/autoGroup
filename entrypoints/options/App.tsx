@@ -8,15 +8,15 @@ import { Icon } from '../../src/ui/Icon';
 import { useExpiring } from '../../src/ui/use-expiring';
 import { useDescribing } from '../../src/ui/use-describing';
 import { useSettings } from '../../src/ui/use-settings';
-import { Card } from './Card';
+import { Card } from '../../src/ui/settings/Card';
 import { BackupSection } from './BackupSection';
 import { AutoGroupSection, CategoriesSection } from './CategoriesSection';
 import { DescriptionsSection } from './DescriptionsSection';
-import { ModeSection } from './ModeSection';
-import { NanoStatus } from './NanoStatus';
-import { ProviderSection } from './ProviderSection';
+import { ModeSection } from '../../src/ui/settings/ModeSection';
+import { NanoStatus } from '../../src/ui/settings/NanoStatus';
+import { ProviderSection } from '../../src/ui/settings/ProviderSection';
 import { TabsSection } from './TabsSection';
-import { ThresholdField } from './ThresholdField';
+import { ThresholdField } from '../../src/ui/settings/ThresholdField';
 import { resolveHash, VIEWS, type ViewId } from './views';
 
 /** Pagina Buy Me a Coffee dell'autore. */

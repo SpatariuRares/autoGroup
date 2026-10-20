@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { isValidMinTabs, normalizeDomain } from '../../src/settings';
 import { t } from '../../src/shared/i18n';
 import { Icon } from '../../src/ui/Icon';
-import { Card } from './Card';
+import { Card } from '../../src/ui/settings/Card';
 
 interface TabsSectionProps {
   minTabs: number;

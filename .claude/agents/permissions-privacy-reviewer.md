@@ -12,7 +12,7 @@ You review a Chrome MV3 extension (WXT + React) for permission and privacy regre
 Start from the diff you are given, or `git diff $(git describe --tags --abbrev=0)..HEAD` if none. Focus on:
 
 - `wxt.config.ts` → `manifest.permissions`, `optional_host_permissions`, `host_permissions` (the `AUTOGROUP_SMOKE` branch must stay test-only).
-- `src/settings/index.ts`, `src/settings/providers.ts`, `entrypoints/options/App.tsx`, `entrypoints/options/ProviderSection.tsx` → which origins are requested and when (`permissions.request` must be called synchronously inside the user gesture, before any `await`, and only for the configured provider's host or `<all_urls>` for descriptions).
+- `src/settings/index.ts`, `src/settings/providers.ts`, `entrypoints/options/App.tsx`, `src/ui/settings/ProviderSection.tsx` → which origins are requested and when (`permissions.request` must be called synchronously inside the user gesture, before any `await`, and only for the configured provider's host or `<all_urls>` for descriptions).
 - `src/organizer/description-reader.ts` → `scripting.executeScript` must only read the meta description, only with the option on, never on excluded domains.
 - `src/organizer/ai-input.ts`, `src/ai/*` → what leaves the browser: short IDs, title, cleaned URL (host + path, no query/fragment/credentials), optional description. Chrome tab IDs must never be sent.
 - API keys → `storage.local` only (never `sync`), sent only to their own provider.

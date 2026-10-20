@@ -1,6 +1,6 @@
-import { t } from '../../src/shared/i18n';
-import type { GroupingMode } from '../../src/settings';
-import { Icon, type IconName } from '../../src/ui/Icon';
+import { t } from '../../shared/i18n';
+import type { GroupingMode } from '../../settings';
+import { Icon, type IconName } from '../Icon';
 import { Card } from './Card';
 
 const MODES: { id: GroupingMode; icon: IconName; title: string; hint: string }[] = [
