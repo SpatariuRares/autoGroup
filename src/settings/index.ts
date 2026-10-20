@@ -70,34 +70,68 @@ export interface Settings {
   autoGroupSites: boolean;
 }
 
-const KEYS: (keyof Settings)[] = ['mode', 'minTabs', 'excludedDomains', 'categories', 'categorySites', 'generator', 'classifier', 'threshold', 'readDescriptions', 'autoGroupSites'];
+/** Regole di una preferenza: valore di default, controllo, pulizia e se va nel backup. */
+interface Field<T> {
+  /** Il valore quando non c'è niente di salvato, o quello salvato non è valido. */
+  fallback: () => T;
+  /** Chiave i18n del motivo per cui il valore non va salvato, oppure null se va bene. */
+  check: (value: unknown) => string | null;
+  /** Pulizia prima del salvataggio, su un valore già controllato. */
+  normalize?: (value: T) => T;
+  /** Portata da un browser all'altro con "Esporta" e "Importa". Provider e chiavi API mai. */
+  backup: boolean;
+}
 
-export const DEFAULT_SETTINGS: Omit<Settings, 'categories'> = {
-  mode: 'ai',
-  minTabs: 2,
-  excludedDomains: [],
-  categorySites: {},
-  generator: NANO_PROVIDER,
-  classifier: NO_PROVIDER,
-  threshold: DEFAULT_THRESHOLD,
-  readDescriptions: false,
-  autoGroupSites: true,
+const unless = (ok: boolean, error = 'errorSaveSettings') => (ok ? null : error);
+const isBoolean = (value: unknown) => unless(typeof value === 'boolean');
+
+/**
+ * Tutte le preferenze, una voce per campo di `Settings`: aggiungerne una significa aggiungere il
+ * campo all'interfaccia e una voce qui. Lettura, salvataggio, default e backup si ricavano da questa tabella.
+ */
+const FIELDS: { [K in keyof Settings]: Field<Settings[K]> } = {
+  mode: { fallback: () => 'ai', check: (v) => unless(v === 'ai' || v === 'domain'), backup: true },
+  minTabs: { fallback: () => 2, check: (v) => unless(isValidMinTabs(v), 'optionsMinTabsInvalid'), backup: true },
+  excludedDomains: {
+    fallback: () => [],
+    check: (v) => unless(Array.isArray(v) && v.every((d) => typeof d === 'string' && normalizeDomain(d) === d), 'optionsDomainInvalid'),
+    backup: true,
+  },
+  categories: { fallback: defaultCategories, check: validateCategories, normalize: normalizeCategories, backup: true },
+  categorySites: { fallback: () => ({}), check: validateCategorySites, backup: true },
+  generator: {
+    fallback: () => NANO_PROVIDER,
+    check: (v) => unless(isProviderSettings('generator', v), 'optionsProviderInvalid'),
+    normalize: normalizeProvider,
+    backup: false,
+  },
+  classifier: {
+    fallback: () => NO_PROVIDER,
+    check: (v) => unless(isProviderSettings('classifier', v), 'optionsProviderInvalid'),
+    normalize: normalizeProvider,
+    backup: false,
+  },
+  threshold: { fallback: () => DEFAULT_THRESHOLD, check: (v) => unless(isValidThreshold(v), 'optionsThresholdInvalid'), backup: false },
+  readDescriptions: { fallback: () => false, check: isBoolean, backup: false },
+  autoGroupSites: { fallback: () => true, check: isBoolean, backup: true },
 };
 
+const KEYS = Object.keys(FIELDS) as (keyof Settings)[];
+
+/** Le preferenze che vanno nel file di "Esporta". */
+export const BACKUP_KEYS = KEYS.filter((key) => FIELDS[key].backup);
+
+const field = (key: keyof Settings) => FIELDS[key] as Field<unknown>;
+
+export const DEFAULT_SETTINGS = Object.fromEntries(
+  KEYS.filter((key) => key !== 'categories').map((key) => [key, field(key).fallback()]),
+) as Omit<Settings, 'categories'>;
+
 export async function loadSettings(): Promise<Settings> {
-  const stored = await browser.storage.sync.get<Partial<Settings>>(KEYS);
-  return {
-    mode: stored.mode === 'domain' ? 'domain' : 'ai',
-    minTabs: isValidMinTabs(stored.minTabs) ? stored.minTabs : DEFAULT_SETTINGS.minTabs,
-    excludedDomains: Array.isArray(stored.excludedDomains) ? stored.excludedDomains : DEFAULT_SETTINGS.excludedDomains,
-    categories: validateCategories(stored.categories) === null ? stored.categories! : defaultCategories(),
-    categorySites: validateCategorySites(stored.categorySites) === null ? stored.categorySites! : {},
-    generator: isProviderSettings('generator', stored.generator) ? stored.generator : NANO_PROVIDER,
-    classifier: isProviderSettings('classifier', stored.classifier) ? stored.classifier : NO_PROVIDER,
-    threshold: isValidThreshold(stored.threshold) ? stored.threshold : DEFAULT_THRESHOLD,
-    readDescriptions: stored.readDescriptions === true,
-    autoGroupSites: stored.autoGroupSites !== false,
-  };
+  const stored = await browser.storage.sync.get<Record<string, unknown>>(KEYS);
+  const settings = {} as Record<keyof Settings, unknown>;
+  for (const key of KEYS) settings[key] = field(key).check(stored[key]) === null ? stored[key] : field(key).fallback();
+  return settings as Settings;
 }
 
 /** Errore di validazione delle impostazioni, con la chiave i18n del messaggio da mostrare. */
@@ -107,42 +141,24 @@ export class SettingsError extends Error {
   }
 }
 
-/** Salva solo i campi indicati. I valori non validi vengono rifiutati con un `SettingsError`. */
+/** Salva solo i campi indicati. Se un valore non è valido la patch è rifiutata con un `SettingsError` e non cambia nulla. */
 export async function saveSettings(patch: Partial<Settings>): Promise<void> {
-  if (patch.mode !== undefined && patch.mode !== 'ai' && patch.mode !== 'domain') {
-    throw new SettingsError('optionsProviderInvalid');
-  }
-  if (patch.minTabs !== undefined && !isValidMinTabs(patch.minTabs)) {
-    throw new SettingsError('optionsMinTabsInvalid');
-  }
-  if (patch.categories !== undefined) {
-    const error = validateCategories(patch.categories);
+  const checked: Partial<Record<keyof Settings, unknown>> = {};
+  for (const key of KEYS) {
+    const value = patch[key];
+    if (value === undefined) continue;
+    const error = field(key).check(value);
     if (error) throw new SettingsError(error);
-    patch = { ...patch, categories: normalizeCategories(patch.categories) };
+    checked[key] = field(key).normalize?.(value) ?? value;
   }
-  if (patch.categorySites !== undefined) {
-    const error = validateCategorySites(patch.categorySites);
-    if (error) throw new SettingsError(error);
-  }
-  if (patch.categories !== undefined || patch.categorySites !== undefined) {
+  if (checked.categories !== undefined || checked.categorySites !== undefined) {
     // Senza le categorie che non esistono più e senza liste vuote.
     const current = await loadSettings();
-    const ids = new Set((patch.categories ?? current.categories).map((c) => c.id));
-    const sites = Object.entries(patch.categorySites ?? current.categorySites).filter(([id, list]) => ids.has(id) && list.length > 0);
-    patch = { ...patch, categorySites: Object.fromEntries(sites) };
+    const ids = new Set(((checked.categories as Category[] | undefined) ?? current.categories).map((c) => c.id));
+    const sites = Object.entries((checked.categorySites as CategorySites | undefined) ?? current.categorySites).filter(([id, list]) => ids.has(id) && list.length > 0);
+    checked.categorySites = Object.fromEntries(sites);
   }
-  if (patch.generator !== undefined) {
-    if (!isProviderSettings('generator', patch.generator)) throw new SettingsError('optionsProviderInvalid');
-    patch = { ...patch, generator: normalizeProvider(patch.generator) };
-  }
-  if (patch.classifier !== undefined) {
-    if (!isProviderSettings('classifier', patch.classifier)) throw new SettingsError('optionsProviderInvalid');
-    patch = { ...patch, classifier: normalizeProvider(patch.classifier) };
-  }
-  if (patch.threshold !== undefined && !isValidThreshold(patch.threshold)) {
-    throw new SettingsError('optionsThresholdInvalid');
-  }
-  await browser.storage.sync.set(patch);
+  await browser.storage.sync.set(checked);
 }
 
 /** Permesso opzionale per leggere la descrizione delle pagine. */

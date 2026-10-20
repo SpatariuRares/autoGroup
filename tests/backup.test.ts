@@ -62,6 +62,8 @@ describe('esporta e importa le impostazioni', () => {
     ['un JSON di un\'altra app', JSON.stringify({ app: 'altro', settings: {} })],
     ['categorie non valide', JSON.stringify({ app: 'autoGroup', version: 1, settings: { categories: [{ id: 'x', name: '', description: '', color: 'grey' }] } })],
     ['un numero minimo non valido', JSON.stringify({ app: 'autoGroup', version: 1, settings: { minTabs: 0 } })],
+    ['domini esclusi che non sono una lista', JSON.stringify({ app: 'autoGroup', version: 1, settings: { excludedDomains: 'banca.it' } })],
+    ['un raggruppamento automatico non booleano', JSON.stringify({ app: 'autoGroup', version: 1, settings: { autoGroupSites: 'sì' } })],
   ])('rifiuta %s senza cambiare nulla', async (_, text) => {
     const before = await loadSettings();
 

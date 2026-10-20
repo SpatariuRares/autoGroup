@@ -1,15 +1,11 @@
-import { normalizeDomain, saveSettings, SettingsError, type Settings } from './index';
-
-/** Le preferenze che si portano da un browser all'altro. Provider e chiavi API no: le chiavi non lasciano mai storage.local. */
-const KEYS = ['mode', 'minTabs', 'excludedDomains', 'categories', 'categorySites', 'autoGroupSites'] as const satisfies (keyof Settings)[];
-
-type Backup = Pick<Settings, (typeof KEYS)[number]>;
+import { BACKUP_KEYS, normalizeDomain, saveSettings, SettingsError, type Settings } from './index';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /** Il file di "Esporta": JSON leggibile, con il nome dell'app e la versione del formato. */
 export function exportSettings(settings: Settings): string {
-  const picked = Object.fromEntries(KEYS.map((key) => [key, settings[key]])) as Backup;
+  // Solo le preferenze con `backup` nella tabella: provider e chiavi API non lasciano mai il browser.
+  const picked = Object.fromEntries(BACKUP_KEYS.map((key) => [key, settings[key]]));
   return `${JSON.stringify({ app: 'autoGroup', version: 1, exportedAt: new Date().toISOString(), settings: picked }, null, 2)}\n`;
 }
 
@@ -29,13 +25,12 @@ export async function importSettings(text: string): Promise<Partial<Settings>> {
   const source = data.settings;
 
   const patch: Partial<Settings> = {};
-  for (const key of KEYS) if (key in source) (patch as Record<string, unknown>)[key] = source[key];
-  if (patch.excludedDomains !== undefined) {
-    if (!Array.isArray(patch.excludedDomains)) throw new SettingsError('optionsImportInvalid');
+  for (const key of BACKUP_KEYS) if (key in source) (patch as Record<string, unknown>)[key] = source[key];
+  // Scritti a mano nel file: si normalizzano e si scartano quelli non validi, invece di rifiutare il file.
+  if (Array.isArray(patch.excludedDomains)) {
     const domains = patch.excludedDomains.map((d) => (typeof d === 'string' ? normalizeDomain(d) : null)).filter((d): d is string => d !== null);
     patch.excludedDomains = [...new Set(domains)].sort();
   }
-  if (patch.autoGroupSites !== undefined && typeof patch.autoGroupSites !== 'boolean') throw new SettingsError('optionsImportInvalid');
   // Le categorie prima dei siti: saveSettings scarta i siti di categorie che non esistono.
   await saveSettings(patch);
   return patch;
