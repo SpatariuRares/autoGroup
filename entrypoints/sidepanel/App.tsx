@@ -23,16 +23,16 @@ import { TabRow } from './TabRow';
 export function App() {
   const { state, windowId, busy, failure, run, send, edit } = useOrganizer();
   const [settings] = useSettings();
-  const [notice, setNotice] = useState<'popupApplied' | 'popupUndone' | null>(null);
+  const [done, setDone] = useState<'popupApplied' | 'popupUndone' | null>(null);
   const [offer, setOffer, pauseOffer] = useExpiring<RememberOffer>(SNACKBAR_MS);
 
   const view = useWindowView(windowId, state, settings);
-  const { proposal, preview, computing, readOnly, canUndo, notice: panelNotice, banners, announcement } = panelModel({ state, windowId, view, failure, done: notice });
+  const { proposal, preview, computing, readOnly, canUndo, notice: panelNotice, banners, announcement } = panelModel({ state, windowId, view, failure, done });
   const categories = useSaveToCategories(run, view);
 
   function recompute() {
     if (windowId === null) return;
-    setNotice(null);
+    setDone(null);
     setOffer(null);
     run(() => organizer.propose(windowId, { force: true }));
   }
@@ -117,7 +117,8 @@ export function App() {
         return <CloseTabsBanner icon="tab" text={b.text} tabs={b.tabs} disabled={busy} onClose={closeDuplicates} />;
       case 'inactive':
         return <CloseTabsBanner icon="schedule" text={b.text} tabs={b.tabs} disabled={busy} onClose={closeInactive} />;
-      default:
+      case 'info':
+      case 'no-groups':
         return <InfoBanner text={b.text} />;
     }
   };
@@ -247,7 +248,7 @@ export function App() {
 
       <footer className="bottom-bar">
         {canUndo && (
-          <button className="text undo" disabled={busy} onClick={() => run(() => organizer.undo(), () => setNotice('popupUndone'))}>
+          <button className="text undo" disabled={busy} onClick={() => run(() => organizer.undo(), () => setDone('popupUndone'))}>
             <Icon name="undo" size={18} />
             {t('popupUndo')}
           </button>
@@ -267,7 +268,7 @@ export function App() {
             onClick={() =>
               run(() => organizer.apply(), () => {
                 setOffer(null);
-                setNotice('popupApplied');
+                setDone('popupApplied');
               })
             }
           >

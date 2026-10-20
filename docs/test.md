@@ -127,7 +127,7 @@ Mutation test: removing the comparison with the threshold makes 3 tests fail; ca
 - Name already present (different case): no duplicate, warning.
 - Only "new AI" groups.
 - The saved category is among the options of the next organization.
-- A later edit removes the warning.
+- Any later operation of the user (an edit, closing a tab, sorting the strip) removes the notice, also from the saved state, so reopening the panel does not show it again.
 - The outcome of "Add to categories" (new or open group) is for the snackbar only (`notice.snackbar`); a rejected group name is an ordinary notice.
 
 ## Scenarios covered (AG-10), in `tests/errors.test.ts`

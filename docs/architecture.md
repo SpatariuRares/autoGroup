@@ -372,7 +372,7 @@ ReadyState     { phase: 'ready'; windowId: number; proposal: Proposal; stale?: b
 
 A proposal exists only in `ready`, and the compiler checks it: code that needs one narrows the state (`readyIn` in the Organizer, `proposalIn(state, windowId)` in `src/shared/types.ts` for the panel). The other variants declare `proposal?: never` (and so on), so `state.proposal` can still be read without checking the phase and is `undefined` there.
 
-**Notices.** A `notice` lasts until the next operation the user starts: every Organizer method called from the panel starts from `begin()`, which also removes the previous notice from the saved state, so reopening the panel does not show it again. What the service worker does by itself (`checkStale`, `autoGroupTab`) and the reads (`state`, `view`) leave it alone.
+**Notices.** A `notice` lasts until the next operation the user starts: every Organizer method called from the panel starts from `begin()` (except `abort` and `acceptPreview`, which only end the computation in progress), which also removes the previous notice from the saved state, so reopening the panel does not show it again. What the service worker does by itself (`checkStale`, `autoGroupTab`) and the reads (`state`, `view`) leave it alone.
 
 The state always has the `windowId` it refers to: it is unique for all windows, and the panel shows only the updates of its own window. Opening the panel in another window replaces the previous proposal.
 

@@ -1,8 +1,6 @@
 import { browser, type Browser } from 'wxt/browser';
 import { createColorAssigner } from './colors';
-import { domainOf, findCandidate } from './tab-selection';
-
-const NONE = -1;
+import { domainOf, findCandidate, TAB_GROUP_ID_NONE as NONE } from './tab-selection';
 
 /*
  * Spostamenti del drag and drop del pannello, sui gruppi già aperti e sulle tab senza gruppo.

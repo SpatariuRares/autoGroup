@@ -4,6 +4,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { createOrganizer, type Organizer } from '../src/organizer';
 import { loadSettings, saveSettings } from '../src/settings';
 import { loadDescribing } from '../src/shared/describing';
+import type { OrganizerState } from '../src/shared/types';
 import { installFakeI18n } from './fake-i18n';
 import { httpError, installFakeFetch, installFakePermissions, openAiReply, type RecordedRequest } from './fake-network';
 import { installFakeTabStrip, type FakeTabStrip } from './fake-tab-strip';
@@ -192,6 +193,19 @@ describe('Salva nella lista', () => {
     await organizer.saveToList(await groupId('Lavoro'));
     expect((await organizer.sortTabs(W)).notice).toBeUndefined();
     expect((await organizer.state()).notice).toBeUndefined();
+  });
+
+  it("gli altri pannelli aperti sanno che l'avviso è sparito", async () => {
+    const announced: OrganizerState[] = [];
+    organizer = createOrganizer({ onStateChange: (state) => announced.push(state) });
+    generator();
+    await organizer.propose(W);
+    await organizer.saveToList(await groupId('Cucina'));
+
+    await organizer.sortGroups(W);
+
+    expect(announced.at(-1)?.phase).toBe('ready');
+    expect(announced.at(-1)?.notice).toBeUndefined();
   });
 });
 

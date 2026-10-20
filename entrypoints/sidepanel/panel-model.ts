@@ -1,5 +1,5 @@
 import { t } from '../../src/shared/i18n';
-import { proposalIn, type Notice, type OrganizerState, type Proposal, type ProposalWarning, type ProposedTab, type WindowView } from '../../src/shared/types';
+import { previewIn, proposalIn, type Notice, type OrganizerState, type Proposal, type ProposalWarning, type ProposedTab, type WindowView } from '../../src/shared/types';
 
 export interface PanelInput {
   state: OrganizerState | null;
@@ -38,7 +38,7 @@ export function panelModel({ state, windowId, view, failure, done }: PanelInput)
   const proposal = proposalIn(state, windowId);
   const canUndo = state?.undo !== undefined && state.undo.windowId === windowId;
   const computing = !state || state.phase === 'computing';
-  const preview = state?.phase === 'computing' && state.windowId === windowId ? state.preview : undefined;
+  const preview = previewIn(state, windowId);
   const readOnly = !proposal && preview !== undefined;
 
   // L'esito di "Aggiungi alle categorie" sta nella sua snackbar, non nel pannello.

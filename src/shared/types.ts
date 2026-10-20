@@ -224,3 +224,8 @@ export type OrganizerState = IdleState | ComputingState | ReadyState;
 export function proposalIn(state: OrganizerState | null | undefined, windowId: number | null | undefined): Proposal | undefined {
   return state?.phase === 'ready' && state.windowId === windowId ? state.proposal : undefined;
 }
+
+/** L'anteprima per sito del calcolo in corso per questa finestra, se c'è. */
+export function previewIn(state: OrganizerState | null | undefined, windowId: number | null | undefined): Proposal | undefined {
+  return state?.phase === 'computing' && state.windowId === windowId ? state.preview : undefined;
+}

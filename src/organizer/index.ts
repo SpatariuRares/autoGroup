@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { loadSettings, SettingsError } from '../settings';
-import { proposalIn, type GroupColor, type OrganizerState, type Proposal, type ProposalEdit, type ReadyState, type WindowView } from '../shared/types';
+import { previewIn, proposalIn, type GroupColor, type OrganizerState, type Proposal, type ProposalEdit, type ReadyState, type WindowView } from '../shared/types';
 import { applyProposal } from './applier';
 import { autoGroupTab } from './auto-group';
 import { findDuplicates } from './duplicates';
@@ -207,8 +207,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
    */
   async function begin(): Promise<OrganizerState> {
     const { notice, ...state } = await load();
-    if (notice) await saveState(state);
-    return state;
+    return notice ? setState(state) : state;
   }
 
   async function setState(state: OrganizerState): Promise<OrganizerState> {
@@ -494,8 +493,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         browser.tabGroups.query({ windowId }),
         loadSettings(),
       ]);
-      const preview = current.phase === 'computing' && current.windowId === windowId ? current.preview : undefined;
-      return buildWindowView(tabs, groups, proposalIn(current, windowId) ?? preview, excludedDomains, Date.now(), categories.map((c) => c.name));
+      return buildWindowView(tabs, groups, proposalIn(current, windowId) ?? previewIn(current, windowId), excludedDomains, Date.now(), categories.map((c) => c.name));
     },
 
     async abort() {
