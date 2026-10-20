@@ -128,6 +128,7 @@ Mutation test: removing the comparison with the threshold makes 3 tests fail; ca
 - Only "new AI" groups.
 - The saved category is among the options of the next organization.
 - A later edit removes the warning.
+- The outcome of "Add to categories" (new or open group) is for the snackbar only (`notice.snackbar`); a rejected group name is an ordinary notice.
 
 ## Scenarios covered (AG-10), in `tests/errors.test.ts`
 

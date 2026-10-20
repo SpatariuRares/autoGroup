@@ -1,26 +1,10 @@
 import { t } from '../../src/shared/i18n';
-import type { HeldReason, ProposalEdit, ProposedTab } from '../../src/shared/types';
+import type { HeldReason, ProposedTab } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
 import { useTabDrag } from './drag';
 import { useLiveTabs } from './live-tabs';
+import type { Reorder, Target } from './move-targets';
 import { openTab, setMuted } from './tab-actions';
-
-/**
- * Dove può andare una tab: un gruppo della proposta ("p:id"), un gruppo aperto non ancora toccato ("c:id"),
- * uno nuovo ("n") o, per una tab di un gruppo aperto, fuori dal gruppo ("f").
- */
-export interface Target {
-  value: string;
-  label: string;
-  to: Extract<ProposalEdit, { kind: 'add-tab' }>['to'] | { free: true };
-}
-
-/** Su e giù di un posto nella barra: l'alternativa al trascinamento, dal menu "Sposta in…". */
-export interface Reorder {
-  up: boolean;
-  down: boolean;
-  onMove: (direction: 'up' | 'down') => void;
-}
 
 /** "1 tab" / "3 tab": chrome.i18n non ha i plurali, quindi il singolare ha una chiave sua. */
 export const tabCount = (n: number) => (n === 1 ? t('popupTabCountOne') : t('popupTabCount', String(n)));
@@ -35,7 +19,7 @@ const REASON_KEY: Record<HeldReason, string> = {
 
 /**
  * Una riga di tab, sempre con il pulsante per andarci (anche Invio sulla riga o doppio clic). Con
- * `targets` mostra il menu per spostarla; con `onRemove` la −; con `onClose` la ✕; con `reason` il
+ * `targets` mostra il menu per spostarla (vedi `moveTargets`); con `onRemove` la −; con `onClose` la ✕; con `reason` il
  * motivo per cui è ferma. Dai dati dal vivo: la tab attiva è evidenziata, una tab che suona o muta ha
  * il suo pulsante audio, una tab inattiva mostra da quanti giorni. Con `drag` la riga si trascina
  * (tab di un gruppo aperto o senza gruppo, vedi `useTabDrag`); `reorder` mette Su e Giù nello stesso
@@ -44,7 +28,6 @@ const REASON_KEY: Record<HeldReason, string> = {
 export function TabRow({
   tab,
   targets = [],
-  onMove,
   onRemove,
   onClose,
   reason,
@@ -54,7 +37,6 @@ export function TabRow({
 }: {
   tab: ProposedTab;
   targets?: Target[];
-  onMove?: (tab: ProposedTab, value: string) => void;
   onRemove?: () => void;
   onClose?: () => void;
   reason?: HeldReason;
@@ -68,7 +50,7 @@ export function TabRow({
   const idleDays = chrome?.idleDays;
   // Il nome accessibile dei controlli dice anche quale tab: tra tante "Chiudi la tab" si sente quale si chiude.
   const named = (key: string) => `${t(key)}: ${tab.title}`;
-  const moves = onMove && targets.length > 0;
+  const moves = targets.length > 0;
   const positions = reorder && (reorder.up || reorder.down) ? reorder : undefined;
   const moveLabel = positions ? 'panelMoveTabAnywhere' : 'popupMoveTab';
   return (
@@ -118,7 +100,7 @@ export function TabRow({
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === 'up' || value === 'down') positions?.onMove(value);
-                else if (value) onMove?.(tab, value);
+                else targets.find((x) => x.value === value)?.move(tab);
               }}
             >
               <option value="">{t('popupMoveTo')}</option>

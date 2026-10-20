@@ -57,7 +57,7 @@ describe('Salva nella lista', () => {
       { name: 'Lavoro', description: 'Lavoro', color: 'blue' },
       { name: 'Ricette', description: 'Ricette, cucina e siti di cibo.', color: 'orange' },
     ]);
-    expect(state.notice).toEqual({ key: 'saveToListSaved', arg: 'Ricette' });
+    expect(state.notice).toEqual({ key: 'saveToListSaved', arg: 'Ricette', snackbar: true });
     expect(state.proposal!.groups.find((g) => g.id === id)!.provenance).toBe('list');
     // Alla descrizione arrivano nome ed esempi ripuliti.
     const describe = JSON.parse(requests.at(-1)!.body.messages[1].content);
@@ -103,7 +103,7 @@ describe('Salva nella lista', () => {
     const state = await organizer.saveToList(await groupId('Cucina'));
 
     expect((await loadSettings()).categories.at(-1)).toMatchObject({ name: 'Cucina', description: '' });
-    expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'Cucina' });
+    expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'Cucina', snackbar: true });
   });
 
   it('una descrizione tagliata dal limite di token non viene salvata: categoria senza descrizione e avviso', async () => {
@@ -119,7 +119,7 @@ describe('Salva nella lista', () => {
 
     expect(requests.at(-1)!.body.max_tokens).toBeGreaterThanOrEqual(1000);
     expect((await loadSettings()).categories.at(-1)).toMatchObject({ name: 'Cucina', description: '' });
-    expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'Cucina' });
+    expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'Cucina', snackbar: true });
   });
 
   it('non duplica una categoria con lo stesso nome, senza distinguere maiuscole e minuscole', async () => {
@@ -131,7 +131,22 @@ describe('Salva nella lista', () => {
     const state = await organizer.saveToList(id);
 
     expect((await loadSettings()).categories.map((c) => c.name)).toEqual(['Lavoro']);
-    expect(state.notice).toEqual({ key: 'saveToListDuplicate', arg: 'LAVORO' });
+    expect(state.notice).toEqual({ key: 'saveToListDuplicate', arg: 'LAVORO', snackbar: true });
+  });
+
+  it("l'esito è solo per la snackbar, a differenza dell'avviso di un nome rifiutato", async () => {
+    generator();
+    await organizer.propose(W);
+    const [, , mail] = (await browser.tabs.query({ windowId: W })).map((t) => t.id!);
+    const open = await strip.addGroup('Posta', 'green', [mail!]);
+
+    const saved = await organizer.saveToList(await groupId('Cucina'));
+    const savedOpen = await organizer.saveOpenGroupToList(open);
+    const rejected = await organizer.renameGroup(open, 'lavoro');
+
+    expect(saved.notice).toEqual({ key: 'saveToListSaved', arg: 'Cucina', snackbar: true });
+    expect(savedOpen.notice).toEqual({ key: 'saveToListSaved', arg: 'Posta', snackbar: true });
+    expect(rejected.notice).toEqual({ key: 'categoryNameDuplicate' });
   });
 
   it('non vale per i gruppi che sono già una categoria', async () => {
@@ -190,7 +205,7 @@ describe('Aggiungi alle categorie: la categoria c\'è subito, la descrizione arr
     expect(meanwhile).toEqual({ description: '', describing: ['Cucina'] });
     expect((await loadSettings()).categories.at(-1)).toMatchObject({ name: 'Cucina', description: 'Ricette e cucina.' });
     expect(await loadDescribing()).toEqual([]);
-    expect(state.notice).toEqual({ key: 'saveToListSaved', arg: 'Cucina' });
+    expect(state.notice).toEqual({ key: 'saveToListSaved', arg: 'Cucina', snackbar: true });
     expect((await createOrganizer().propose(W)).proposal).toEqual(state.proposal);
   });
 
@@ -227,7 +242,7 @@ describe('Aggiungi alle categorie: gruppi per sito e gruppi aperti', () => {
     const state = await organizer.saveToList(id);
 
     expect((await loadSettings()).categories.map(({ name, description }) => ({ name, description }))).toContainEqual({ name: 'cucina.it', description: '' });
-    expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'cucina.it' });
+    expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'cucina.it', snackbar: true });
     expect(state.proposal!.groups.find((g) => g.id === id)!.provenance).toBe('list');
     expect(requests).toEqual([]);
   });
@@ -245,7 +260,7 @@ describe('Aggiungi alle categorie: gruppi per sito e gruppi aperti', () => {
       description: 'Ricette e cucina.',
       color: 'orange',
     });
-    expect(state.notice).toEqual({ key: 'saveToListSaved', arg: 'Cucina' });
+    expect(state.notice).toEqual({ key: 'saveToListSaved', arg: 'Cucina', snackbar: true });
     expect(JSON.parse(requests.at(-1)!.body.messages[1].content).example_tabs.map((t: { title: string }) => t.title)).toEqual(['Pasta al forno', 'Pizza in casa']);
     expect((await organizer.view(W)).existing[0]!.isCategory).toBe(true);
   });
@@ -257,7 +272,7 @@ describe('Aggiungi alle categorie: gruppi per sito e gruppi aperti', () => {
     const unnamed = await strip.addGroup('', 'red', [pizza!]);
 
     expect((await organizer.view(W)).existing.map((e) => e.isCategory)).toEqual([true, false]);
-    expect((await organizer.saveOpenGroupToList(lavoro)).notice).toEqual({ key: 'saveToListDuplicate', arg: 'lavoro' });
+    expect((await organizer.saveOpenGroupToList(lavoro)).notice).toEqual({ key: 'saveToListDuplicate', arg: 'lavoro', snackbar: true });
     await organizer.saveOpenGroupToList(unnamed);
     expect((await loadSettings()).categories.map((c) => c.name)).toEqual(['Lavoro']);
   });

@@ -38,10 +38,12 @@ async function addCategory(
 ): Promise<{ proposal?: Proposal; notice: SaveResult['notice'] } | null> {
   const name = group.name.trim();
   if (!name) return null;
+  // L'esito si legge subito nella snackbar: riaprendo il pannello non torna (`snackbar`).
+  const outcome = (proposal: Proposal | undefined, key: string, arg?: string) => ({ proposal, notice: { key, ...(arg ? { arg } : {}), snackbar: true as const } });
 
   const { categories, mode } = await loadSettings();
   if (categories.some((c) => categoryKey(c.name) === categoryKey(name))) {
-    return { proposal, notice: { key: 'saveToListDuplicate', arg: name } };
+    return outcome(proposal, 'saveToListDuplicate', name);
   }
 
   const id = newCategoryId();
@@ -51,10 +53,10 @@ async function addCategory(
       await saveSettings({ categories: [...categories, { id, name: name.slice(0, MAX_NAME_LENGTH), description: '', color: group.color }] });
     }, mark);
   } catch (err) {
-    if (err instanceof SettingsError) return { proposal, notice: { key: err.messageKey } };
+    if (err instanceof SettingsError) return outcome(proposal, err.messageKey);
     throw err;
   }
-  if (mode !== 'ai') return { proposal: saved, notice: { key: 'saveToListNoDescription', arg: name } };
+  if (mode !== 'ai') return outcome(saved, 'saveToListNoDescription', name);
 
   let description = '';
   await setDescribing(id, true);
@@ -75,7 +77,7 @@ async function addCategory(
   } finally {
     await setDescribing(id, false);
   }
-  return { proposal: saved, notice: { key: description ? 'saveToListSaved' : 'saveToListNoDescription', arg: name } };
+  return outcome(saved, description ? 'saveToListSaved' : 'saveToListNoDescription', name);
 }
 
 /** Esegue `change` mantenendo attuale la proposta (se c'è ed era attuale), aggiornata da `mark`. */

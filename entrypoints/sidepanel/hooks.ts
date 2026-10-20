@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser';
 import type { Settings } from '../../src/settings';
 import { onOrganizerState, remoteOrganizer as organizer } from '../../src/shared/organizer-remote';
 import type { OrganizerState, ProposalEdit, WindowView } from '../../src/shared/types';
+import { useExpiring } from '../../src/ui/use-expiring';
 
 /**
  * Lo stato dell'Organizzatore per la finestra del pannello. All'apertura lo legge soltanto, senza
@@ -36,7 +37,10 @@ export function useOrganizer() {
     });
   }, []);
 
-  /** Operazione che blocca i pulsanti finché non finisce (Applica, Annulla, Ricalcola…). */
+  /**
+   * Operazione che blocca i pulsanti finché non finisce: sulla proposta intera, sulla finestra o lunga
+   * (Organizza, Applica, Annulla, A-Z, Aggiungi alle categorie).
+   */
   async function run(request: () => Promise<OrganizerState>, after?: () => void) {
     setBusy(true);
     setFailure(null);
@@ -51,7 +55,10 @@ export function useOrganizer() {
     }
   }
 
-  /** Richiesta senza attesa visibile: il nuovo stato, o `null` se fallisce (con l'errore mostrato). */
+  /**
+   * Richiesta senza attesa visibile, per le azioni su una tab o un gruppo che finiscono subito (modifiche,
+   * chiudere, spostare): il nuovo stato, o `null` se fallisce (con l'errore mostrato).
+   */
   async function send(request: () => Promise<OrganizerState>): Promise<OrganizerState | null> {
     setFailure(null);
     try {
@@ -135,4 +142,43 @@ export function useWindowView(windowId: number | null, state: OrganizerState | n
   return view;
 }
 
-export { useExpiring } from '../../src/ui/use-expiring';
+/** Per quanto resta visibile una snackbar con un esito o un'offerta. */
+export const SNACKBAR_MS = 8000;
+
+/** Dopo quanto il segno di categoria sparisce se la vista non cambia (es. categoria già esistente). */
+const ADDED_MARK_MS = 1500;
+
+/**
+ * "Aggiungi alle categorie": il gruppo (`adding.id`, della proposta o di Chrome) mostra subito il segno
+ * di categoria e la snackbar dice che si sta salvando. Finito il salvataggio si aspetta la vista nuova,
+ * così il segno non torna indietro. L'esito (`saved`) resta nella snackbar per qualche secondo.
+ */
+export function useSaveToCategories(run: ReturnType<typeof useOrganizer>['run'], view: WindowView) {
+  const [adding, setAdding] = useState<{ id: string | number; name: string; done: boolean } | null>(null);
+  const [saved, setSaved, pauseSaved] = useExpiring<NonNullable<OrganizerState['notice']>>(SNACKBAR_MS);
+
+  useEffect(() => {
+    if (adding?.done) setAdding(null);
+  }, [view]);
+  useEffect(() => {
+    if (!adding?.done) return;
+    const timer = setTimeout(() => setAdding(null), ADDED_MARK_MS);
+    return () => clearTimeout(timer);
+  }, [adding?.done]);
+
+  const save = async (id: string | number, name: string, request: () => Promise<OrganizerState>) => {
+    setAdding({ id, name, done: false });
+    setSaved(null);
+    await run(async () => {
+      const next = await request();
+      // Anche un errore delle impostazioni (es. troppe categorie) arriva come esito.
+      if (next.notice) setSaved(next.notice);
+      return next;
+    });
+    setAdding((a) => a && { ...a, done: true });
+  };
+
+  return { adding, saved, pauseSaved, save };
+}
+
+export { useExpiring };

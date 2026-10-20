@@ -1,38 +1,29 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { saveSettings, type GroupingMode } from '../../src/settings';
 import { t } from '../../src/shared/i18n';
 import { remoteOrganizer as organizer } from '../../src/shared/organizer-remote';
-import type { OrganizerState, ProposedTab, RememberOffer } from '../../src/shared/types';
+import type { RememberOffer } from '../../src/shared/types';
 import { useFocusRecovery } from '../../src/ui/focus-recovery';
 import { Icon } from '../../src/ui/Icon';
 import { CloseTabsBanner, ComputingStatus, ErrorBanner, InfoBanner, StaleBanner, WarningsBanner } from './Banners';
 import { ExistingCard, GroupCard } from './GroupCards';
 import { useSettings } from '../../src/ui/use-settings';
 import { DragContext, useDragState, useFreeDrop, useNewGroupDrop, type DragItem, type DropTarget } from './drag';
-import { useExpiring, useOrganizer, useWindowView } from './hooks';
+import { SNACKBAR_MS, useExpiring, useOrganizer, useSaveToCategories, useWindowView } from './hooks';
 import { LiveTabsContext } from './live-tabs';
 import { ModePicker } from './ModePicker';
-import { openSettings } from './open-settings';
+import { moveTargets, reorderAt } from './move-targets';
+import { PanelActionsContext, type PanelActions } from './panel-actions';
 import { moveBetweenRows } from './row-navigation';
-import { TabRow, type Target } from './TabRow';
-
-/** Per quanto resta visibile l'offerta "Metti sempre qui". */
-const OFFER_MS = 8000;
-
-/** "Nuovo gruppo", in fondo a ogni menu "Sposta in…": un gruppo tutto suo per la tab. */
-const NEW_GROUP: Target = { value: 'n', label: t('panelNewGroup'), to: { newGroup: true } };
+import { Snackbar } from './Snackbar';
+import { TabRow } from './TabRow';
 
 export function App() {
   const { state, windowId, busy, failure, run, send, edit } = useOrganizer();
   const [settings] = useSettings();
   const [notice, setNotice] = useState<'popupApplied' | 'popupUndone' | null>(null);
-  const [offer, setOffer, pauseOffer] = useExpiring<RememberOffer>(OFFER_MS);
-  // "Aggiungi alle categorie" in corso: il gruppo ("p:id" o "c:id") mostra subito il segno di categoria e
-  // la snackbar lo dice. Finito il salvataggio (`done`) si aspetta la vista nuova, così l'icona non torna indietro.
-  const [adding, setAdding] = useState<{ key: string; name: string; done: boolean } | null>(null);
-  // L'esito, nella snackbar per qualche secondo, con o senza proposta.
-  const [saved, setSaved, pauseSaved] = useExpiring<NonNullable<OrganizerState['notice']>>(OFFER_MS);
+  const [offer, setOffer, pauseOffer] = useExpiring<RememberOffer>(SNACKBAR_MS);
 
   const proposal = state?.phase === 'ready' && state.windowId === windowId ? state.proposal : undefined;
   const canUndo = state?.undo !== undefined && state.undo.windowId === windowId;
@@ -42,23 +33,7 @@ export function App() {
   const readOnly = !proposal && preview !== undefined;
 
   const view = useWindowView(windowId, state, settings);
-  useEffect(() => {
-    if (adding?.done) setAdding(null);
-  }, [view]);
-
-  const addToCategories = async (key: string, name: string, request: () => Promise<OrganizerState>) => {
-    setAdding({ key, name, done: false });
-    setSaved(null);
-    await run(async () => {
-      const next = await request();
-      // Anche un errore delle impostazioni (es. troppe categorie) arriva come avviso.
-      if (next.notice) setSaved(next.notice);
-      return next;
-    });
-    setAdding((a) => a && { ...a, done: true });
-    // Se la vista non cambia (es. categoria già esistente) il segno sparisce comunque.
-    setTimeout(() => setAdding((a) => (a?.done ? null : a)), 1500);
-  };
+  const categories = useSaveToCategories(run, view);
 
   function recompute() {
     if (windowId === null) return;
@@ -74,22 +49,20 @@ export function App() {
     if (proposal) recompute();
   }
 
-  // Destinazioni per "Sposta in…": gruppi della proposta, gruppi aperti non ancora toccati e un gruppo nuovo.
-  const targets: Target[] = proposal
-    ? [
-        ...proposal.groups.map((g) => ({ value: `p:${g.id}`, label: g.name || t('popupUnnamed'), to: { groupId: g.id } })),
-        ...view.existing
-          .filter((e) => !e.proposedGroupId)
-          .map((e) => ({ value: `c:${e.group.id}`, label: e.group.name || t('popupUnnamed'), to: { existingGroup: e.group } })),
-        NEW_GROUP,
-      ]
-    : [];
-
   // L'Organizzatore toglie le tab chiuse dalla proposta e la tiene attuale: nessun avviso di proposta vecchia.
-  const closeTab = (tabId: number) => send(() => organizer.closeTab(tabId));
+  const actions: PanelActions = {
+    busy,
+    edit,
+    closeTab: (tabId) => send(() => organizer.closeTab(tabId)),
+    closeGroup: (groupId) => send(() => organizer.closeGroup(groupId)),
+    renameGroup: (groupId, name) => send(() => organizer.renameGroup(groupId, name)),
+    moveTab: (tabId, groupId, beforeTabId) => send(() => organizer.moveTab(tabId, groupId, beforeTabId)),
+    saveProposedGroup: (group) => categories.save(group.id, group.name, () => organizer.saveToList(group.id)),
+    saveOpenGroup: (group) => categories.save(group.id, group.name, () => organizer.saveOpenGroupToList(group.id)),
+    adding: categories.adding?.id ?? null,
+  };
   const closeDuplicates = (tabIds: number[]) => windowId !== null && send(() => organizer.closeDuplicates(windowId, tabIds));
   const closeInactive = (tabIds: number[]) => windowId !== null && send(() => organizer.closeInactive(windowId, tabIds));
-  const closeGroup = (groupId: number) => send(() => organizer.closeGroup(groupId));
 
   // Riordinano la barra di Chrome; il pannello segue da solo (vedi `useWindowView`).
   const sortButtons = (which: ('groups' | 'tabs')[]) =>
@@ -109,7 +82,7 @@ export function App() {
 
   // Drag and drop sui gruppi aperti e sulle tab senza gruppo: sposta davvero tab e gruppi nella barra.
   const moveByDrag = (item: DragItem, target: DropTarget) => {
-    if (item.kind === 'tab' && target.kind === 'tab') send(() => organizer.moveTab(item.tabId, target.groupId, target.beforeTabId));
+    if (item.kind === 'tab' && target.kind === 'tab') actions.moveTab(item.tabId, target.groupId, target.beforeTabId);
     if (item.kind === 'tab' && target.kind === 'new-group') send(() => organizer.newGroup(item.tabId));
     if (item.kind === 'group' && target.kind === 'group') send(() => organizer.moveGroup(item.groupId, target.beforeGroupId));
   };
@@ -117,66 +90,21 @@ export function App() {
   // Il gruppo che segue ciascuno nella barra (`view.existing` è nell'ordine della barra).
   const nextGroup = new Map(view.existing.map((e, i) => [e.group.id, view.existing[i + 1]?.group.id ?? null]));
 
-  const duplicateTabs = view.duplicates;
-  const inactiveTabs = view.inactive;
-
-  const moveTab = async (tab: ProposedTab, value: string) => {
-    const target = targets.find((x) => x.value === value);
-    if (!target || 'free' in target.to) return;
-    const next = await edit({ kind: 'add-tab', tab, to: target.to });
-    setOffer(next?.offer ?? null);
-  };
-
-  // Senza proposta (es. dopo "Applica") le tab libere vanno subito in un gruppo aperto o in uno nuovo. Non durante il calcolo.
-  const directTargets: Target[] =
-    !proposal && !computing
-      ? [...view.existing.map((e) => ({ value: `c:${e.group.id}`, label: e.group.name || t('popupUnnamed'), to: { existingGroup: e.group } })), NEW_GROUP]
-      : [];
-  const freeTargets = proposal ? targets : directTargets;
-  const groupTab = (tab: ProposedTab, value: string) => {
-    const target = directTargets.find((x) => x.value === value);
-    if (!target) return;
-    if ('newGroup' in target.to) send(() => organizer.newGroup(tab.tabId));
-    else if ('existingGroup' in target.to) {
-      const groupId = target.to.existingGroup.id;
-      send(() => organizer.groupTab(tab.tabId, groupId));
-    }
-  };
-
-  // Le alternative al trascinamento valgono quando vale il trascinamento: spostano davvero tab e gruppi.
-  // Una tab di un gruppo aperto va in un altro gruppo aperto, in uno nuovo o fuori dal gruppo.
-  const liveTargets = (groupId: number): Target[] =>
-    drag.enabled
-      ? [
-          ...view.existing
-            .filter((e) => e.group.id !== groupId)
-            .map((e) => ({ value: `c:${e.group.id}`, label: e.group.name || t('popupUnnamed'), to: { existingGroup: e.group } })),
-          NEW_GROUP,
-          { value: 'f', label: t('panelUngroupTab'), to: { free: true } },
-        ]
-      : [];
-  const moveLive = (groupId: number) => (tab: ProposedTab, value: string) => {
-    const target = liveTargets(groupId).find((x) => x.value === value);
-    if (!target) return;
-    if ('newGroup' in target.to) send(() => organizer.newGroup(tab.tabId));
-    else if ('existingGroup' in target.to) {
-      const to = target.to.existingGroup.id;
-      send(() => organizer.moveTab(tab.tabId, to, null));
-    } else if ('free' in target.to) send(() => organizer.moveTab(tab.tabId, null, null));
-  };
-  // Su e Giù di un gruppo nella barra (`view.existing` è nell'ordine della barra).
-  const groupReorder = (groupId: number) => {
-    const i = view.existing.findIndex((e) => e.group.id === groupId);
-    if (!drag.enabled || i < 0) return undefined;
-    return {
-      up: i > 0,
-      down: i < view.existing.length - 1,
-      onMove: (direction: 'up' | 'down') => {
-        const before = direction === 'up' ? view.existing[i - 1]!.group.id : (view.existing[i + 2]?.group.id ?? null);
-        send(() => organizer.moveGroup(groupId, before));
-      },
-    };
-  };
+  // Le alternative al trascinamento ("Sposta in…" sulle tab di un gruppo aperto, Su e Giù) valgono quando vale il trascinamento.
+  const targets = moveTargets({
+    proposal,
+    view,
+    computing,
+    live: drag.enabled,
+    moves: {
+      edit: async (change) => setOffer((await edit(change))?.offer ?? null),
+      groupTab: (tabId, groupId) => send(() => organizer.groupTab(tabId, groupId)),
+      newGroup: (tabId) => send(() => organizer.newGroup(tabId)),
+      moveTab: actions.moveTab,
+    },
+  });
+  const groupIds = view.existing.map((e) => e.group.id);
+  const freeIds = view.free.map((tab) => tab.tabId);
 
   const message = failure ?? state?.error;
   const touched = view.existing.filter((e) => e.added.length > 0);
@@ -185,25 +113,30 @@ export function App() {
 
   // "Applica" e "Annulla" tolgono la proposta: nessun avviso nemmeno se le tab cambiano.
   const showStale = proposal !== undefined && state?.stale === true && !computing;
-  const duplicatesText = duplicateTabs.length === 1 ? t('panelDuplicatesOne') : t('panelDuplicates', String(duplicateTabs.length));
-  const inactiveText =
-    inactiveTabs.length === 1 ? t('panelInactiveOne', String(view.inactiveDays)) : t('panelInactive', [String(inactiveTabs.length), String(view.inactiveDays)]);
-  // L'esito di "Aggiungi alle categorie" sta nella sua snackbar (`saved`), non nel pannello.
-  const panelNotice = state?.notice?.key.startsWith('saveToList') || state?.notice?.key === saved?.key ? undefined : state?.notice;
+  // L'esito di "Aggiungi alle categorie" sta nella sua snackbar, non nel pannello.
+  const panelNotice = state?.notice?.snackbar ? undefined : state?.notice;
   const info = !proposal && !computing && (panelNotice || notice) ? (panelNotice ? t(panelNotice.key, panelNotice.arg) : t(notice!)) : null;
   const noGroups = proposal !== undefined && view.created.length === 0 && touched.length === 0;
-  // Banner e stato del calcolo compaiono già pieni, e una regione live nuova di solito non viene letta:
-  // i loro testi passano da questa, sempre presente.
-  const announcement = [
-    computing && t(preview ? 'panelPreviewComputing' : 'popupComputing'),
-    showStale && t('panelStale'),
-    duplicateTabs.length > 0 && !computing && duplicatesText,
-    inactiveTabs.length > 0 && !computing && inactiveText,
-    info,
-    noGroups && t('popupNoGroups'),
-  ]
-    .filter(Boolean)
-    .join(' ');
+
+  // I banner, nell'ordine in cui compaiono. Compaiono già pieni, e una regione live nuova di solito non
+  // viene letta: il loro testo (`announce`) passa da `announcement`, sempre presente. Errori e avvisi
+  // dell'AI hanno già role="alert".
+  const banners: { key: string; announce?: string; node: React.ReactNode }[] = [];
+  if (message) banners.push({ key: 'error', node: <ErrorBanner messageKey={message} /> });
+  if (showStale) banners.push({ key: 'stale', announce: t('panelStale'), node: <StaleBanner onRecompute={recompute} /> });
+  if (proposal && proposal.warnings.length > 0) banners.push({ key: 'warnings', node: <WarningsBanner warnings={proposal.warnings} /> });
+  if (view.duplicates.length > 0 && !computing) {
+    const text = view.duplicates.length === 1 ? t('panelDuplicatesOne') : t('panelDuplicates', String(view.duplicates.length));
+    banners.push({ key: 'duplicates', announce: text, node: <CloseTabsBanner icon="tab" text={text} tabs={view.duplicates} disabled={busy} onClose={closeDuplicates} /> });
+  }
+  if (view.inactive.length > 0 && !computing) {
+    const text =
+      view.inactive.length === 1 ? t('panelInactiveOne', String(view.inactiveDays)) : t('panelInactive', [String(view.inactive.length), String(view.inactiveDays)]);
+    banners.push({ key: 'inactive', announce: text, node: <CloseTabsBanner icon="schedule" text={text} tabs={view.inactive} disabled={busy} onClose={closeInactive} /> });
+  }
+  if (info) banners.push({ key: 'info', announce: info, node: <InfoBanner text={info} /> });
+  if (noGroups) banners.push({ key: 'no-groups', announce: t('popupNoGroups'), node: <InfoBanner text={t('popupNoGroups')} /> });
+  const announcement = [computing && t(preview ? 'panelPreviewComputing' : 'popupComputing'), ...banners.map((b) => b.announce)].filter(Boolean).join(' ');
 
   return (
     <div className="panel" onClickCapture={rememberFocus} onChangeCapture={rememberFocus}>
@@ -228,55 +161,19 @@ export function App() {
         />
       )}
 
+      <PanelActionsContext.Provider value={actions}>
       <DragContext.Provider value={drag}>
       <LiveTabsContext.Provider value={view.live}>
         <div className="content" onKeyDown={moveBetweenRows}>
-          {message && <ErrorBanner messageKey={message} />}
-
-          {showStale && <StaleBanner onRecompute={recompute} />}
-
-          {proposal && proposal.warnings.length > 0 && <WarningsBanner warnings={proposal.warnings} />}
-
-          {duplicateTabs.length > 0 && !computing && (
-            <CloseTabsBanner
-              icon="tab"
-              text={duplicatesText}
-              tabs={duplicateTabs}
-              disabled={busy}
-              onClose={closeDuplicates}
-            />
-          )}
-
-          {inactiveTabs.length > 0 && !computing && (
-            <CloseTabsBanner
-              icon="schedule"
-              text={inactiveText}
-              tabs={inactiveTabs}
-              disabled={busy}
-              onClose={closeInactive}
-            />
-          )}
-
-          {info && <InfoBanner text={info} />}
-
-          {noGroups && <InfoBanner text={t('popupNoGroups')} />}
+          {banners.map((b) => (
+            <Fragment key={b.key}>{b.node}</Fragment>
+          ))}
 
           {view.created.length > 0 && (
             <Section title={t('panelSectionNew')} count={view.created.length}>
               <ul className="groups">
                 {view.created.map((group) => (
-                  <GroupCard
-                    key={group.id}
-                    group={group}
-                    readOnly={readOnly}
-                    targets={targets.filter((x) => x.value !== `p:${group.id}`)}
-                    onMove={moveTab}
-                    onEdit={edit}
-                    onClose={closeTab}
-                    onSave={() => addToCategories(`p:${group.id}`, group.name, () => organizer.saveToList(group.id))}
-                    saving={busy}
-                    adding={adding?.key === `p:${group.id}`}
-                  />
+                  <GroupCard key={group.id} group={group} readOnly={readOnly} targets={targets.proposed({ proposedGroupId: group.id })} />
                 ))}
               </ul>
             </Section>
@@ -290,20 +187,14 @@ export function App() {
                     key={existing.group.id}
                     existing={existing}
                     readOnly={readOnly}
-                    targets={targets.filter((x) => x.value !== `p:${existing.proposedGroupId}` && x.value !== `c:${existing.group.id}`)}
-                    onMove={moveTab}
-                    onEdit={edit}
-                    onClose={closeTab}
-                    onCloseGroup={() => closeGroup(existing.group.id)}
-                    onRename={(name) => send(() => organizer.renameGroup(existing.group.id, name))}
-                    onSave={() => addToCategories(`c:${existing.group.id}`, existing.group.name, () => organizer.saveOpenGroupToList(existing.group.id))}
-                    saving={busy}
-                    adding={adding?.key === `c:${existing.group.id}`}
+                    targets={targets.proposed({ proposedGroupId: existing.proposedGroupId, openGroupId: existing.group.id })}
                     nextGroupId={nextGroup.get(existing.group.id) ?? null}
-                    reorder={groupReorder(existing.group.id)}
-                    liveTargets={liveTargets(existing.group.id)}
-                    onMoveLive={moveLive(existing.group.id)}
-                    onMoveTab={drag.enabled ? (tabId, before) => send(() => organizer.moveTab(tabId, existing.group.id, before)) : undefined}
+                    reorder={
+                      drag.enabled
+                        ? reorderAt(groupIds, groupIds.indexOf(existing.group.id), (before) => send(() => organizer.moveGroup(existing.group.id, before)))
+                        : undefined
+                    }
+                    liveTargets={targets.live(existing.group.id)}
                   />
                 ))}
               </ul>
@@ -315,7 +206,7 @@ export function App() {
             <Section
               title={t('panelSectionFree')}
               count={view.free.length}
-              hint={freeTargets.length > 0 ? t('panelFreeHint') : undefined}
+              hint={targets.free.length > 0 ? t('panelFreeHint') : undefined}
               // Con gruppi aperti "Tab A-Z" sta già nella loro intestazione e ordina anche queste.
               actions={view.existing.length === 0 && view.free.length > 1 && sortButtons(['tabs'])}
             >
@@ -324,22 +215,10 @@ export function App() {
                   <TabRow
                     key={tab.tabId}
                     tab={tab}
-                    targets={freeTargets}
-                    onMove={proposal ? moveTab : groupTab}
-                    onClose={() => closeTab(tab.tabId)}
+                    targets={targets.free}
+                    onClose={() => actions.closeTab(tab.tabId)}
                     drag={{ groupId: null, nextTabId: view.free[i + 1]?.tabId ?? null }}
-                    reorder={
-                      drag.enabled
-                        ? {
-                            up: i > 0,
-                            down: i < view.free.length - 1,
-                            onMove: (direction) => {
-                              const before = direction === 'up' ? view.free[i - 1]!.tabId : (view.free[i + 2]?.tabId ?? null);
-                              send(() => organizer.moveTab(tab.tabId, null, before));
-                            },
-                          }
-                        : undefined
-                    }
+                    reorder={drag.enabled ? reorderAt(freeIds, i, (before) => actions.moveTab(tab.tabId, null, before)) : undefined}
                   />
                 ))}
               </FreeTabs>
@@ -358,7 +237,7 @@ export function App() {
               </summary>
               <ul className="tabs card-list">
                 {view.held.map(({ tab, reason }) => (
-                  <TabRow key={tab.tabId} tab={tab} reason={reason} onClose={() => closeTab(tab.tabId)} />
+                  <TabRow key={tab.tabId} tab={tab} reason={reason} onClose={() => actions.closeTab(tab.tabId)} />
                 ))}
               </ul>
             </details>
@@ -366,44 +245,21 @@ export function App() {
         </div>
       </LiveTabsContext.Provider>
       </DragContext.Provider>
+      </PanelActionsContext.Provider>
 
-      {/* Regione live sempre presente: la snackbar che ci compare dentro viene letta. */}
-      <div role="status">
-      {proposal && offer ? (
-        <div className="snackbar" {...pauseOffer}>
-          <span>{t('panelRememberSite', [offer.site, offer.category])}</span>
-          <button
-            className="text small inverse"
-            onClick={() => {
-              setOffer(null);
-              run(() => organizer.rememberSite(offer.tabId));
-            }}
-          >
-            {t('panelRememberSiteYes')}
-          </button>
-        </div>
-      ) : adding && !adding.done ? (
-        <div className="snackbar">
-          <span>{t('panelSavingToList', adding.name)}</span>
-        </div>
-      ) : saved ? (
-        <div className="snackbar" {...pauseSaved}>
-          <span>{t(saved.key, saved.arg)}</span>
-          {saved.key === 'saveToListNoDescription' && (
-            <button className="text small inverse" onClick={() => openSettings('categories')}>
-              {t('popupWarningSettings')}
-            </button>
-          )}
-        </div>
-      ) : (
-        proposal &&
-        panelNotice && (
-          <div className="snackbar">
-            <span>{t(panelNotice.key, panelNotice.arg)}</span>
-          </div>
-        )
-      )}
-      </div>
+      <Snackbar
+        withProposal={proposal !== undefined}
+        offer={offer}
+        pauseOffer={pauseOffer}
+        onRemember={(chosen) => {
+          setOffer(null);
+          run(() => organizer.rememberSite(chosen.tabId));
+        }}
+        savingName={categories.adding && !categories.adding.done ? categories.adding.name : null}
+        saved={categories.saved}
+        pauseSaved={categories.pauseSaved}
+        notice={panelNotice}
+      />
 
       <footer className="bottom-bar">
         {canUndo && (

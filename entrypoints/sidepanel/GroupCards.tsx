@@ -1,45 +1,30 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { t } from '../../src/shared/i18n';
-import { GROUP_COLORS, type ExistingGroupView, type ProposalEdit, type ProposedGroup, type ProposedTab } from '../../src/shared/types';
+import { GROUP_COLORS, type ExistingGroupView, type ProposedGroup } from '../../src/shared/types';
 import { Icon } from '../../src/ui/Icon';
 import { moveInRadioGroup } from '../../src/ui/radio-keys';
-import { useGroupDrag } from './drag';
+import { DragContext, useGroupDrag } from './drag';
 import { useExpiring } from './hooks';
+import { reorderAt, type Reorder, type Target } from './move-targets';
+import { usePanelActions } from './panel-actions';
 import { setCollapsed } from './tab-actions';
-import { addedCount, tabCount, TabRow, type Reorder, type Target } from './TabRow';
+import { addedCount, tabCount, TabRow } from './TabRow';
 
 /** Quanto resta armato "Chiudi gruppo" dopo il primo clic. */
 const CONFIRM_MS = 4000;
 
-interface GroupCardProps {
-  group: ProposedGroup;
-  targets: Target[];
-  onMove: (tab: ProposedTab, value: string) => void;
-  onEdit: (edit: ProposalEdit) => void;
-  onClose: (tabId: number) => void;
-  onSave: () => void;
-  saving: boolean;
-  /** Vero da quando si preme "Aggiungi alle categorie" a quando il gruppo risulta una categoria. */
-  adding?: boolean;
-  /** Anteprima per sito durante il calcolo: si guarda soltanto. */
-  readOnly?: boolean;
-}
-
-/** Un gruppo nuovo della proposta: nome e colore modificabili, tab spostabili. */
-export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, saving, adding = false, readOnly = false }: GroupCardProps) {
-  const [name, setName] = useState(group.name);
+/**
+ * Un gruppo nuovo della proposta: nome e colore modificabili, tab spostabili (`targets`). Con
+ * `readOnly` (anteprima per sito durante il calcolo) si guarda soltanto.
+ */
+export function GroupCard({ group, targets, readOnly = false }: { group: ProposedGroup; targets: Target[]; readOnly?: boolean }) {
+  const { edit, closeTab, saveProposedGroup, adding } = usePanelActions();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const swatch = useRef<HTMLButtonElement>(null);
-  const savedHere = useRef(false);
   // Chiudendo la tavolozza il focus torna sul pallino: i suoi pulsanti spariscono e lo lascerebbero sul body.
   const closePalette = () => {
     swatch.current?.focus();
     setPaletteOpen(false);
-  };
-  useEffect(() => setName(group.name), [group.name]);
-
-  const commitName = () => {
-    if (name.trim() !== group.name) onEdit({ kind: 'rename', groupId: group.id, name });
   };
 
   if (readOnly) {
@@ -72,44 +57,22 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
           aria-expanded={paletteOpen}
           onClick={() => setPaletteOpen(!paletteOpen)}
         />
-        <input
-          className="group-name"
-          value={name}
-          aria-label={t('popupGroupName')}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={commitName}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') e.currentTarget.blur();
-            if (e.key === 'Escape') setName(group.name);
-          }}
-        />
+        <GroupNameInput name={group.name} onRename={(name) => edit({ kind: 'rename', groupId: group.id, name })} />
         <GroupMeta group={group} />
         <span className="group-end">
           <span className="group-actions">
-            {group.provenance === 'list' || adding ? (
-              <InCategories focus={savedHere.current} />
-            ) : (
-              group.name.trim() !== '' && (
-                <button
-                  className="icon small save"
-                  disabled={saving}
-                  data-tooltip={t('popupSaveToListHint')}
-                  aria-label={t('popupSaveToList')}
-                  onClick={(e) => {
-                    savedHere.current = document.activeElement === e.currentTarget;
-                    onSave();
-                  }}
-                >
-                  <Icon name="bookmarkAdd" size={18} />
-                </button>
-              )
-            )}
+            <SaveToCategories
+              inCategories={group.provenance === 'list' || adding === group.id}
+              canSave={group.name.trim() !== ''}
+              iconSize={18}
+              onSave={() => saveProposedGroup(group)}
+            />
           </span>
           <button
             className="icon small danger"
             data-tooltip={t('popupDiscardGroup')}
             aria-label={t('popupDiscardGroup')}
-            onClick={() => onEdit({ kind: 'discard-group', groupId: group.id })}
+            onClick={() => edit({ kind: 'discard-group', groupId: group.id })}
           >
             <Icon name="close" size={18} />
           </button>
@@ -130,7 +93,7 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
               aria-label={t(`color_${color}`)}
               onClick={() => {
                 closePalette();
-                if (color !== group.color) onEdit({ kind: 'recolor', groupId: group.id, color });
+                if (color !== group.color) edit({ kind: 'recolor', groupId: group.id, color });
               }}
             />
           ))}
@@ -142,13 +105,77 @@ export function GroupCard({ group, targets, onMove, onEdit, onClose, onSave, sav
             key={tab.tabId}
             tab={tab}
             targets={targets}
-            onMove={onMove}
-            onRemove={() => onEdit({ kind: 'remove-tab', tabId: tab.tabId })}
-            onClose={() => onClose(tab.tabId)}
+            onRemove={() => edit({ kind: 'remove-tab', tabId: tab.tabId })}
+            onClose={() => closeTab(tab.tabId)}
           />
         ))}
       </ul>
     </li>
+  );
+}
+
+/**
+ * Il nome di un gruppo, da modificare. Invio o uscire dal campo salvano il nome se è cambiato; Esc
+ * torna al nome di adesso. Con `onDone` (il campo compare solo mentre si modifica) Esc esce anche
+ * dal campo, senza salvare, e `onDone` arriva all'uscita.
+ */
+function GroupNameInput({ name, onRename, onDone }: { name: string; onRename: (name: string) => void; onDone?: () => void }) {
+  const [value, setValue] = useState(name);
+  const cancelled = useRef(false);
+  // Il gruppo nuovo segue il nome della proposta; il campo di un gruppo aperto, che c'è solo mentre si
+  // scrive, non perde quanto scritto se il nome cambia in Chrome.
+  useEffect(() => {
+    if (!onDone) setValue(name);
+  }, [name]);
+  return (
+    <input
+      className="group-name"
+      value={value}
+      autoFocus={onDone !== undefined}
+      aria-label={t('popupGroupName')}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => {
+        if (!cancelled.current && value.trim() !== name) onRename(value);
+        cancelled.current = false;
+        onDone?.();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+        if (e.key === 'Escape') {
+          setValue(name);
+          if (onDone) {
+            cancelled.current = true;
+            e.currentTarget.blur();
+          }
+        }
+      }}
+    />
+  );
+}
+
+/**
+ * "Aggiungi alle categorie" (`canSave`: il gruppo ha un nome). Per un gruppo che è già una categoria,
+ * o che lo sta diventando (`inCategories`), al posto del pulsante c'è solo il segno.
+ */
+function SaveToCategories({ inCategories, canSave, iconSize, onSave }: { inCategories: boolean; canSave: boolean; iconSize: number; onSave: () => void }) {
+  const { busy } = usePanelActions();
+  // Se il pulsante aveva il focus, lo prende il segno che lo sostituisce.
+  const savedHere = useRef(false);
+  if (inCategories) return <InCategories focus={savedHere.current} />;
+  if (!canSave) return null;
+  return (
+    <button
+      className="icon small save"
+      disabled={busy}
+      data-tooltip={t('popupSaveToListHint')}
+      aria-label={t('popupSaveToList')}
+      onClick={(e) => {
+        savedHere.current = document.activeElement === e.currentTarget;
+        onSave();
+      }}
+    >
+      <Icon name="bookmarkAdd" size={iconSize} />
+    </button>
   );
 }
 
@@ -206,57 +233,35 @@ function GroupMeta({ group }: { group: ProposedGroup }) {
  * espande il gruppo in Chrome e si chiudono tutte le sue tab (al secondo clic, entro qualche secondo).
  * Dall'intestazione si trascina tutto il gruppo; le sue tab di adesso si trascinano una per una
  * (`nextGroupId`: il gruppo che lo segue nella barra, vedi `useGroupDrag`). Senza trascinare: "Sposta il
- * gruppo" (`reorder`), e per le sue tab "Sposta in…" (`liveTargets`, `onMoveLive`) con Su e Giù (`onMoveTab`).
+ * gruppo" (`reorder`), e per le sue tab "Sposta in…" (`liveTargets`) con Su e Giù.
  */
 export function ExistingCard({
   existing,
   targets,
-  onMove,
-  onEdit,
-  onClose,
-  onCloseGroup,
-  onRename,
-  onSave,
-  saving,
-  adding = false,
   nextGroupId,
   reorder,
   liveTargets = [],
-  onMoveLive,
-  onMoveTab,
   readOnly = false,
 }: {
   existing: ExistingGroupView;
   nextGroupId: number | null;
+  /** Per le tab che la proposta gli aggiunge. */
   targets: Target[];
-  onMove: GroupCardProps['onMove'];
-  onEdit: GroupCardProps['onEdit'];
-  onClose: GroupCardProps['onClose'];
-  onCloseGroup: () => void;
-  onRename: (name: string) => void;
-  onSave: () => void;
-  saving: boolean;
-  adding?: boolean;
   /** Assente mentre il trascinamento non è possibile (calcolo in corso, anteprima). */
   reorder?: Reorder;
+  /** Per le sue tab di adesso. */
   liveTargets?: Target[];
-  onMoveLive?: GroupCardProps['onMove'];
-  /** Sposta una tab di adesso dentro il gruppo, prima di `beforeTabId` o in fondo. */
-  onMoveTab?: (tabId: number, beforeTabId: number | null) => void;
   readOnly?: boolean;
 }) {
   const { group, current, added, collapsed, isCategory } = existing;
+  const { edit, closeTab, closeGroup, renameGroup, moveTab, saveOpenGroup, adding } = usePanelActions();
+  const { enabled: canDrag } = useContext(DragContext);
   const [armed, setArmed] = useExpiring<true>(CONFIRM_MS);
-  const savedHere = useRef(false);
-  // Nome in modifica (null: non si sta modificando). Uscendo dal campo il nome si salva, Esc annulla.
-  const [name, setName] = useState<string | null>(null);
+  // Uscendo dal campo il nome si salva, Esc annulla (vedi `GroupNameInput`).
+  const [editing, setEditing] = useState(false);
   const pencil = useRef<HTMLButtonElement>(null);
-  const cancelled = useRef(false);
-  // Invio ed Esc tolgono il focus dal campo: il nome si salva (o no) solo qui, una volta.
   const stopEditing = () => {
-    if (!cancelled.current && name !== null && name.trim() !== group.name) onRename(name);
-    cancelled.current = false;
-    setName(null);
+    setEditing(false);
     // Il campo sparisce: il focus torna sulla matita invece di finire sul body.
     requestAnimationFrame(() => pencil.current?.focus());
   };
@@ -271,8 +276,8 @@ export function ExistingCard({
       {/* I pulsanti stanno accanto all'intestazione, non dentro: un controllo dentro un altro (com'era nel
           <summary>) non è valido, e molti screen reader non leggono o non raggiungono quello interno. */}
       {/* Mentre si scrive il nome l'intestazione non si trascina: il trascinamento selezionerebbe il testo. */}
-      <div className="group-header" {...(name === null ? header : {})}>
-        {name === null ? (
+      <div className="group-header" {...(!editing ? header : {})}>
+        {!editing ? (
           <button className="group-toggle" aria-expanded={open} aria-controls={listId} onClick={() => setOpen(!open)}>
             {/* La freccia dice che il gruppo si apre: a riposo l'intestazione è solo pallino, nome e conteggio. */}
             <Icon name="chevronRight" size={18} />
@@ -288,53 +293,29 @@ export function ExistingCard({
         ) : (
           <>
             <span className={`swatch static color-${group.color}`} />
-            <input
-              className="group-name"
-              value={name}
-              autoFocus
-              aria-label={t('popupGroupName')}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={stopEditing}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') cancelled.current = true;
-                if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur();
-              }}
-            />
+            <GroupNameInput name={group.name} onRename={(name) => renameGroup(group.id, name)} onDone={stopEditing} />
           </>
         )}
         <span className={`group-end${armed ? ' armed' : ''}`}>
           <span className="group-actions">
-            {!readOnly && name === null && (
+            {!readOnly && !editing && (
               <button
                 ref={pencil}
                 className="icon small"
                 data-tooltip={t('panelRenameGroup')}
                 aria-label={t('panelRenameGroup')}
-                onClick={() => setName(group.name)}
+                onClick={() => setEditing(true)}
               >
                 <Icon name="edit" size={16} />
               </button>
             )}
-            {isCategory || adding ? (
-              <InCategories focus={savedHere.current} />
-            ) : (
-              !readOnly &&
-              group.name.trim() !== '' && (
-                <button
-                  className="icon small save"
-                  disabled={saving}
-                  data-tooltip={t('popupSaveToListHint')}
-                  aria-label={t('popupSaveToList')}
-                  onClick={(e) => {
-                    savedHere.current = document.activeElement === e.currentTarget;
-                    onSave();
-                  }}
-                >
-                  <Icon name="bookmarkAdd" size={16} />
-                </button>
-              )
-            )}
-            {reorder && (reorder.up || reorder.down) && name === null && <MoveGroup name={group.name || t('popupUnnamed')} reorder={reorder} />}
+            <SaveToCategories
+              inCategories={isCategory || adding === group.id}
+              canSave={!readOnly && group.name.trim() !== ''}
+              iconSize={16}
+              onSave={() => saveOpenGroup(group)}
+            />
+            {reorder && (reorder.up || reorder.down) && !editing && <MoveGroup name={group.name || t('popupUnnamed')} reorder={reorder} />}
             <button
               className="icon small"
               data-tooltip={t(collapsed ? 'panelExpandGroup' : 'panelCollapseGroup')}
@@ -350,7 +331,7 @@ export function ExistingCard({
                 className="text small close-group"
                 onClick={() => {
                   setArmed(null);
-                  onCloseGroup();
+                  closeGroup(group.id);
                 }}
               >
                 {current.length === 1 ? t('panelCloseGroupConfirmOne') : t('panelCloseGroupConfirm', String(current.length))}
@@ -372,9 +353,8 @@ export function ExistingCard({
               tab={tab}
               added
               targets={targets}
-              onMove={onMove}
-              onRemove={() => onEdit({ kind: 'remove-tab', tabId: tab.tabId })}
-              onClose={() => onClose(tab.tabId)}
+              onRemove={() => edit({ kind: 'remove-tab', tabId: tab.tabId })}
+              onClose={() => closeTab(tab.tabId)}
             />
           )
         ))}
@@ -383,17 +363,9 @@ export function ExistingCard({
             key={tab.tabId}
             tab={tab}
             targets={liveTargets}
-            onMove={onMoveLive}
-            onClose={() => onClose(tab.tabId)}
+            onClose={() => closeTab(tab.tabId)}
             drag={{ groupId: group.id, nextTabId: current[i + 1]?.tabId ?? null }}
-            reorder={
-              onMoveTab && {
-                up: i > 0,
-                down: i < current.length - 1,
-                // Giù: prima della tab che segue la successiva, o in fondo al gruppo.
-                onMove: (direction) => onMoveTab(tab.tabId, direction === 'up' ? current[i - 1]!.tabId : (current[i + 2]?.tabId ?? null)),
-              }
-            }
+            reorder={canDrag ? reorderAt(current.map((x) => x.tabId), i, (before) => moveTab(tab.tabId, group.id, before)) : undefined}
           />
         ))}
       </ul>

@@ -7,7 +7,7 @@ Manifest V3 extension built with WXT, TypeScript and React. All the logic lives 
 ```
 entrypoints/
   background.ts          service worker: creates the Organizer, answers the panel's messages, opens the panel when the icon is clicked and the guide on install
-  sidepanel/             React side panel: App.tsx composes the components (GroupCards, TabRow, ModePicker, Banners); hooks.ts holds the Organizer state and the window view
+  sidepanel/             React side panel: App.tsx composes the components (GroupCards, TabRow, ModePicker, Banners, Snackbar); hooks.ts holds the Organizer state, the window view and "Add to categories"; move-targets.ts the "Move to…" entries; panel-actions.ts the actions context
   options/               React settings page in four pages (views.ts), opened in a full tab; ModeSection, ProviderSection, NanoStatus and ThresholdField are also used by the guide
   onboarding/            first-run guide (onboarding.html), in steps
 src/
@@ -147,7 +147,7 @@ For new groups of the proposal that are not a category yet (provenance `ai`, `do
 - Generator missing or in error: the category keeps the empty description and the notice invites the user to complete it in the settings (with a link to the Categories section).
 - A category with the same name already exists (case-insensitive): no duplicate, notice.
 - After saving, a proposal group becomes `list` (an open group is simply shown as a category from then on) and, through `keepCurrent`, the proposal stays current with the new list (the categories changed, but the proposal already takes them into account), so reopening the panel does not lose the edits. Currency is checked after the description arrives: a tab opened during the description (up to 30 s) makes the proposal stale.
-- The outcome goes in the state's `notice` field (i18n key and name), shown in the panel; the next edit removes it.
+- The outcome goes in the state's `notice` field (i18n key and name) with `snackbar: true`: the panel shows it only in the snackbar, right after the click, never as a banner or after reopening. The next edit removes it.
 
 ### Queued operations
 
@@ -359,7 +359,7 @@ interface OrganizerState {
   proposal?: Proposal;   // groups + warnings (+ timings, diagnostics only)
   preview?: Proposal;    // only in "computing" with AI: read-only by-site proposal
   undo?: UndoSnapshot;   // present while "Undo" is available
-  notice?: { key, arg }; // outcome of the last operation, e.g. "Add to categories"
+  notice?: { key, arg, snackbar? }; // outcome of the last operation; `snackbar` for "Add to categories", shown only right after the click
   error?: string;        // i18n key of the last error
 }
 ```
@@ -492,6 +492,14 @@ On opening it reads the current window and only the Organizer's state (`state()`
 - **Open groups**, in strip order: Chrome name and color (locked), the tabs they have now (view only) and those that the proposal adds, marked "new" and removable or movable. A group with no additions stays collapsed.
 - **Ungrouped**: the ungrouped (free) tabs that the proposal leaves out, with "Add to…".
 - **Not organized** (collapsed): pinned tabs, browser pages, excluded domains and loading tabs, with the reason.
+
+**Code structure.** `App.tsx` reads the state and the view, then hands the rest down; the cards and rows never call the Organizer themselves.
+- **`run` or `send`** (`useOrganizer` in `hooks.ts`). `run` disables the buttons until the call ends: it is for operations on the whole proposal or the whole window, or long ones (Organize, Apply, Undo, A-Z, Add to categories, Always put here). `send` does not block: it is for actions on one tab or one group, which end at once and can follow each other (proposal edits, close, move, drag). Both show "An unexpected error occurred" if the call fails.
+- **Organizer or Chrome.** What touches the proposal or needs the queue goes through the Organizer; what does not (go to a tab, mute, collapse a group, open the settings) calls `chrome.tabs`/`chrome.tabGroups` straight from `tab-actions.ts`.
+- **Actions context** (`panel-actions.ts`). `App` puts the Organizer actions of cards and rows (edit, close, rename, move, add to categories, `busy`) in `PanelActionsContext`, next to `DragContext` and `LiveTabsContext`: a new action is one field there and one call where it is used, without new props through the cards.
+- **"Move to…" entries** (`move-targets.ts`). `moveTargets` builds the menu entries for the three kinds of tab: tabs of the proposal (a proposal edit), ungrouped tabs (an edit with a proposal, a real move without), current tabs of an open group (a real move, only when drag and drop is possible). Each entry carries its own `move(tab)`, so `TabRow` only calls the chosen one. `reorderAt` gives Up and Down for a tab or a group from the strip order.
+- **Banners** (`App.tsx`). One list, in display order, each with the text that the live region announces (`announce`): a new banner is one entry, and what is read cannot differ from what is shown.
+- **Snackbar** (`Snackbar.tsx`). One at a time, in a fixed order: the "Always put here" offer, "Add to categories" in progress, its outcome, the last notice while a proposal is shown.
 
 **Close the tab.** Each row has ✕ "Close tab" (also tabs of open groups, ungrouped and not organized ones); "−" removes the tab from the proposed group leaving it open. The panel calls `organizer/close-tab`, and `Organizer.closeTab` closes the tab and removes it from the proposal, in the operation queue, through `closeTabs` and `keepCurrent`: a current proposal stays current, so reopening the panel reuses it without new AI calls. If the tab was the last one of an open group that the proposal extends, the group disappears and the tabs the proposal was adding to it go back to ungrouped. Closes done from the panel do not make the stale-proposal notice appear.
 
