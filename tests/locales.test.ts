@@ -103,6 +103,22 @@ describe('chiavi usate nel codice', () => {
     expect(dynamic.filter((key) => !(key in messages))).toEqual([]);
   });
 
+  it('ogni chiave delle traduzioni è usata: scritta nel codice o composta a runtime', () => {
+    const code = sources().join('\n');
+    const categoryKeys = [...readFileSync(new URL('../src/settings/categories.ts', import.meta.url), 'utf8').matchAll(/key: '(\w+)'/g)].map((m) => m[1]!);
+    const dynamic = new Set([
+      ...WARNING_CAUSES.map(warningKey),
+      ...GROUP_COLORS.map((c) => `color_${c}`),
+      ...PROVENANCES.map((p) => `provenance_${p}`),
+      ...NANO_STATUSES.map((s) => `nanoStatus_${s}`),
+      ...categoryKeys.flatMap((k) => [`category_${k}_name`, `category_${k}_description`]),
+    ]);
+    // Scritta tra virgolette (anche senza i prefissi, es. 'aiLanguageName') o come __MSG_chiave__.
+    const literal = (key: string) => new RegExp(`['"\`]${key}['"\`]|__MSG_${key}__`).test(code);
+
+    expect(Object.keys(messages).filter((key) => !dynamic.has(key) && !literal(key))).toEqual([]);
+  });
+
   it('italiano e inglese usano gli stessi segnaposto', () => {
     const en = load('en') as Record<string, Message>;
     const placeholders = (m: Message) => [...m.message.matchAll(/\$(\w+)\$/g)].map((x) => x[1]!.toLowerCase()).sort();

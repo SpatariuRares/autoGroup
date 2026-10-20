@@ -22,10 +22,10 @@ Go through the commit list and decide, change by change:
 | If the release... | Update |
 |---|---|
 | adds or changes a permission, a host permission, or what is sent to a provider | `docs/store/privacy-practices.md` and `docs/store/privacy.md`. Use the `permissions-privacy-reviewer` agent to check them against the diff |
-| adds a user-visible feature or changes the panel/settings UI | `docs/store/listing.md` (it and en) and `README.md`; regenerate screenshots with `npm run store-assets` (macOS/Linux, needs `openssl`) |
+| adds a user-visible feature or changes the panel/settings UI | `docs/store/listing.md` (every language block) and `README.md`; regenerate screenshots with `npm run store-assets` (macOS/Linux, needs `openssl`) |
 | changes architecture or modules | `docs/architecture.md` |
 
-Docs are in English (listing.md also has the Italian text). Commit doc updates separately with a `docs:` message before the bump.
+Docs are in English (listing.md also carries the it, es, fr and de texts). Commit doc updates separately with a `docs:` message before the bump.
 
 ## 3. Bump and tag
 

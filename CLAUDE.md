@@ -9,6 +9,7 @@ Chrome MV3 extension (WXT 0.21, React 19, TypeScript 5.9) that groups the tabs o
 | `npm run compile` | `tsc --noEmit` (~1.5 s) |
 | `npm test` | Vitest, all tests (~1.5 s) |
 | `npm run check` | compile + test + `wxt build` — run before saying a change is done |
+| `node scripts/add-message.mjs` | Adds a UI text to every locale (see the `add-message` skill) |
 | `npm run dev` | WXT dev mode with hot reload |
 | `npm run smoke` | Build with pre-granted host permissions, then Puppeteer test in Chrome for Testing (`scripts/smoke.mjs`) |
 | `npm run build && node scripts/permissions-check.mjs` | Checks that optional permission requests open the Chrome prompt |
@@ -22,8 +23,8 @@ All logic lives in the service worker (`entrypoints/background.ts`) behind the *
 ## Conventions
 
 - **Language**: code comments, test names (`describe`/`it`) are in **Italian**. Docs (`README.md`, `docs/`) are in **English**. Commit messages: Conventional Commits in English (`feat:`, `fix:`, `docs:`, `refactor:`, `chore: release vX.Y.Z`).
-- **UI text**: never hard-coded; always `t(key)` from `src/shared/i18n.ts`, with the key in **both** `public/_locales/it` and `en` (see the `add-message` skill; `tests/locales.test.ts` enforces it).
-- **Tests**: one seam — the Organizer's public interface. Set up the tab strip with the fakes in `tests/` (`fake-tab-strip`, `fake-network`, `fake-nano`, `fake-scripting`, `fake-i18n`), call the Organizer, assert on the proposal or on the resulting groups. Don't test internal module calls. Read `docs/test.md` before adding a test file.
+- **UI text**: never hard-coded; always `t(key)` from `src/shared/i18n.ts`, with the key in **every** folder of `public/_locales/` (see the `add-message` skill; `tests/locales.test.ts` enforces it).
+- **Tests**: one seam — the Organizer's public interface. Set up the tab strip with the fakes in `tests/` (`fake-tab-strip`, `fake-network`, `fake-nano`, `fake-scripting`, `fake-i18n`), call the Organizer, assert on the proposal or on the resulting groups. Don't test internal module calls. Read `docs/test.md` before adding a test file; to see a panel change in real Chrome, follow its "Checking a panel change by hand" (chrome-devtools MCP).
 - **UI**: Material 3 via `src/ui/md3-tokens.css` + `base.css` (`--md-sys-*` tokens); icons via `src/ui/Icon.tsx` (Material Symbols SVG). No CSS framework.
 - **Permissions**: host permissions are optional and requested at runtime; `permissions.request` must be called synchronously inside the click handler, before any `await`. Any change to permissions or to what is sent to a provider must also update `docs/store/privacy-practices.md` and `privacy.md` (use the `permissions-privacy-reviewer` agent).
 - **API keys** live in `storage.local` only, never `storage.sync`.
