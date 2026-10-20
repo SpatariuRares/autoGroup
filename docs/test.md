@@ -267,6 +267,15 @@ The settings are split into pages chosen by the address (`resolveHash`): no addr
 
 The smoke test goes through the pages from the menu: the four entries visible at 800 px, the coffee button in *About*, `#classifier` opening the AI page, a category opened to rename it, "Undo" after deleting a category (the category and its sites come back), the providers and the descriptions switch in the AI page, and the AI page in by-site mode showing only the note.
 
+## Side panel, in `tests/panel-model.test.ts`
+
+The second seam, besides the Organizer: `panelModel` (`entrypoints/sidepanel/panel-model.ts`), the pure function that turns the Organizer's state and the window view into what the panel shows. A derivation the panel needs (a phase, a banner, a text for screen readers) goes there, not in `App.tsx`, and gets a test here.
+
+- Banners in a fixed order (error, stale, AI warnings, duplicates, inactive) and their texts in the live region.
+- While computing: the by-site preview is read-only, duplicates and inactive wait.
+- Without a proposal the outcome is an info banner; the outcome of "Add to categories" never is.
+- The state of another window shows neither its proposal nor its "Undo".
+
 ## Duplicate tabs, in `tests/duplicates.test.ts`
 
 - The free copies of a page are closed and the first one stays; the fragment does not count, the query does.

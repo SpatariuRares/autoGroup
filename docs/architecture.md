@@ -7,18 +7,18 @@ Manifest V3 extension built with WXT, TypeScript and React. All the logic lives 
 ```
 entrypoints/
   background.ts          service worker: creates the Organizer, answers the panel's messages, opens the panel when the icon is clicked and the guide on install
-  sidepanel/             React side panel: App.tsx composes the components (GroupCards, TabRow, ModePicker, Banners, Snackbar); hooks.ts holds the Organizer state, the window view and "Add to categories"; move-targets.ts the "Move to…" entries; panel-actions.ts the actions context
+  sidepanel/             React side panel: App.tsx composes the components (GroupCards, TabRow, ModePicker, Banners, Snackbar); hooks.ts holds the Organizer state, the window view and "Add to categories"; panel-model.ts what the panel shows (phases, banners, live announcement; pure, tested in `tests/panel-model.test.ts`); move-targets.ts the "Move to…" entries; panel-actions.ts the actions context
   options/               React settings page in four pages, opened in a full tab: views.ts lists the pages and their cards (the sections an address like #generator opens), App.tsx maps each page to its view (GeneralView, CategoriesView, AiView, AboutView), use-save.ts is the only way the page saves (error banner, "Saved", "Undo")
   onboarding/            first-run guide (onboarding.html), in steps
 src/
   organizer/             the Organizer and its internal modules
     index.ts             public interface: createOrganizer() → propose / edit / apply / undo / state …; the state in chrome.storage.session
     proposal-builder.ts  reading of the inputs (tabs, open groups, settings, Generator) and signature
-    pipeline.ts          fallback table: choice of the Generator, call, fallback to domain; domain of a URL; category description for "Add to categories"
+    pipeline.ts          fallback table: choice of the Generator, call, fallback to domain; category description for "Add to categories"
     ai-input.ts          data for the AI (short IDs, cleaned URL) and options (categories + open groups)
     validator.ts         validation of the Generator's response
     group-rules.ts       rules on groups and colors, shared by all AI levels
-    tab-selection.ts     selection of the candidate tabs
+    tab-selection.ts     selection of the candidate tabs; `findCandidate` (is this tab a candidate in its window?); domain of a URL (`domainOf`)
     site-rules.ts        site rules of the categories: matching, most specific rule, site to remember
     remember-site.ts     "Always put here": saves a tab's site in the category of its group
     auto-group.ts        automatic grouping: a tab that opens a category site goes into that category's group
@@ -36,6 +36,7 @@ src/
     duplicates.ts        duplicate tabs: which copies "Close duplicates" closes
     inactive.ts          inactive tabs: which tabs "Close inactive" closes
     sort.ts              "Sort groups A-Z" and "Sort tabs A-Z": reorder the window's strip
+    moves.ts             changes to the strip without a proposal: drag and drop (`moveTab`, `moveGroup`), "Move to…" (`groupTab`), "New group" (`newGroup`)
   settings/              preferences in chrome.storage.sync
     index.ts             the field table (FIELDS), loading and saving, excluded domains, category sites, saving a provider (saveProvider)
     categories.ts        default categories (from chrome.i18n), list validation
@@ -99,6 +100,8 @@ It is the main module and **the only entry point called by the panel**. Interfac
 | `closeTab(tabId)` | Closes one tab from the panel and removes it from the proposal, through the same step as `closeGroup` (see below). |
 | `sortGroups(windowId)`, `sortTabs(windowId)` | "Sort groups A to Z" and "Sort tabs A to Z" on the Chrome strip (see "Sorting"). They do not touch the proposal. |
 | `moveTab(tabId, groupId, beforeTabId)`, `moveGroup(groupId, beforeGroupId)` | Drag and drop in the panel: moves a tab into an open group or out of every group, or a whole open group (see "Drag and drop"). |
+| `groupTab(tabId, groupId)` | "Move to…" without a proposal: puts a candidate tab into an open group of its window, at once. |
+| `newGroup(tabId)` | "New group" without a proposal, or a tab dropped on "New group": a new group with the tab's site as name and a color not used in the window. Takes candidate tabs and, from drag and drop, tabs of an open group; never pinned ones. |
 | `checkStale()` | Compares the current proposal's signature with the live inputs and writes the result to `state.stale` (see "Stale proposal"). Goes through the queue. |
 | `view(windowId)` | The whole window as the panel shows it (see "The whole window"). Read-only; does not wait for the queue, so the panel can ask while the AI computes. |
 | `state()` | Returns the current state. |
@@ -149,7 +152,7 @@ For new groups of the proposal that are not a category yet (provenance `ai`, `do
 - Generator missing or in error: the category keeps the empty description and the notice invites the user to complete it in the settings (with a link to the Categories section).
 - A category with the same name already exists (case-insensitive): no duplicate, notice.
 - After saving, a proposal group becomes `list` (an open group is simply shown as a category from then on) and, through `keepCurrent`, the proposal stays current with the new list (the categories changed, but the proposal already takes them into account), so reopening the panel does not lose the edits. Currency is checked after the description arrives: a tab opened during the description (up to 30 s) makes the proposal stale.
-- The outcome goes in the state's `notice` field (i18n key and name) with `snackbar: true`: the panel shows it only in the snackbar, right after the click, never as a banner or after reopening. The next edit removes it.
+- The outcome goes in the state's `notice` field (i18n key and name) with `snackbar: true`: the panel shows it only in the snackbar, right after the click, never as a banner or after reopening. The next user operation removes it (see "State and persistence").
 
 ### Queued operations
 
@@ -355,16 +358,21 @@ The snapshot stays available until another organization is applied (computing a 
 The state lives in `chrome.storage.session` under the `organizer` key:
 
 ```ts
-interface OrganizerState {
-  phase: 'idle' | 'computing' | 'ready';
-  windowId?: number;
-  proposal?: Proposal;   // groups + warnings (+ timings, diagnostics only)
-  preview?: Proposal;    // only in "computing" with AI: read-only by-site proposal
-  undo?: UndoSnapshot;   // present while "Undo" is available
-  notice?: { key, arg, snackbar? }; // outcome of the last operation; `snackbar` for "Add to categories", shown only right after the click
-  error?: string;        // i18n key of the last error
-}
+type OrganizerState = IdleState | ComputingState | ReadyState; // by `phase`
+
+// in every phase
+undo?: UndoSnapshot;   // present while "Undo" is available
+notice?: Notice;       // { key, arg?, snackbar? }: outcome of the last operation; `snackbar` for "Add to categories", shown only right after the click
+error?: string;        // i18n key of the last error
+
+IdleState      { phase: 'idle'; windowId?: number }
+ComputingState { phase: 'computing'; windowId: number; preview?: Proposal }   // preview: only with AI, read-only by-site proposal
+ReadyState     { phase: 'ready'; windowId: number; proposal: Proposal; stale?: boolean; offer?: RememberOffer }
 ```
+
+A proposal exists only in `ready`, and the compiler checks it: code that needs one narrows the state (`readyIn` in the Organizer, `proposalIn(state, windowId)` in `src/shared/types.ts` for the panel). The other variants declare `proposal?: never` (and so on), so `state.proposal` can still be read without checking the phase and is `undefined` there.
+
+**Notices.** A `notice` lasts until the next operation the user starts: every Organizer method called from the panel starts from `begin()`, which also removes the previous notice from the saved state, so reopening the panel does not show it again. What the service worker does by itself (`checkStale`, `autoGroupTab`) and the reads (`state`, `view`) leave it alone.
 
 The state always has the `windowId` it refers to: it is unique for all windows, and the panel shows only the updates of its own window. Opening the panel in another window replaces the previous proposal.
 
