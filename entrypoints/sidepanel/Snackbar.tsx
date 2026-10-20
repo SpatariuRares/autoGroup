@@ -1,11 +1,9 @@
 import { t } from '../../src/shared/i18n';
 import type { OrganizerState, RememberOffer } from '../../src/shared/types';
-import type { useExpiring } from '../../src/ui/use-expiring';
+import { Snackbar as Message, type Hold } from '../../src/ui/Snackbar';
 import { openSettings } from './open-settings';
 
 type Notice = NonNullable<OrganizerState['notice']>;
-/** Da spargere sulla snackbar: finché c'è sopra il mouse o il focus non sparisce. */
-type Hold = ReturnType<typeof useExpiring>[2];
 
 /**
  * La snackbar del pannello: una sola alla volta, la prima che c'è in quest'ordine.
@@ -38,41 +36,14 @@ export function Snackbar({
 
   function content() {
     if (withProposal && offer) {
-      return (
-        <div className="snackbar" {...pauseOffer}>
-          <span>{t('panelRememberSite', [offer.site, offer.category])}</span>
-          <button className="text small inverse" onClick={() => onRemember(offer)}>
-            {t('panelRememberSiteYes')}
-          </button>
-        </div>
-      );
+      return <Message text={t('panelRememberSite', [offer.site, offer.category])} action={{ label: t('panelRememberSiteYes'), onClick: () => onRemember(offer) }} hold={pauseOffer} />;
     }
-    if (savingName !== null) {
-      return (
-        <div className="snackbar">
-          <span>{t('panelSavingToList', savingName)}</span>
-        </div>
-      );
-    }
+    if (savingName !== null) return <Message text={t('panelSavingToList', savingName)} />;
     if (saved) {
-      return (
-        <div className="snackbar" {...pauseSaved}>
-          <span>{t(saved.key, saved.arg)}</span>
-          {saved.key === 'saveToListNoDescription' && (
-            <button className="text small inverse" onClick={() => openSettings('categories')}>
-              {t('popupWarningSettings')}
-            </button>
-          )}
-        </div>
-      );
+      const action = saved.key === 'saveToListNoDescription' ? { label: t('popupWarningSettings'), onClick: () => openSettings('categories') } : undefined;
+      return <Message text={t(saved.key, saved.arg)} action={action} hold={pauseSaved} />;
     }
-    if (withProposal && notice) {
-      return (
-        <div className="snackbar">
-          <span>{t(notice.key, notice.arg)}</span>
-        </div>
-      );
-    }
+    if (withProposal && notice) return <Message text={t(notice.key, notice.arg)} />;
     return null;
   }
 }

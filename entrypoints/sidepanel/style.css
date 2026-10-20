@@ -451,26 +451,11 @@ input.group-name:not(:read-only) {
   padding: 0;
 }
 
-/* Messaggio temporaneo sopra la barra delle azioni. */
+/* Messaggio temporaneo sopra la barra delle azioni (stile in base.css). */
 .snackbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin: 0 12px 8px;
   padding: 6px 8px 6px 16px;
-  min-height: 48px;
-  border-radius: var(--md-sys-shape-corner-extra-small);
-  background: var(--md-sys-color-inverse-surface);
-  color: var(--md-sys-color-inverse-on-surface);
   animation: snackbar-in var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-emphasized-decelerate);
-}
-
-.snackbar span {
-  flex: 1;
-}
-
-.snackbar button.inverse {
-  --btn-fg: var(--md-sys-color-inverse-primary);
 }
 
 @keyframes snackbar-in {

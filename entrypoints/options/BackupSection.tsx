@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { SettingsError, type Settings } from '../../src/settings';
+import type { Settings } from '../../src/settings';
 import { exportSettings } from '../../src/settings/backup';
 import { t } from '../../src/shared/i18n';
 import { Icon } from '../../src/ui/Icon';
@@ -9,7 +9,14 @@ import { Card } from '../../src/ui/settings/Card';
  * "Esporta" scarica un file JSON con le preferenze (senza provider né chiavi); "Importa" lo rilegge.
  * Il download passa da un link locale: non serve il permesso "downloads".
  */
-export function BackupSection({ settings, onImport }: { settings: Settings; onImport: (text: string) => Promise<void> }) {
+export function BackupSection({
+  settings,
+  onImport,
+}: {
+  settings: Settings;
+  /** Importa il testo del file; un file rifiutato chiama `onError` con la chiave del messaggio. */
+  onImport: (text: string, onError: (messageKey: string) => void) => Promise<unknown>;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,11 +31,7 @@ export function BackupSection({ settings, onImport }: { settings: Settings; onIm
 
   async function read(file: File) {
     setError(null);
-    try {
-      await onImport(await file.text());
-    } catch (err) {
-      setError(err instanceof SettingsError ? err.messageKey : 'optionsImportInvalid');
-    }
+    await onImport(await file.text(), setError);
   }
 
   return (

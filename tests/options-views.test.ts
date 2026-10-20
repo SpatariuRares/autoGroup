@@ -19,6 +19,13 @@ describe('pagine delle impostazioni dall\'indirizzo', () => {
     expect(resolveHash('#mode')).toEqual({ view: 'general', section: 'mode' });
   });
 
+  it('ogni scheda delle pagine si apre dal suo indirizzo, nella pagina che la contiene', () => {
+    expect(resolveHash('#backup')).toEqual({ view: 'general', section: 'backup' });
+    expect(resolveHash('#autogroup')).toEqual({ view: 'categories', section: 'autogroup' });
+    expect(resolveHash('#descriptions')).toEqual({ view: 'ai', section: 'descriptions' });
+    expect(resolveHash('#about-privacy')).toEqual({ view: 'about', section: 'about-privacy' });
+  });
+
   it('i nomi delle sezioni della vecchia pagina unica portano ancora dove sono finite', () => {
     expect(resolveHash('#behavior')).toEqual({ view: 'general', section: 'behavior' });
     expect(resolveHash('#privacy')).toEqual({ view: 'general', section: 'privacy' });

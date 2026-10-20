@@ -26,7 +26,7 @@ interface CategoriesSectionProps {
   sites: CategorySites;
   /** Salva i siti di tutte le categorie; restituisce false se sono stati rifiutati. */
   onSitesChange: (sites: CategorySites) => Promise<boolean>;
-  onReset: () => Promise<void>;
+  onReset: () => Promise<unknown>;
   /** Una categoria è stata eliminata e salvata: la pagina offre di annullare. */
   onDeleted: (category: Category) => void;
 }

@@ -382,6 +382,26 @@ input[role='switch']:disabled {
   }
 }
 
+/* Snackbar (src/ui/Snackbar.tsx): superficie inversa, testo body-medium, azione in inverse-primary. Posizione e margini li decide la pagina. */
+.snackbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.snackbar span {
+  flex: 1;
+}
+
+.snackbar button.inverse {
+  --btn-fg: var(--md-sys-color-inverse-primary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .md-linear-progress::after {
     animation-duration: 4s;

@@ -57,6 +57,10 @@ describe('esporta e importa le impostazioni', () => {
     expect((await loadSettings()).excludedDomains).toEqual(['esempio.com']);
   });
 
+  it('un interruttore non booleano rende il file non valido', async () => {
+    await expect(importSettings(JSON.stringify({ app: 'autoGroup', version: 1, settings: { autoGroupSites: 'sì' } }))).rejects.toMatchObject({ messageKey: 'optionsImportInvalid' });
+  });
+
   it.each([
     ['un testo che non è JSON', 'ciao'],
     ['un JSON di un\'altra app', JSON.stringify({ app: 'altro', settings: {} })],

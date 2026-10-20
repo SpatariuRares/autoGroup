@@ -31,7 +31,12 @@ export async function importSettings(text: string): Promise<Partial<Settings>> {
     const domains = patch.excludedDomains.map((d) => (typeof d === 'string' ? normalizeDomain(d) : null)).filter((d): d is string => d !== null);
     patch.excludedDomains = [...new Set(domains)].sort();
   }
-  // Le categorie prima dei siti: saveSettings scarta i siti di categorie che non esistono.
-  await saveSettings(patch);
+  try {
+    await saveSettings(patch);
+  } catch (err) {
+    // Un valore senza un messaggio suo (es. un interruttore che non è un booleano) rende il file non valido.
+    if (err instanceof SettingsError && err.messageKey === 'errorSaveSettings') throw new SettingsError('optionsImportInvalid');
+    throw err;
+  }
   return patch;
 }

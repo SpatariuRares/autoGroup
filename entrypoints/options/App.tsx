@@ -1,39 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
-import { browser } from 'wxt/browser';
-import { loadSettings, resetCategories, saveSettings, SettingsError, type Settings } from '../../src/settings';
-import { importSettings } from '../../src/settings/backup';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { t } from '../../src/shared/i18n';
 import { useFocusRecovery } from '../../src/ui/focus-recovery';
 import { Icon } from '../../src/ui/Icon';
-import { useExpiring } from '../../src/ui/use-expiring';
-import { useDescribing } from '../../src/ui/use-describing';
+import { Snackbar } from '../../src/ui/Snackbar';
 import { useSettings } from '../../src/ui/use-settings';
-import { Card } from '../../src/ui/settings/Card';
-import { BackupSection } from './BackupSection';
-import { AutoGroupSection, CategoriesSection } from './CategoriesSection';
-import { DescriptionsSection } from './DescriptionsSection';
-import { ModeSection } from '../../src/ui/settings/ModeSection';
-import { NanoStatus } from '../../src/ui/settings/NanoStatus';
-import { ProviderSection } from '../../src/ui/settings/ProviderSection';
-import { TabsSection } from './TabsSection';
-import { ThresholdField } from '../../src/ui/settings/ThresholdField';
+import { AboutView } from './AboutView';
+import { AiView } from './AiView';
+import { CategoriesView } from './CategoriesView';
+import { GeneralView } from './GeneralView';
+import { useSave, type PageProps } from './use-save';
 import { resolveHash, VIEWS, type ViewId } from './views';
 
-/** Pagina Buy Me a Coffee dell'autore. */
-const COFFEE_URL = 'https://www.buymeacoffee.com/SpatariuRares';
-const REPO_URL = 'https://github.com/SpatariuRares/autoGroup';
-const STORE_URL = 'https://chromewebstore.google.com/detail/gpfcmddgokgkjdeecjhgbbdcpjffcmke';
-/** Informativa completa: la stessa pubblicata per il Chrome Web Store. */
-const PRIVACY_URL = `${REPO_URL}/blob/main/docs/store/privacy.md`;
-
-/** Per quanto resta visibile "Annulla" dopo un'eliminazione o un ripristino delle categorie, o un import (fermo con mouse o focus sopra). */
-const UNDO_MS = 8000;
-
-/** Un'azione che si può annullare: il testo della snackbar e i valori di prima delle impostazioni che ha cambiato. */
-interface Undoable {
-  text: string;
-  before: Partial<Settings>;
-}
+/** Il contenuto di ogni pagina del menu: una pagina nuova va aggiunta qui e in `VIEWS`. */
+const PAGES: Record<ViewId, ComponentType<PageProps>> = {
+  general: GeneralView,
+  categories: CategoriesView,
+  ai: AiView,
+  about: AboutView,
+};
 
 /** La pagina indicata dall'indirizzo (#general, #categories, … o una sezione come #generator), seguita al cambio. */
 function useView() {
@@ -49,62 +33,27 @@ function useView() {
 export function App() {
   // Lette dal vivo: anche il pannello le cambia (es. "Metti sempre qui" aggiunge un sito), e "Annulla" deve ripartire da quelle vere.
   const [settings, setSettings] = useSettings();
-  const describing = useDescribing();
-  const [saved, setSaved] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [undoable, setUndoable, holdUndo] = useExpiring<Undoable>(UNDO_MS);
+  const saving = useSave(setSettings);
   const { view, section } = useView();
   const rememberFocus = useFocusRecovery('.chip, .category');
 
   const heading = useRef<HTMLHeadingElement>(null);
   const shownView = useRef<ViewId | null>(null);
+  const title = VIEWS.find((v) => v.id === view)!.title;
 
   // Cambiando pagina si riparte dall'alto; se l'indirizzo nomina una sezione (es. #generator dal pannello) si scorre lì.
   // Il titolo della scheda nomina la pagina, e il focus va sul suo h1: lo screen reader annuncia dove si è arrivati.
   useEffect(() => {
     if (!settings) return;
-    document.title = `${t(VIEWS.find((v) => v.id === view)!.title)} – ${t('optionsTitle')}`;
+    document.title = `${t(title)} – ${t('optionsTitle')}`;
     if (shownView.current !== null && shownView.current !== view) heading.current?.focus({ preventScroll: true });
     shownView.current = view;
     if (section) document.getElementById(section)?.scrollIntoView();
     else window.scrollTo(0, 0);
   }, [view, section, settings === null]);
 
-  function confirmSaved() {
-    setSaveError(null);
-    setSaved(true);
-    clearTimeout(savedTimer.current);
-    savedTimer.current = setTimeout(() => setSaved(false), 1500);
-  }
-
-  /** Mostra "Annulla" per qualche secondo; `before` sono categorie e siti prima dell'azione. */
-  function offerUndo(text: string, before: Undoable['before']) {
-    setUndoable({ text, before });
-  }
-
-  async function undo() {
-    if (!undoable) return;
-    setUndoable(null);
-    // Categorie e siti insieme: eliminando una categoria il salvataggio ha tolto anche i suoi siti.
-    await update(undoable.before);
-  }
-
-  async function update(patch: Partial<Settings>) {
-    try {
-      await saveSettings(patch);
-    } catch (err) {
-      console.error('autoGroup:', err);
-      setSaveError(err instanceof SettingsError ? err.messageKey : 'errorSaveSettings');
-      return false;
-    }
-    setSettings(await loadSettings());
-    confirmSaved();
-    return true;
-  }
-
   if (!settings) return null;
-  const title = VIEWS.find((v) => v.id === view)!.title;
+  const Page = PAGES[view];
 
   return (
     <div className="layout" onClickCapture={rememberFocus} onChangeCapture={rememberFocus}>
@@ -131,71 +80,20 @@ export function App() {
             {t(title)}
           </h1>
         </header>
-        {saveError && (
+        {saving.error && (
           <p className="banner error" role="alert">
-            {t(saveError)}
+            {t(saving.error)}
           </p>
         )}
-
-        {view === 'general' && (
-          <GeneralView
-            settings={settings}
-            update={update}
-            onImport={async (text) => {
-              const patch = await importSettings(text);
-              const before = Object.fromEntries(Object.keys(patch).map((key) => [key, settings[key as keyof Settings]])) as Partial<Settings>;
-              setSettings(await loadSettings());
-              offerUndo(t('optionsImported'), before);
-            }}
-          />
-        )}
-        {view === 'categories' && (
-          <>
-            <CategoriesSection
-              categories={settings.categories}
-              describing={describing}
-              sites={settings.categorySites}
-              onChange={(categories) => update({ categories })}
-              onSitesChange={(categorySites) => update({ categorySites })}
-              onReset={async () => {
-                const before = { categories: settings.categories, categorySites: settings.categorySites };
-                const categories = await resetCategories();
-                setSettings((current) => (current ? { ...current, categories, categorySites: {} } : current));
-                offerUndo(t('optionsCategoriesReset'), before);
-              }}
-              onDeleted={(category) =>
-                offerUndo(t('optionsCategoryDeleted', category.name), { categories: settings.categories, categorySites: settings.categorySites })
-              }
-            />
-            <AutoGroupSection enabled={settings.autoGroupSites} onChange={(autoGroupSites) => update({ autoGroupSites })} />
-          </>
-        )}
-        {view === 'ai' && (
-          <AiView
-            settings={settings}
-            update={update}
-            onProviderSaved={(patch) => {
-              setSettings((current) => (current ? { ...current, ...patch } : current));
-              confirmSaved();
-            }}
-          />
-        )}
-        {view === 'about' && <AboutView />}
+        <Page settings={settings} saving={saving} />
       </main>
       {/* Sempre visibili, anche lontano dalla cima della pagina. "Annulla" prende il posto di "Salvato". */}
       {/* Regione live sempre presente: la snackbar che ci compare dentro viene letta. */}
       <div role="status">
-        {undoable && (
-          <div className="snackbar" {...holdUndo}>
-            <span>{undoable.text}</span>
-            <button className="text small inverse" onClick={undo}>
-              {t('optionsUndo')}
-            </button>
-          </div>
-        )}
+        {saving.undoable && <Snackbar text={saving.undoable.text} action={{ label: t('optionsUndo'), onClick: saving.undo }} hold={saving.holdUndo} />}
       </div>
-      <div className={`saved${saved && !undoable ? ' visible' : ''}`} role="status">
-        {saved && !undoable && (
+      <div className={`saved${saving.saved ? ' visible' : ''}`} role="status">
+        {saving.saved && (
           <>
             <Icon name="check" size={18} />
             {t('optionsSaved')}
@@ -203,112 +101,5 @@ export function App() {
         )}
       </div>
     </div>
-  );
-}
-
-type Update = (patch: Partial<Settings>) => Promise<boolean>;
-
-/** Generale: come raggruppare e quali tab organizzare. */
-function GeneralView({ settings, update, onImport }: { settings: Settings; update: Update; onImport: (text: string) => Promise<void> }) {
-  return (
-    <>
-      <ModeSection mode={settings.mode} onChange={(mode) => update({ mode })} />
-      <TabsSection
-        minTabs={settings.minTabs}
-        onMinTabs={(minTabs) => update({ minTabs })}
-        excludedDomains={settings.excludedDomains}
-        onExcludedDomains={(excludedDomains) => update({ excludedDomains })}
-      />
-      <BackupSection settings={settings} onImport={onImport} />
-    </>
-  );
-}
-
-/**
- * AI: prima il Generatore, che basta da solo, poi la lettura delle descrizioni e il Classificatore
- * facoltativo. Nella modalità per sito la pagina resta nel menu e spiega come accendere l'AI.
- */
-function AiView({ settings, update, onProviderSaved }: { settings: Settings; update: Update; onProviderSaved: (patch: Partial<Settings>) => void }) {
-  if (settings.mode !== 'ai') {
-    return (
-      <div className="banner">
-        <Icon name="info" />
-        <span>{t('optionsModeDomainNote')}</span>
-        <button className="tonal" onClick={() => update({ mode: 'ai' })}>
-          {t('optionsUseAi')}
-        </button>
-      </div>
-    );
-  }
-  return (
-    <>
-      <ProviderSection role="generator" saved={settings.generator} nano={<NanoStatus />} onSaved={(generator) => onProviderSaved({ generator })} />
-      <DescriptionsSection enabled={settings.readDescriptions} onChange={(readDescriptions) => update({ readDescriptions })} />
-      <ProviderSection
-        role="classifier"
-        saved={settings.classifier}
-        onSaved={(classifier) => onProviderSaved({ classifier })}
-        extra={<ThresholdField threshold={settings.threshold} onChange={(threshold) => update({ threshold })} />}
-      />
-    </>
-  );
-}
-
-/** Link esterno, in una nuova scheda. */
-function ExternalLink({ href, label }: { href: string; label: string }) {
-  return (
-    <a className="guide-link" href={href} target="_blank" rel="noopener noreferrer">
-      {label}
-    </a>
-  );
-}
-
-/**
- * Informazioni: cosa fa autoGroup, privacy in breve (fedele a docs/store/privacy.md, con il link
- * all'informativa completa) e "Offrimi un caffè". Il pulsante è locale, nello stile di Buy Me a
- * Coffee: l'immagine ufficiale verrebbe scaricata dal loro sito a ogni apertura della pagina.
- */
-function AboutView() {
-  return (
-    <>
-      <Card id="about-card" title="autoGroup" hint={t('optionsVersion', browser.runtime.getManifest().version)}>
-        <p>{t('optionsAboutText')}</p>
-        <div className="extra-links">
-          <a className="guide-link" href="/onboarding.html" target="_blank">
-            {t('optionsOnboarding')}
-          </a>
-          <ExternalLink href={STORE_URL} label={t('optionsAboutRate')} />
-          <ExternalLink href={REPO_URL} label={t('optionsAboutSource')} />
-          <ExternalLink href={`${REPO_URL}/issues`} label={t('optionsAboutIssue')} />
-        </div>
-      </Card>
-
-      <Card id="about-privacy" title={t('optionsAboutPrivacy')} hint={t('optionsAboutPrivacyHint')}>
-        {(
-          [
-            ['optionsAboutLocal', 'optionsAboutLocalHint'],
-            ['optionsAboutProvider', 'optionsAboutProviderHint'],
-            ['optionsAboutKeys', 'optionsAboutKeysHint'],
-          ] as const
-        ).map(([title, hint]) => (
-          <div key={title} className="setting setting-text">
-            <strong>{t(title)}</strong>
-            <span className="hint">{t(hint)}</span>
-          </div>
-        ))}
-        <div className="setting">
-          <ExternalLink href={PRIVACY_URL} label={t('optionsAboutPolicy')} />
-        </div>
-      </Card>
-
-      <Card id="about-support" title={t('optionsAboutSupport')} hint={t('optionsAboutSupportHint')}>
-        <div className="extra-links">
-          <a className="coffee" href={COFFEE_URL} target="_blank" rel="noopener noreferrer">
-            <span aria-hidden="true">✈️</span>
-            {t('optionsCoffee')}
-          </a>
-        </div>
-      </Card>
-    </>
   );
 }

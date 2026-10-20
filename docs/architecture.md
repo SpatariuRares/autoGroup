@@ -8,7 +8,7 @@ Manifest V3 extension built with WXT, TypeScript and React. All the logic lives 
 entrypoints/
   background.ts          service worker: creates the Organizer, answers the panel's messages, opens the panel when the icon is clicked and the guide on install
   sidepanel/             React side panel: App.tsx composes the components (GroupCards, TabRow, ModePicker, Banners, Snackbar); hooks.ts holds the Organizer state, the window view and "Add to categories"; move-targets.ts the "Move to…" entries; panel-actions.ts the actions context
-  options/               React settings page in four pages (views.ts), opened in a full tab
+  options/               React settings page in four pages, opened in a full tab: views.ts lists the pages and their cards (the sections an address like #generator opens), App.tsx maps each page to its view (GeneralView, CategoriesView, AiView, AboutView), use-save.ts is the only way the page saves (error banner, "Saved", "Undo")
   onboarding/            first-run guide (onboarding.html), in steps
 src/
   organizer/             the Organizer and its internal modules
@@ -45,6 +45,7 @@ src/
   ui/base.css            Material 3 basics: typography, shapes, buttons, fields, switch, chips, progress
   ui/Icon.tsx            Material Symbols icons included as SVG
   ui/provider-name.ts    short name of the chosen provider, for panel, settings and guide
+  ui/Snackbar.tsx        Material 3 snackbar (text and optional action), used by the panel and the settings page
   ui/use-settings.ts     useSettings(): settings read live (storage.onChanged), for panel and settings page
   ui/settings/           settings parts shared by the options page and the guide: Card, ModeSection, ProviderSection, NanoStatus, ThresholdField and their styles (settings.css)
   ai/                    AI provider adapters, with no dependencies on the Organizer
