@@ -178,6 +178,21 @@ describe('Salva nella lista', () => {
 
     expect(state.notice).toBeUndefined();
   });
+
+  it("anche chiudere una tab o ordinare la barra toglie l'avviso, pure riaprendo il pannello", async () => {
+    generator();
+    await organizer.propose(W);
+    await organizer.saveToList(await groupId('Cucina'));
+    expect((await organizer.state()).notice).toEqual({ key: 'saveToListSaved', arg: 'Cucina', snackbar: true });
+
+    const posta = (await browser.tabs.query({ windowId: W })).find((t) => t.title === 'Posta')!.id!;
+    expect((await organizer.closeTab(posta)).notice).toBeUndefined();
+    expect((await organizer.state()).notice).toBeUndefined();
+
+    await organizer.saveToList(await groupId('Lavoro'));
+    expect((await organizer.sortTabs(W)).notice).toBeUndefined();
+    expect((await organizer.state()).notice).toBeUndefined();
+  });
 });
 
 describe('Aggiungi alle categorie: la categoria c\'è subito, la descrizione arriva dopo', () => {

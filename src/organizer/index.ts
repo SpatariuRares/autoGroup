@@ -199,6 +199,16 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     return state;
   }
 
+  /**
+   * Lo stato da cui parte un'operazione dell'utente. L'esito della precedente (`notice`) vale fino a
+   * questa, anche riaprendo il pannello, quindi sparisce pure dallo stato salvato.
+   */
+  async function begin(): Promise<OrganizerState> {
+    const { notice, ...state } = await load();
+    if (notice) await saveState(state);
+    return state;
+  }
+
   async function setState(state: OrganizerState): Promise<OrganizerState> {
     await saveState(state);
     options.onStateChange?.(state);
@@ -211,7 +221,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
    * Così una proposta attuale resta attuale (nuova impronta), senza un nuovo calcolo.
    */
   async function closeTabs(windowId: number, tabIds: number[]): Promise<OrganizerState> {
-    const current = await load();
+    const current = await begin();
     if (tabIds.length === 0) return current;
     const proposal = current.phase === 'ready' && current.proposal?.windowId === windowId ? current.proposal : undefined;
     if (!proposal) {
@@ -233,7 +243,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
   }
 
   async function propose(windowId: number, force: boolean, signal: AbortSignal): Promise<OrganizerState> {
-    const current = await load();
+    const current = await begin();
     // La foto per "Annulla" resta valida fino alla prossima organizzazione applicata.
     const { undo } = current;
     let preview: Proposal | undefined;
@@ -287,11 +297,10 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     edit(edit) {
       return exclusive(async () => {
-        const current = await load();
+        const current = await begin();
         if (current.phase !== 'ready' || !current.proposal) return current;
         const checked = edit.kind === 'add-tab' ? await checkAddTab(current.proposal, edit) : edit;
         if (!checked) return current;
-        const { notice: _done, ...rest } = current;
         // Rinominare un gruppo che è una categoria rinomina anche la categoria (vedi `renameCategory`).
         const target = checked.kind === 'rename' ? current.proposal.groups.find((g) => g.id === checked.groupId) : undefined;
         if (checked.kind === 'rename' && target?.provenance === 'list') {
@@ -300,9 +309,9 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
               await renameCategory(target.name, checked.name);
               return editProposal(current.proposal!, checked);
             });
-            return setState({ ...rest, proposal });
+            return setState({ ...current, proposal });
           } catch (err) {
-            if (err instanceof SettingsError) return setState({ ...rest, notice: { key: err.messageKey } });
+            if (err instanceof SettingsError) return setState({ ...current, notice: { key: err.messageKey } });
             throw err;
           }
         }
@@ -310,13 +319,13 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         const used = checked.kind === 'add-tab' && 'newGroup' in checked.to ? (await browser.tabGroups.query({ windowId: current.proposal.windowId })).map((g) => g.color) : [];
         const proposal = editProposal(current.proposal, checked, used);
         const offer = checked.kind === 'add-tab' ? rememberOffer(proposal, checked.tab.tabId, await loadSettings()) : null;
-        return setState({ ...rest, proposal, ...(offer ? { offer } : {}) });
+        return setState({ ...current, proposal, ...(offer ? { offer } : {}) });
       });
     },
 
     saveToList(groupId) {
       return exclusive(async () => {
-        const current = await load();
+        const current = await begin();
         if (current.phase !== 'ready' || !current.proposal) return current;
         const result = await saveGroupToList(current.proposal, groupId);
         if (!result) return current;
@@ -326,21 +335,20 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     saveOpenGroupToList(groupId) {
       return exclusive(async () => {
-        const current = await load();
+        const current = await begin();
         const group = await browser.tabGroups.get(groupId).catch(() => null);
         if (!group) return current;
         const tabs = (await browser.tabs.query({ windowId: group.windowId, groupId })).map((t) => ({ title: t.title ?? '', url: t.url ?? '' }));
         const proposal = current.phase === 'ready' && current.proposal?.windowId === group.windowId ? current.proposal : undefined;
         const result = await saveOpenGroupToList({ windowId: group.windowId, name: group.title ?? '', color: group.color as GroupColor, tabs }, proposal);
         if (!result) return current;
-        const { notice: _done, ...rest } = current;
-        return setState({ ...rest, ...(result.proposal ? { proposal: result.proposal } : {}), notice: result.notice });
+        return setState({ ...current, ...(result.proposal ? { proposal: result.proposal } : {}), notice: result.notice });
       });
     },
 
     renameGroup(groupId, name) {
       return exclusive(async () => {
-        const current = await load();
+        const current = await begin();
         const group = await browser.tabGroups.get(groupId).catch(() => null);
         if (!group) return current;
         const title = name.trim();
@@ -369,7 +377,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     rememberSite(tabId) {
       return exclusive(async () => {
-        const current = await load();
+        const current = await begin();
         if (current.phase !== 'ready' || !current.proposal) return current;
         const result = await rememberTabSite(current.proposal, tabId);
         if (!result) return current;
@@ -379,7 +387,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     apply() {
       return exclusive(async () => {
-        const current = await load();
+        const current = await begin();
         if (current.phase !== 'ready' || !current.proposal) return current;
         const windowId = current.proposal.windowId;
         try {
@@ -394,7 +402,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     undo() {
       return exclusive(async () => {
-        const current = await load();
+        const current = await begin();
         if (!current.undo) return current;
         try {
           await restoreSnapshot(current.undo);
@@ -410,7 +418,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     closeTab(tabId) {
       return exclusive(async () => {
         const tab = await browser.tabs.get(tabId).catch(() => null);
-        if (!tab) return load();
+        if (!tab) return begin();
         return closeTabs(tab.windowId, [tabId]);
       });
     },
@@ -434,7 +442,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     closeGroup(groupId) {
       return exclusive(async () => {
         const group = await browser.tabGroups.get(groupId).catch(() => null);
-        if (!group) return load();
+        if (!group) return begin();
         const tabIds = (await browser.tabs.query({ windowId: group.windowId, groupId })).map((tab) => tab.id!);
         return closeTabs(group.windowId, tabIds);
       });
@@ -442,7 +450,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     groupTab(tabId, groupId) {
       return exclusive(async () => {
-        const current = await load();
+        const current = await begin();
         const [tab, group] = await Promise.all([browser.tabs.get(tabId).catch(() => null), browser.tabGroups.get(groupId).catch(() => null)]);
         if (!tab || !group || group.windowId !== tab.windowId) return current;
         const { excludedDomains } = await loadSettings();
@@ -455,7 +463,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
     newGroup(tabId) {
       return exclusive(async () => {
-        const current = await load();
+        const current = await begin();
         const tab = await browser.tabs.get(tabId).catch(() => null);
         if (!tab) return current;
         const { excludedDomains } = await loadSettings();
@@ -475,28 +483,28 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     sortGroups(windowId) {
       return exclusive(async () => {
         await sortGroups(windowId);
-        return load();
+        return begin();
       });
     },
 
     sortTabs(windowId) {
       return exclusive(async () => {
         await sortTabs(windowId);
-        return load();
+        return begin();
       });
     },
 
     moveTab(tabId, groupId, beforeTabId) {
       return exclusive(async () => {
         await moveTab(tabId, groupId, beforeTabId);
-        return load();
+        return begin();
       });
     },
 
     moveGroup(groupId, beforeGroupId) {
       return exclusive(async () => {
         await moveGroup(groupId, beforeGroupId);
-        return load();
+        return begin();
       });
     },
 
