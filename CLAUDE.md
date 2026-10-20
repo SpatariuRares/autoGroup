@@ -9,10 +9,11 @@ Chrome MV3 extension (WXT 0.21, React 19, TypeScript 5.9) that groups the tabs o
 | `npm run compile` | `tsc --noEmit` (~1.5 s) |
 | `npm test` | Vitest, all tests (~1.5 s) |
 | `npm run check` | compile + test + `wxt build` — run before saying a change is done |
-| `node scripts/add-message.mjs` | Adds a UI text to every locale (see the `add-message` skill) |
+| `node scripts/add-message.mjs` | Adds, changes (`--set`) or removes (`--remove`) a UI text in every locale (see the `add-message` skill) |
 | `npm run dev` | WXT dev mode with hot reload |
 | `npm run smoke` | Build with pre-granted host permissions, then Puppeteer test in Chrome for Testing (`scripts/smoke.mjs`) |
 | `npm run build && node scripts/permissions-check.mjs` | Checks that optional permission requests open the Chrome prompt |
+| `npm run build && node scripts/drag-check.mjs` | Drags tabs in the panel with the real mouse; run after touching `drag.ts` or the panel layout |
 | `npm run store-assets` | Regenerates store screenshots in `docs/store/{it,en}/` |
 | `npm run theme` | Regenerates `src/ui/md3-tokens.css` (`scripts/generate-theme.mjs`) |
 
@@ -29,6 +30,7 @@ All logic lives in the service worker (`entrypoints/background.ts`) behind the *
 - **Permissions**: host permissions are optional and requested at runtime; `permissions.request` must be called synchronously inside the click handler, before any `await`. Any change to permissions or to what is sent to a provider must also update `docs/store/privacy-practices.md` and `privacy.md` (use the `permissions-privacy-reviewer` agent).
 - **API keys** live in `storage.local` only, never `storage.sync`.
 - Don't edit generated files: `package-lock.json`, `.output/`, `.wxt/`, `src/ui/md3-tokens.css` (use `npm run theme`).
+- **Parallel sessions**: a second agent session working at the same time (e.g. design next to development) works in its own git worktree (`git worktree add`, or `isolation: "worktree"`), so the two never edit the same files.
 
 ## Release
 

@@ -17,7 +17,14 @@ node scripts/add-message.mjs panelSortTabs --after panelSortGroups \
   [--placeholders '{"count":{"content":"$1"}}']
 ```
 
-To change an existing text, edit that key in every locale file. A key the code no longer uses gets deleted from every locale file (the test flags it).
+## Change or remove a key
+
+The same script changes a text in every locale (placeholders kept unless `--placeholders` is given), or removes a key the code no longer uses (the test flags it). Both leave the rest of each file byte-for-byte as it was:
+
+```bash
+node scripts/add-message.mjs popupSaveToList --set --it "Aggiungi alle categorie" --en "Add to categories" --es "…" --fr "…" --de "…"
+node scripts/add-message.mjs panelReadOnly --remove
+```
 
 ## Rules (enforced by `tests/locales.test.ts`)
 

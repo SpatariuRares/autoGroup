@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-21T00:00:00Z",
+  "title": "Design System: autoGroup",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Chrome-Seeded Blue", "canonical": "var(--md-sys-color-primary)", "dark": "#adc7ff", "tonalRamp": ["#001a41", "#0f2f60", "#2a4678", "#435e91", "#7691c7", "#adc7ff", "#d8e2ff", "#edf0ff"] },
+      "primary-container": { "role": "primary", "displayName": "Pale Blue Container", "canonical": "var(--md-sys-color-primary-container)", "dark": "#2a4678" },
+      "secondary": { "role": "secondary", "displayName": "Slate", "canonical": "var(--md-sys-color-secondary)", "dark": "#bfc6dc", "tonalRamp": ["#131b2c", "#283041", "#3f4759", "#565e71", "#8991a5", "#bfc6dc", "#dbe2f9", "#edf0ff"] },
+      "secondary-container": { "role": "secondary", "displayName": "Mist Container", "canonical": "var(--md-sys-color-secondary-container)", "dark": "#3f4759" },
+      "tertiary": { "role": "tertiary", "displayName": "Dusk Mauve", "canonical": "var(--md-sys-color-tertiary)", "dark": "#debcdf", "tonalRamp": ["#29132d", "#402843", "#583e5b", "#715574", "#a687a8", "#debcdf", "#fbd7fc", "#ffebfd"] },
+      "tertiary-container": { "role": "tertiary", "displayName": "Dusk Mauve Container", "canonical": "var(--md-sys-color-tertiary-container)", "dark": "#583e5b" },
+      "error": { "role": "error", "displayName": "Error Red", "canonical": "var(--md-sys-color-error)", "dark": "#ffb4ab", "tonalRamp": ["#410002", "#690005", "#93000a", "#ba1a1a", "#ff5449", "#ffb4ab", "#ffdad6", "#ffedea"] },
+      "error-container": { "role": "error", "displayName": "Error Container", "canonical": "var(--md-sys-color-error-container)", "dark": "#93000a" },
+      "surface": { "role": "neutral", "displayName": "Cool Paper", "canonical": "var(--md-sys-color-surface)", "dark": "#111318", "tonalRamp": ["#1a1b20", "#2f3036", "#45474c", "#5d5e64", "#8f9097", "#c6c6cd", "#e2e2e9", "#f0f0f7"] },
+      "on-surface": { "role": "neutral", "displayName": "Ink", "canonical": "var(--md-sys-color-on-surface)", "dark": "#e2e2e9" },
+      "on-surface-variant": { "role": "neutral", "displayName": "Soft Ink", "canonical": "var(--md-sys-color-on-surface-variant)", "dark": "#c4c6d0", "tonalRamp": ["#191c22", "#2d3038", "#44474f", "#5c5e66", "#8e9099", "#c4c6d0", "#e1e2ec", "#eff0fa"] },
+      "surface-container-low": { "role": "neutral", "displayName": "Panel Wash", "canonical": "var(--md-sys-color-surface-container-low)", "dark": "#1a1b20" },
+      "surface-container": { "role": "neutral", "displayName": "Bar Grey", "canonical": "var(--md-sys-color-surface-container)", "dark": "#1e1f25" },
+      "surface-container-high": { "role": "neutral", "displayName": "Raised Tint", "canonical": "var(--md-sys-color-surface-container-high)", "dark": "#282a2f" },
+      "surface-container-highest": { "role": "neutral", "displayName": "Raised Tint Strong", "canonical": "var(--md-sys-color-surface-container-highest)", "dark": "#33353a" },
+      "outline": { "role": "neutral", "displayName": "Rule", "canonical": "var(--md-sys-color-outline)", "dark": "#8e9099" },
+      "outline-variant": { "role": "neutral", "displayName": "Soft Rule", "canonical": "var(--md-sys-color-outline-variant)", "dark": "#44474f" },
+      "inverse-surface": { "role": "neutral", "displayName": "Inverse", "canonical": "var(--md-sys-color-inverse-surface)", "dark": "#e2e2e9" },
+      "chrome-grey": { "role": "content", "displayName": "Chrome Group Grey" },
+      "chrome-blue": { "role": "content", "displayName": "Chrome Group Blue" },
+      "chrome-red": { "role": "content", "displayName": "Chrome Group Red" },
+      "chrome-yellow": { "role": "content", "displayName": "Chrome Group Yellow" },
+      "chrome-green": { "role": "content", "displayName": "Chrome Group Green" },
+      "chrome-pink": { "role": "content", "displayName": "Chrome Group Pink" },
+      "chrome-purple": { "role": "content", "displayName": "Chrome Group Purple" },
+      "chrome-cyan": { "role": "content", "displayName": "Chrome Group Cyan" },
+      "chrome-orange": { "role": "content", "displayName": "Chrome Group Orange" }
+    },
+    "typographyMeta": {
+      "headline-medium": { "displayName": "Headline", "purpose": "Onboarding step titles and options page titles." },
+      "title-large": { "displayName": "Title Large", "purpose": "Side panel top app bar title." },
+      "title-medium": { "displayName": "Title Medium", "purpose": "Group names, settings brand." },
+      "title-small": { "displayName": "Title Small", "purpose": "Panel section headings." },
+      "body-large": { "displayName": "Body Large", "purpose": "Text fields, empty states, onboarding lead." },
+      "body-medium": { "displayName": "Body Medium", "purpose": "Default text and tab titles." },
+      "body-small": { "displayName": "Body Small", "purpose": "Hints, hostnames, tooltips." },
+      "label-large": { "displayName": "Label Large", "purpose": "Buttons, chips, navigation items." },
+      "label-medium": { "displayName": "Label Medium", "purpose": "Small buttons, badges, counts." },
+      "label-small": { "displayName": "Label Small", "purpose": "Tab chips, section count pills." }
+    },
+    "shadows": [
+      { "name": "floating-layer", "value": "0 2px 6px 2px color-mix(in srgb, var(--md-sys-color-shadow) 15%, transparent)", "purpose": "Colour-picker popover and options snackbar only." },
+      { "name": "drop-line-row", "value": "inset 0 2px 0 var(--md-sys-color-primary)", "purpose": "Drop position above a tab row while dragging (negative y for below)." },
+      { "name": "drop-line-group", "value": "0 -3px 0 var(--md-sys-color-primary)", "purpose": "Drop position above a group card while dragging (positive y for below)." },
+      { "name": "swatch-selected", "value": "0 0 0 2px var(--md-sys-color-surface), 0 0 0 4px var(--md-sys-color-on-surface)", "purpose": "Selected colour swatch ring." }
+    ],
+    "motion": [
+      { "name": "easing-standard", "value": "cubic-bezier(0.2, 0, 0, 1)", "purpose": "State transitions: button backgrounds, switch, tooltips, row action fade." },
+      { "name": "easing-emphasized-decelerate", "value": "cubic-bezier(0.05, 0.7, 0.1, 1)", "purpose": "Entering elements such as the snackbar." },
+      { "name": "duration-short", "value": "150ms", "purpose": "Hover, focus and small state changes." },
+      { "name": "duration-medium", "value": "300ms", "purpose": "Switch handle, snackbar entry." },
+      { "name": "state-hover", "value": "8%", "purpose": "Hover state layer mixed with color-mix." },
+      { "name": "state-pressed", "value": "10%", "purpose": "Pressed state layer." }
+    ],
+    "breakpoints": [
+      { "name": "panel-min", "value": "280px" },
+      { "name": "stack-forms", "value": "600px" },
+      { "name": "onboarding-choices", "value": "700px" },
+      { "name": "options-nav-top", "value": "900px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Filled Button",
+      "kind": "button",
+      "refersTo": "button-filled",
+      "description": "Main action of a surface: Organize, Apply.",
+      "html": "<button class=\"ds-btn ds-btn-filled\"><svg class=\"ds-icon\" viewBox=\"0 -960 960 960\" aria-hidden=\"true\"><path d=\"M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z\"/></svg>Apply</button>",
+      "css": ".ds-btn { --btn-bg: var(--md-sys-color-primary); --btn-fg: var(--md-sys-color-on-primary); display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 24px; border: none; border-radius: 9999px; background: var(--btn-bg); color: var(--btn-fg); font: 500 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; cursor: pointer; transition: background 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-btn:has(> .ds-icon:first-child) { padding-left: 16px; } .ds-btn:hover { background: color-mix(in srgb, var(--btn-bg), var(--btn-fg) 8%); } .ds-btn:active { background: color-mix(in srgb, var(--btn-bg), var(--btn-fg) 10%); } .ds-btn:focus-visible { outline: 3px solid var(--md-sys-color-secondary); outline-offset: 2px; } .ds-icon { width: 18px; height: 18px; fill: currentColor; }"
+    },
+    {
+      "name": "Tonal Button",
+      "kind": "button",
+      "refersTo": "button-tonal",
+      "description": "Secondary action that still carries weight.",
+      "html": "<button class=\"ds-btn ds-btn-tonal\">Use this</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 24px; border: none; border-radius: 9999px; background: var(--btn-bg); color: var(--btn-fg); font: 500 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; cursor: pointer; transition: background 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-btn-tonal { --btn-bg: var(--md-sys-color-secondary-container); --btn-fg: var(--md-sys-color-on-secondary-container); } .ds-btn:hover { background: color-mix(in srgb, var(--btn-bg), var(--btn-fg) 8%); } .ds-btn:focus-visible { outline: 3px solid var(--md-sys-color-secondary); outline-offset: 2px; }"
+    },
+    {
+      "name": "Outlined and Text Buttons",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "Low-emphasis actions; text button in error colour confirms closing.",
+      "html": "<div style=\"display:flex;gap:8px\"><button class=\"ds-btn ds-btn-outlined\">Recompute</button><button class=\"ds-btn ds-btn-text\">Undo</button><button class=\"ds-btn ds-btn-text ds-danger\">Close 4 tabs</button></div>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; height: 40px; padding: 0 24px; border: none; border-radius: 9999px; background: var(--btn-bg); color: var(--btn-fg); font: 500 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; cursor: pointer; transition: background 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-btn-outlined { --btn-bg: transparent; --btn-fg: var(--md-sys-color-primary); border: 1px solid var(--md-sys-color-outline); } .ds-btn-text { --btn-bg: transparent; --btn-fg: var(--md-sys-color-primary); padding: 0 12px; } .ds-danger { --btn-fg: var(--md-sys-color-error); } .ds-btn:hover { background: color-mix(in srgb, var(--btn-bg), var(--btn-fg) 8%); } .ds-btn:focus-visible { outline: 3px solid var(--md-sys-color-secondary); outline-offset: 2px; }"
+    },
+    {
+      "name": "Segmented Mode Picker",
+      "kind": "nav",
+      "refersTo": "segmented-selected",
+      "description": "By site / With AI switch at the top of the panel.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\"><button class=\"ds-seg-btn ds-selected\" role=\"radio\" aria-checked=\"true\">By site</button><button class=\"ds-seg-btn\" role=\"radio\" aria-checked=\"false\">With AI</button></div>",
+      "css": ".ds-seg { display: flex; width: 320px; border: 1px solid var(--md-sys-color-outline); border-radius: 9999px; overflow: hidden; } .ds-seg-btn { flex: 1; height: 40px; padding: 0 12px; border: none; background: transparent; color: var(--md-sys-color-on-surface); font: 500 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; cursor: pointer; } .ds-seg-btn + .ds-seg-btn { border-left: 1px solid var(--md-sys-color-outline); } .ds-seg-btn:hover { background: color-mix(in srgb, transparent, var(--md-sys-color-on-surface) 8%); } .ds-selected { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); } .ds-seg-btn:focus-visible { outline: 3px solid var(--md-sys-color-secondary); outline-offset: -3px; }"
+    },
+    {
+      "name": "Group Card",
+      "kind": "card",
+      "refersTo": "group-card",
+      "description": "A proposed group: swatch, editable name, provenance badge, count, tab rows.",
+      "html": "<div class=\"ds-group\"><div class=\"ds-group-header\"><span class=\"ds-swatch\" style=\"background:#1a73e8\"></span><input class=\"ds-group-name\" value=\"Dev\"><span class=\"ds-badge ds-badge-ai\">AI</span><span class=\"ds-count\">3</span></div><div class=\"ds-tab ds-current\"><span class=\"ds-fav\"></span><span class=\"ds-tab-title\">wxt.dev – Next-gen web extension framework</span></div><div class=\"ds-tab\"><span class=\"ds-fav\"></span><span class=\"ds-tab-title\">GitHub – SpatariuRares/autoGroup</span></div></div>",
+      "css": ".ds-group { width: 340px; background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant); border-radius: 12px; padding: 8px 4px 8px 12px; font: 400 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; color: var(--md-sys-color-on-surface); } .ds-group-header { display: flex; align-items: center; gap: 8px; } .ds-swatch { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--md-sys-color-outline); flex: none; } .ds-group-name { flex: 1; min-width: 0; min-height: 36px; padding: 4px 8px; font: 500 16px/24px 'Roboto Flex', Roboto, system-ui, sans-serif; color: inherit; background: transparent; border: 1px solid transparent; border-bottom-color: var(--md-sys-color-outline); border-radius: 8px; } .ds-group-name:hover { border-color: var(--md-sys-color-outline-variant); border-bottom-color: var(--md-sys-color-outline); } .ds-group-name:focus { outline: none; border-color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary); } .ds-badge { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 8px; font: 500 12px/16px 'Roboto Flex', Roboto, system-ui, sans-serif; } .ds-badge-ai { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); } .ds-count { font: 500 12px/16px 'Roboto Flex', Roboto, system-ui, sans-serif; color: var(--md-sys-color-on-surface-variant); } .ds-tab { display: flex; align-items: center; gap: 10px; min-height: 36px; padding-left: 26px; border-radius: 8px; } .ds-tab:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); } .ds-current { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); } .ds-fav { width: 16px; height: 16px; border-radius: 2px; background: var(--md-sys-color-surface-container-highest); flex: none; } .ds-tab-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }"
+    },
+    {
+      "name": "Outlined Text Field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "Settings fields: API address, key, model.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"http://localhost:11434\">",
+      "css": ".ds-input { width: 320px; min-height: 48px; padding: 8px 14px; font: 400 16px/24px 'Roboto Flex', Roboto, system-ui, sans-serif; color: var(--md-sys-color-on-surface); background: transparent; border: 1px solid var(--md-sys-color-outline); border-radius: 4px; } .ds-input:hover { border-color: var(--md-sys-color-on-surface); } .ds-input:focus { outline: none; border-color: var(--md-sys-color-primary); box-shadow: inset 0 0 0 1px var(--md-sys-color-primary); } .ds-input::placeholder { color: var(--md-sys-color-on-surface-variant); }"
+    },
+    {
+      "name": "Site Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A site in a category, with a remove action.",
+      "html": "<span class=\"ds-chip\">github.com<button class=\"ds-chip-x\" aria-label=\"Remove\"><svg viewBox=\"0 -960 960 960\" aria-hidden=\"true\"><path d=\"m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z\"/></svg></button></span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 4px 0 12px; border: 1px solid var(--md-sys-color-outline-variant); border-radius: 8px; font: 500 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; color: var(--md-sys-color-on-surface-variant); } .ds-chip-x { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: none; border-radius: 9999px; background: transparent; color: inherit; cursor: pointer; } .ds-chip-x svg { width: 18px; height: 18px; fill: currentColor; } .ds-chip-x:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); } .ds-chip-x:focus-visible { outline: 3px solid var(--md-sys-color-secondary); outline-offset: 2px; }"
+    },
+    {
+      "name": "Banner",
+      "kind": "custom",
+      "refersTo": "banner-error",
+      "description": "In-panel notice; error variant explains an AI fallback.",
+      "html": "<div class=\"ds-banner ds-banner-error\"><svg class=\"ds-banner-icon\" viewBox=\"0 -960 960 960\" aria-hidden=\"true\"><path d=\"M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z\"/></svg><span>The AI did not answer in time. Showing groups by site.</span></div>",
+      "css": ".ds-banner { display: flex; align-items: flex-start; gap: 12px; width: 340px; padding: 12px 16px; border-radius: 12px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface); font: 400 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; } .ds-banner-error { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); } .ds-banner-icon { width: 20px; height: 20px; flex: none; fill: currentColor; margin-top: 1px; }"
+    },
+    {
+      "name": "Snackbar",
+      "kind": "custom",
+      "refersTo": "snackbar",
+      "description": "Temporary confirmation above the bottom bar, with an inverse-primary action.",
+      "html": "<div class=\"ds-snackbar\"><span>5 groups created</span><button class=\"ds-snack-action\">Undo</button></div>",
+      "css": ".ds-snackbar { display: flex; align-items: center; gap: 8px; width: 340px; min-height: 48px; padding: 6px 8px 6px 16px; border-radius: 4px; background: var(--md-sys-color-inverse-surface); color: var(--md-sys-color-inverse-on-surface); font: 400 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; animation: ds-snack-in 300ms cubic-bezier(0.05, 0.7, 0.1, 1); } .ds-snackbar span { flex: 1; } .ds-snack-action { height: 40px; padding: 0 12px; border: none; border-radius: 9999px; background: transparent; color: var(--md-sys-color-inverse-primary); font: 500 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; cursor: pointer; } .ds-snack-action:hover { background: color-mix(in srgb, transparent, var(--md-sys-color-inverse-primary) 8%); } .ds-snack-action:focus-visible { outline: 3px solid var(--md-sys-color-secondary); outline-offset: 2px; } @keyframes ds-snack-in { from { opacity: 0; transform: translateY(8px); } } @media (prefers-reduced-motion: reduce) { .ds-snackbar { animation: none; } }"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Options page navigation drawer item; current page uses secondary-container.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item\" aria-current=\"page\" href=\"#\">Mode</a><a class=\"ds-nav-item\" href=\"#\">AI</a><a class=\"ds-nav-item\" href=\"#\">Categories and sites</a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 4px; width: 240px; } .ds-nav-item { display: flex; align-items: center; min-height: 48px; padding: 0 16px; border-radius: 9999px; color: var(--md-sys-color-on-surface-variant); font: 500 14px/20px 'Roboto Flex', Roboto, system-ui, sans-serif; text-decoration: none; } .ds-nav-item:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); color: var(--md-sys-color-on-surface); } .ds-nav-item[aria-current='page'] { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); } .ds-nav-item:focus-visible { outline: 3px solid var(--md-sys-color-secondary); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Native Chrome Companion",
+    "overview": "autoGroup should read as a piece of Chrome itself: Google's Material 3, seeded from Chrome's own blue (#1a73e8) through a Tonal Spot scheme, sitting in the side panel next to the page. Nothing about it asks to be noticed as \"a third-party extension\". The only saturated colour on screen comes from Chrome's nine fixed tab-group colours, because those are the content: they show the user the groups that will appear in their tab strip.\n\nThe incumbent implementation is baseline Material 3: generated colour roles, the standard type scale, the standard shape scale and state layers made with color-mix. The intended character is bolder, in line with Google's latest Material 3 (Expressive) surfaces: confident filled actions, generous full-round shapes, clear selected states. That boldness must come from Material 3's own vocabulary (role colours, shape tokens, emphasized motion, the type scale), never from invented styles.\n\nDensity is tuned for a narrow panel (roughly 320–400px): 36px tab rows, 40px buttons, secondary actions that appear on hover or focus, one fixed action bar at the bottom. The options page and onboarding are roomier (760px column, 24px card padding) but use the same tokens and components.",
+    "keyCharacteristics": [
+      "Material 3 role colours only, generated by `npm run theme`; light and dark follow `prefers-color-scheme`.",
+      "Chrome's nine group colours are the only off-scheme hues, and only for group swatches.",
+      "Flat tonal surfaces; depth by surface-container steps, not shadows.",
+      "Full-round buttons and segmented controls; medium-round cards.",
+      "Compact rows, hover-revealed actions, visible keyboard focus everywhere.",
+      "Material Symbols as inline SVG via `src/ui/Icon.tsx`."
+    ],
+    "rules": [
+      { "name": "The Generated Palette Rule", "body": "Every UI colour is a `--md-sys-color-*` role from `src/ui/md3-tokens.css`, which is generated (`npm run theme`) and never hand-edited. A new colour need is met by an existing role, or by a new seed for the whole scheme.", "section": "colors" },
+      { "name": "The Group Colours Are Content Rule", "body": "The nine Chrome colours represent real tab groups. Using one as an accent anywhere else breaks the mapping between panel and tab strip.", "section": "colors" },
+      { "name": "The No AI Glow Rule", "body": "AI is signalled by a tertiary badge and words, never by gradients, purple glows, sparkles or shimmer.", "section": "colors" },
+      { "name": "The Scale Only Rule", "body": "Text is set with a `--md-sys-typescale-*` shorthand. No ad-hoc font sizes or weights; emphasis inside a line uses `<strong>` at 600 only for the added-tab count.", "section": "typography" },
+      { "name": "The Ellipsis Rule", "body": "Tab titles, hostnames and static group names truncate to one line with an ellipsis; the row never wraps. Translations must fit labels and buttons in German and French.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Cards, banners and bars have no shadow. A shadow means \"this floats above the page and will go away\".", "section": "elevation" },
+      { "name": "The Pill Action Rule", "body": "Anything you press to act is full-round; anything that contains content is a rounded rectangle. Keep the two forms distinct.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do reach for an existing `--md-sys-*` token and an existing class in `base.css` or the surface stylesheet before writing any new rule.",
+      "Do get boldness from Material 3 itself: filled primary pills for the main action, `secondary-container` for selection, full-round shapes, the emphasized easing (`cubic-bezier(0.05, 0.7, 0.1, 1)`) for entering elements.",
+      "Do keep a visible focus ring on every interactive element (3px `secondary`, 2px offset; inset 2px on list rows) and provide keyboard alternatives to drag and drop.",
+      "Do check every panel change at 320px and 400px wide, in light and dark, and with the longest locale.",
+      "Do dim with a role colour (`outline`, `on-surface-variant`) rather than opacity when the result must stay at 3:1 or more."
+    ],
+    "donts": [
+      "Don't invent styles, colours or one-off values outside the Material 3 tokens and existing classes.",
+      "Don't add hex values outside `md3-tokens.css`, except the nine Chrome group colours on swatches.",
+      "Don't use shadows for decoration; only floating layers (popover, snackbar) get one.",
+      "Don't signal AI with purple gradients, glows, sparkles or shimmer; use the tertiary provenance badge and plain words.",
+      "Don't hand-edit `src/ui/md3-tokens.css`; change the seed and run `npm run theme`."
+    ]
+  }
+}
