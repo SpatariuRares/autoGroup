@@ -24,13 +24,18 @@ describe('salvataggio delle impostazioni', () => {
     ['modalità sconosciuta', { mode: 'boh' as never }, 'errorSaveSettings'],
     ['minimo non intero', { minTabs: 1.5 }, 'optionsMinTabsInvalid'],
     ['soglia oltre 1', { threshold: 2 }, 'optionsThresholdInvalid'],
-    ['domini esclusi non lista', { excludedDomains: 'banca.it' as never }, 'optionsDomainInvalid'],
-    ['dominio escluso non normalizzato', { excludedDomains: ['https://www.Banca.it'] }, 'optionsDomainInvalid'],
+    ['domini esclusi non lista', { excludedDomains: 'banca.it' as never }, 'errorSaveSettings'],
     ['descrizioni non booleano', { readDescriptions: 'sì' as never }, 'errorSaveSettings'],
     ['raggruppamento automatico non booleano', { autoGroupSites: 1 as never }, 'errorSaveSettings'],
   ])('rifiuta %s e non salva nulla', async (_name, patch, key) => {
     expect(await rejection(patch)).toBe(key);
     expect(await browser.storage.sync.get(null)).toEqual({});
+  });
+
+  it('i domini esclusi vengono normalizzati, senza doppioni, e quelli non validi scartati', async () => {
+    await saveSettings({ excludedDomains: ['https://www.Banca.it/conto', 'banca.it', 'non valido!', 'posta.it'] });
+
+    expect((await loadSettings()).excludedDomains).toEqual(['banca.it', 'posta.it']);
   });
 
   it('salva solo i campi indicati e li rilegge', async () => {
@@ -62,6 +67,12 @@ describe('lettura delle impostazioni', () => {
     await browser.storage.sync.set({ minTabs: -1, threshold: 'alta', excludedDomains: 'x', autoGroupSites: 'no', readDescriptions: true, mode: 'domain' });
 
     expect(await loadSettings()).toMatchObject({ minTabs: 2, threshold: 0.7, excludedDomains: [], autoGroupSites: true, readDescriptions: true, mode: 'domain' });
+  });
+
+  it('un dominio escluso rovinato nello storage non toglie gli altri dalla lista', async () => {
+    await browser.storage.sync.set({ excludedDomains: ['banca.it', 'www.posta.it', 42] });
+
+    expect((await loadSettings()).excludedDomains).toEqual(['banca.it', 'posta.it']);
   });
 
   it('ogni impostazione salvata viene riletta', async () => {

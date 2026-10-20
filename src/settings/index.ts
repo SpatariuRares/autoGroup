@@ -76,42 +76,46 @@ interface Field<T> {
   fallback: () => T;
   /** Chiave i18n del motivo per cui il valore non va salvato, oppure null se va bene. */
   check: (value: unknown) => string | null;
-  /** Pulizia prima del salvataggio, su un valore già controllato. */
+  /** Pulizia di un valore già controllato, prima del salvataggio e dopo la lettura. */
   normalize?: (value: T) => T;
   /** Portata da un browser all'altro con "Esporta" e "Importa". Provider e chiavi API mai. */
   backup: boolean;
 }
 
-const unless = (ok: boolean, error = 'errorSaveSettings') => (ok ? null : error);
-const isBoolean = (value: unknown) => unless(typeof value === 'boolean');
+/** La chiave dell'errore se il controllo non passa, altrimenti null. */
+const errorUnless = (ok: boolean, error = 'errorSaveSettings') => (ok ? null : error);
+const isBoolean = (value: unknown) => errorUnless(typeof value === 'boolean');
+
+/** Domini normalizzati, senza doppioni e in ordine; quelli non validi vengono scartati. */
+function normalizeDomains(list: unknown[]): string[] {
+  const domains = list.map((d) => (typeof d === 'string' ? normalizeDomain(d) : null)).filter((d): d is string => d !== null);
+  return [...new Set(domains)].sort();
+}
 
 /**
  * Tutte le preferenze, una voce per campo di `Settings`: aggiungerne una significa aggiungere il
  * campo all'interfaccia e una voce qui. Lettura, salvataggio, default e backup si ricavano da questa tabella.
  */
 const FIELDS: { [K in keyof Settings]: Field<Settings[K]> } = {
-  mode: { fallback: () => 'ai', check: (v) => unless(v === 'ai' || v === 'domain'), backup: true },
-  minTabs: { fallback: () => 2, check: (v) => unless(isValidMinTabs(v), 'optionsMinTabsInvalid'), backup: true },
-  excludedDomains: {
-    fallback: () => [],
-    check: (v) => unless(Array.isArray(v) && v.every((d) => typeof d === 'string' && normalizeDomain(d) === d), 'optionsDomainInvalid'),
-    backup: true,
-  },
+  mode: { fallback: () => 'ai', check: (v) => errorUnless(v === 'ai' || v === 'domain'), backup: true },
+  minTabs: { fallback: () => 2, check: (v) => errorUnless(isValidMinTabs(v), 'optionsMinTabsInvalid'), backup: true },
+  // Un dominio rovinato si scarta da solo: svuotare la lista manderebbe all'AI le tab dei siti esclusi.
+  excludedDomains: { fallback: () => [], check: (v) => errorUnless(Array.isArray(v)), normalize: normalizeDomains, backup: true },
   categories: { fallback: defaultCategories, check: validateCategories, normalize: normalizeCategories, backup: true },
   categorySites: { fallback: () => ({}), check: validateCategorySites, backup: true },
   generator: {
     fallback: () => NANO_PROVIDER,
-    check: (v) => unless(isProviderSettings('generator', v), 'optionsProviderInvalid'),
+    check: (v) => errorUnless(isProviderSettings('generator', v), 'optionsProviderInvalid'),
     normalize: normalizeProvider,
     backup: false,
   },
   classifier: {
     fallback: () => NO_PROVIDER,
-    check: (v) => unless(isProviderSettings('classifier', v), 'optionsProviderInvalid'),
+    check: (v) => errorUnless(isProviderSettings('classifier', v), 'optionsProviderInvalid'),
     normalize: normalizeProvider,
     backup: false,
   },
-  threshold: { fallback: () => DEFAULT_THRESHOLD, check: (v) => unless(isValidThreshold(v), 'optionsThresholdInvalid'), backup: false },
+  threshold: { fallback: () => DEFAULT_THRESHOLD, check: (v) => errorUnless(isValidThreshold(v), 'optionsThresholdInvalid'), backup: false },
   readDescriptions: { fallback: () => false, check: isBoolean, backup: false },
   autoGroupSites: { fallback: () => true, check: isBoolean, backup: true },
 };
@@ -130,7 +134,10 @@ export const DEFAULT_SETTINGS = Object.fromEntries(
 export async function loadSettings(): Promise<Settings> {
   const stored = await browser.storage.sync.get<Record<string, unknown>>(KEYS);
   const settings = {} as Record<keyof Settings, unknown>;
-  for (const key of KEYS) settings[key] = field(key).check(stored[key]) === null ? stored[key] : field(key).fallback();
+  for (const key of KEYS) {
+    const { check, normalize, fallback } = field(key);
+    settings[key] = check(stored[key]) === null ? (normalize?.(stored[key]) ?? stored[key]) : fallback();
+  }
   return settings as Settings;
 }
 

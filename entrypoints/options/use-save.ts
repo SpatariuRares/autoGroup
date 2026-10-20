@@ -23,12 +23,17 @@ export function useSave(setSettings: (settings: Settings) => void) {
   const [undoable, setUndoable, holdUndo] = useExpiring<Undoable>(UNDO_MS);
 
   /**
-   * Esegue `action` e la conferma. Un errore va in `onError` se c'è (la sezione lo mostra vicino al
+   * Esegue `action` e la conferma. `undo` riceve il risultato dell'azione (es. le chiavi importate) e
+   * dice cosa offrire con "Annulla". Un errore va in `onError` se c'è (la sezione lo mostra vicino al
    * campo), altrimenti nel banner in cima alla pagina. Restituisce false se il salvataggio è fallito.
    */
-  async function save(action: () => Promise<unknown>, options: { undo?: Undoable; onError?: (messageKey: string) => void } = {}): Promise<boolean> {
+  async function save<T>(
+    action: () => Promise<T>,
+    options: { undo?: (result: T) => Undoable; onError?: (messageKey: string) => void } = {},
+  ): Promise<boolean> {
+    let result: T;
     try {
-      await action();
+      result = await action();
     } catch (err) {
       console.error('autoGroup:', err);
       const key = err instanceof SettingsError ? err.messageKey : 'errorSaveSettings';
@@ -37,9 +42,10 @@ export function useSave(setSettings: (settings: Settings) => void) {
       return false;
     }
     setError(null);
+    // Riletta subito per mostrare il salvataggio; useSettings la rileggerà comunque da storage.onChanged.
     setSettings(await loadSettings());
     if (options.undo) {
-      setUndoable(options.undo);
+      setUndoable(options.undo(result));
     } else {
       setSaved(true);
       clearTimeout(savedTimer.current);

@@ -17,7 +17,7 @@ export function CategoriesView({ settings, saving: { save, update, offerUndo } }
         sites={settings.categorySites}
         onChange={(categories) => update({ categories })}
         onSitesChange={(categorySites) => update({ categorySites })}
-        onReset={() => save(resetCategories, { undo: { text: t('optionsCategoriesReset'), before } })}
+        onReset={() => save(resetCategories, { undo: () => ({ text: t('optionsCategoriesReset'), before }) })}
         onDeleted={(category) => offerUndo({ text: t('optionsCategoryDeleted', category.name), before })}
       />
       <AutoGroupSection enabled={settings.autoGroupSites} onChange={(autoGroupSites) => update({ autoGroupSites })} />

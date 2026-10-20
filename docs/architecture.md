@@ -380,7 +380,7 @@ Module `src/settings`, used by the Organizer (reading) and by the options page (
 |---|---|---|---|
 | `mode` | `'ai' \| 'domain'` | `'ai'` | *With AI* or *By site*; any other value is read as `'ai'`. |
 | `minTabs` | integer ≥ 1 | 2 | `saveSettings` rejects invalid values; `loadSettings` ignores corrupted values and uses the default. |
-| `excludedDomains` | `string[]` | `[]` | Normalized domains: lowercase, without scheme, path, port or `www.`. `saveSettings` rejects a domain that is not normalized. |
+| `excludedDomains` | `string[]` | `[]` | Normalized domains: lowercase, without scheme, path, port or `www.`. Normalized on save and on load, without duplicates and sorted; invalid entries are dropped, so a corrupted entry never empties the list (the excluded sites would reach the AI). |
 | `classifier` | `{ preset, baseUrl, model }` | preset `none` | URL normalized without trailing `/`. |
 | `threshold` | number between 0 and 1 | 0.7 | Confidence threshold of the Classifier. |
 | `autoGroupSites` | boolean | `true` | Automatic grouping with the site rules; only `false` turns it off. Not part of the proposal's signature. |

@@ -1,4 +1,4 @@
-import { BACKUP_KEYS, normalizeDomain, saveSettings, SettingsError, type Settings } from './index';
+import { BACKUP_KEYS, saveSettings, SettingsError, type Settings } from './index';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -26,11 +26,6 @@ export async function importSettings(text: string): Promise<Partial<Settings>> {
 
   const patch: Partial<Settings> = {};
   for (const key of BACKUP_KEYS) if (key in source) (patch as Record<string, unknown>)[key] = source[key];
-  // Scritti a mano nel file: si normalizzano e si scartano quelli non validi, invece di rifiutare il file.
-  if (Array.isArray(patch.excludedDomains)) {
-    const domains = patch.excludedDomains.map((d) => (typeof d === 'string' ? normalizeDomain(d) : null)).filter((d): d is string => d !== null);
-    patch.excludedDomains = [...new Set(domains)].sort();
-  }
   try {
     await saveSettings(patch);
   } catch (err) {

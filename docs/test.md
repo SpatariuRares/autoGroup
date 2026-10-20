@@ -263,7 +263,7 @@ The smoke test checks the real listener: with a rule on `127.0.0.1/auto`, a new 
 
 ## Settings pages, in `tests/options-views.test.ts`
 
-The settings are split into pages chosen by the address (`resolveHash`): no address or an unknown one opens *General*; a page name opens that page; the panel's links to a section (`#generator`, `#classifier`, `#mode`) and the section names of the old single page (`#behavior`, `#privacy`) open the page that contains them, on the section.
+The settings are split into pages chosen by the address (`resolveHash`): no address or an unknown one opens *General*; a page name opens that page; the panel's links to a section (`#generator`, `#classifier`, `#mode`) and the section names of the old single page (`#behavior`, `#privacy`) open the page that contains them, on the section. Every card of a page (`#backup`, `#autogroup`, `#descriptions`, `#about-privacy`) opens from its address, because the section map is derived from the cards listed in `VIEWS`.
 
 The smoke test goes through the pages from the menu: the four entries visible at 800 px, the coffee button in *About*, `#classifier` opening the AI page, a category opened to rename it, "Undo" after deleting a category (the category and its sites come back), the providers and the descriptions switch in the AI page, and the AI page in by-site mode showing only the note.
 
@@ -280,7 +280,15 @@ The smoke test goes through the pages from the menu: the four entries visible at
 - The export has mode, minimum tabs, excluded domains, categories, sites and automatic grouping, never providers or API keys.
 - Importing an exported file restores the same settings and leaves providers and keys alone.
 - Excluded domains are normalized, invalid ones dropped.
-- Not JSON, another app's JSON, invalid categories or an invalid minimum are rejected with a `SettingsError` and nothing changes.
+- Not JSON, another app's JSON, invalid categories, an invalid minimum, excluded domains that are not a list or a non-boolean automatic grouping are rejected with a `SettingsError` and nothing changes; a non-boolean switch reports `optionsImportInvalid`.
+
+## Settings, in `tests/settings.test.ts`
+
+The seam is the public interface of `src/settings` (`loadSettings`, `saveSettings`), used by the Organizer, the panel, the settings page and the import.
+
+- `saveSettings` rejects an unknown mode, a non-integer minimum, a threshold above 1, excluded domains that are not a list and non-boolean switches, with the message key of each, and saves nothing of the patch.
+- Excluded domains are normalized on save and on load, without duplicates and in order; invalid ones are dropped, so one corrupted entry in storage never empties the list.
+- With nothing saved the defaults apply; a corrupted stored value falls back to its default and leaves the others; every saved setting is read back.
 
 `tests/locales.test.ts` checks that every language has the same keys and placeholders as Italian and that the extension name and description fit the Chrome Web Store limits. The smoke test closes nothing as duplicates but imports a backup and undoes it.
 
