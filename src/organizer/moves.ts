@@ -1,4 +1,6 @@
 import { browser, type Browser } from 'wxt/browser';
+import { createColorAssigner } from './colors';
+import { domainOf, findCandidate } from './tab-selection';
 
 const NONE = -1;
 
@@ -107,4 +109,30 @@ export async function moveGroup(groupId: number, beforeGroupId: number | null): 
       index += size;
     }
   }
+}
+
+/** "Sposta in…" senza proposta: mette subito una tab candidata (vedi `findCandidate`) in un gruppo aperto della sua finestra. */
+export async function groupTab(tabId: number, groupId: number): Promise<void> {
+  const [tab, group] = await Promise.all([browser.tabs.get(tabId).catch(() => null), browser.tabGroups.get(groupId).catch(() => null)]);
+  if (!tab || !group || group.windowId !== tab.windowId) return;
+  if (!(await findCandidate(tabId, tab.windowId))) return;
+  await browser.tabs.group({ tabIds: [tabId], groupId });
+}
+
+/**
+ * "Nuovo gruppo": mette subito la tab in un gruppo nuovo, col nome del suo sito e un colore non ancora
+ * usato nella finestra, accanto al gruppo da cui esce. Accetta le tab candidate e, dal drag and drop come
+ * per `moveTab`, quelle già in un gruppo; mai le fissate.
+ */
+export async function newGroup(tabId: number): Promise<void> {
+  const tab = await browser.tabs.get(tabId).catch(() => null);
+  if (!tab || tab.pinned) return;
+  const grouped = (tab.groupId ?? NONE) !== NONE;
+  if (!grouped && !(await findCandidate(tabId, tab.windowId))) return;
+  const groups = await browser.tabGroups.query({ windowId: tab.windowId });
+  const color = createColorAssigner(groups.map((g) => g.color)).next();
+  // Prima fuori dal suo gruppo (Chrome la mette subito dopo, o la lascia prima se era la prima), così il gruppo nuovo non lo spezza.
+  if (grouped) await browser.tabs.ungroup([tabId]);
+  const groupId = await browser.tabs.group({ tabIds: [tabId], createProperties: { windowId: tab.windowId } });
+  await browser.tabGroups.update(groupId, { title: domainOf(tab.url ?? '') ?? '', color });
 }

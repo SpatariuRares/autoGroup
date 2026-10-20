@@ -1,6 +1,6 @@
-import type { Browser } from 'wxt/browser';
+import { browser, type Browser } from 'wxt/browser';
 import type { ProposedTab } from '../shared/types';
-import { isExcludedHost } from '../settings';
+import { isExcludedHost, loadSettings } from '../settings';
 
 export const TAB_GROUP_ID_NONE = -1;
 
@@ -69,4 +69,21 @@ export function selectCandidateTabs(tabs: Browser.tabs.Tab[], excludedDomains: s
       index: tab.index,
       discarded: tab.discarded ?? false,
     }));
+}
+
+/** La tab, se nella sua finestra è candidata (vedi `selectCandidateTabs`) con i domini esclusi salvati. */
+export async function findCandidate(tabId: number, windowId: number): Promise<CandidateTab | undefined> {
+  const [tabs, { excludedDomains }] = await Promise.all([browser.tabs.query({ windowId }), loadSettings()]);
+  return selectCandidateTabs(tabs, excludedDomains).find((t) => t.tabId === tabId);
+}
+
+/** Dominio di una tab senza "www.", oppure null se l'URL non ha un host (es. file://). */
+export function domainOf(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (!host) return null;
+    return host.startsWith('www.') ? host.slice(4) : host;
+  } catch {
+    return null;
+  }
 }

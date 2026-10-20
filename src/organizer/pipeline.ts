@@ -12,7 +12,7 @@ import { applyGroupRules, type RulesContext } from './group-rules';
 import type { ProposalInputs } from './proposal-builder';
 import { createSiteMatcher, type SiteMatch } from './site-rules';
 import type { Stopwatch } from './stopwatch';
-import { isExcluded, isInternalUrl } from './tab-selection';
+import { domainOf, isExcluded, isInternalUrl } from './tab-selection';
 import { validateGroups, type ValidGroup } from './validator';
 
 interface PipelineResult {
@@ -303,17 +303,6 @@ function mergeByName(groups: ValidGroup[]): ValidGroup[] {
     else merged.set(key, { name: g.name, tabIds: [...g.tabIds] });
   }
   return [...merged.values()];
-}
-
-/** Dominio di una tab senza "www.", oppure null se l'URL non ha un host (es. file://). */
-export function domainOf(url: string): string | null {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    if (!host) return null;
-    return host.startsWith('www.') ? host.slice(4) : host;
-  } catch {
-    return null;
-  }
 }
 
 /** Solo i gruppi delle regole sui siti (modalità "Con regole"), con minimo e gruppi aperti come per l'AI. */

@@ -3,7 +3,7 @@ import { browser } from 'wxt/browser';
 import { saveSettings, type GroupingMode } from '../../src/settings';
 import { t } from '../../src/shared/i18n';
 import { remoteOrganizer as organizer } from '../../src/shared/organizer-remote';
-import type { RememberOffer } from '../../src/shared/types';
+import { proposalIn, type RememberOffer } from '../../src/shared/types';
 import { useFocusRecovery } from '../../src/ui/focus-recovery';
 import { Icon } from '../../src/ui/Icon';
 import { CloseTabsBanner, ComputingStatus, ErrorBanner, InfoBanner, StaleBanner, WarningsBanner } from './Banners';
@@ -25,7 +25,7 @@ export function App() {
   const [notice, setNotice] = useState<'popupApplied' | 'popupUndone' | null>(null);
   const [offer, setOffer, pauseOffer] = useExpiring<RememberOffer>(SNACKBAR_MS);
 
-  const proposal = state?.phase === 'ready' && state.windowId === windowId ? state.proposal : undefined;
+  const proposal = proposalIn(state, windowId);
   const canUndo = state?.undo !== undefined && state.undo.windowId === windowId;
   const computing = !state || state.phase === 'computing';
   // Proposta per sito mostrata in sola lettura mentre l'AI calcola.

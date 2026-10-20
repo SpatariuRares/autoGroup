@@ -162,29 +162,65 @@ export interface WindowView {
   live: Record<number, LiveTab>;
 }
 
-/** Stato dell'Organizzatore, salvato in chrome.storage.session. */
-export interface OrganizerState {
-  phase: 'idle' | 'computing' | 'ready';
-  windowId?: number;
-  proposal?: Proposal;
-  /** Vero se le tab, i gruppi aperti o le impostazioni sono cambiati dopo il calcolo della proposta. */
-  stale?: boolean;
-  /** Solo nello stato restituito da "Sposta in…" verso una categoria: l'offerta "Metti sempre qui". */
-  offer?: RememberOffer;
-  /**
-   * Solo durante `computing` in modalità AI: la proposta per sito, pronta subito. Il pannello la mostra
-   * in sola lettura mentre l'AI lavora; "Usa questa" ferma l'AI e la rende la proposta corrente.
-   */
-  preview?: Proposal;
+/** Esito dell'ultima operazione da mostrare nel pannello (chiave i18n e argomento), es. un nome di categoria rifiutato. */
+export interface Notice {
+  key: string;
+  arg?: string | string[];
+  /** Esito di "Aggiungi alle categorie": il pannello lo mostra solo nella snackbar, subito dopo il clic. */
+  snackbar?: true;
+}
+
+/** Campi validi in ogni fase. */
+interface StateCommon {
   /** Presente finché "Annulla ultima organizzazione" è disponibile. */
   undo?: UndoSnapshot;
   /** Chiave i18n dell'ultimo errore, se il calcolo o l'applicazione sono falliti. */
   error?: string;
-  /** Esito dell'ultima operazione da mostrare nel pannello (chiave i18n e argomento), es. un nome di categoria rifiutato. */
-  notice?: {
-    key: string;
-    arg?: string | string[];
-    /** Esito di "Aggiungi alle categorie": il pannello lo mostra solo nella snackbar, subito dopo il clic. */
-    snackbar?: true;
-  };
+  /** Vale fino alla prossima operazione dell'utente. */
+  notice?: Notice;
+}
+
+/** Nessuna proposta. `windowId` è la finestra dell'ultima operazione, se c'è. */
+export interface IdleState extends StateCommon {
+  phase: 'idle';
+  windowId?: number;
+  proposal?: never;
+  preview?: never;
+  stale?: never;
+  offer?: never;
+}
+
+export interface ComputingState extends StateCommon {
+  phase: 'computing';
+  windowId: number;
+  /**
+   * Solo in modalità AI: la proposta per sito, pronta subito. Il pannello la mostra in sola lettura
+   * mentre l'AI lavora; "Usa questa" ferma l'AI e la rende la proposta corrente.
+   */
+  preview?: Proposal;
+  proposal?: never;
+  stale?: never;
+  offer?: never;
+}
+
+export interface ReadyState extends StateCommon {
+  phase: 'ready';
+  windowId: number;
+  proposal: Proposal;
+  /** Vero se le tab, i gruppi aperti o le impostazioni sono cambiati dopo il calcolo della proposta. */
+  stale?: boolean;
+  /** Solo nello stato restituito da "Sposta in…" verso una categoria: l'offerta "Metti sempre qui". */
+  offer?: RememberOffer;
+  preview?: never;
+}
+
+/**
+ * Stato dell'Organizzatore, salvato in chrome.storage.session. I campi `never` ci sono perché si possa
+ * leggere `state.proposal` senza distinguere la fase: vale `undefined` fuori da `ready`.
+ */
+export type OrganizerState = IdleState | ComputingState | ReadyState;
+
+/** La proposta pronta per questa finestra, se c'è. */
+export function proposalIn(state: OrganizerState | null | undefined, windowId: number | null | undefined): Proposal | undefined {
+  return state?.phase === 'ready' && state.windowId === windowId ? state.proposal : undefined;
 }

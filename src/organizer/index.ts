@@ -1,21 +1,20 @@
 import { browser } from 'wxt/browser';
 import { loadSettings, SettingsError } from '../settings';
-import type { GroupColor, OrganizerState, Proposal, ProposalEdit, WindowView } from '../shared/types';
+import { proposalIn, type GroupColor, type OrganizerState, type Proposal, type ProposalEdit, type ReadyState, type WindowView } from '../shared/types';
 import { applyProposal } from './applier';
 import { autoGroupTab } from './auto-group';
-import { createColorAssigner } from './colors';
 import { findDuplicates } from './duplicates';
 import { findInactive } from './inactive';
-import { domainOf, willAskAi } from './pipeline';
+import { willAskAi } from './pipeline';
 import { buildPreview, buildProposal, collectInputs, keepCurrent, signatureOf } from './proposal-builder';
 import { editProposal } from './proposal-edits';
 import { rememberOffer, rememberTabSite } from './remember-site';
 import { renameCategory } from './rename-category';
-import { moveGroup, moveTab } from './moves';
+import { groupTab, moveGroup, moveTab, newGroup } from './moves';
 import { saveGroupToList, saveOpenGroupToList } from './save-to-list';
 import { sortGroups, sortTabs } from './sort';
 import { createStopwatch } from './stopwatch';
-import { selectCandidateTabs, TAB_GROUP_ID_NONE } from './tab-selection';
+import { findCandidate } from './tab-selection';
 import { restoreSnapshot } from './undo';
 import { buildWindowView } from './window-view';
 
@@ -36,16 +35,14 @@ const ACCEPT_PREVIEW = 'accept-preview';
 
 /**
  * "add-tab" arriva dal pannello con i dati della tab: si accetta solo una tab già nella proposta o
- * ancora libera nella finestra (stesse regole della selezione), e solo verso un gruppo di quella finestra.
+ * ancora candidata nella finestra, e solo verso un gruppo di quella finestra.
  * I dati della tab vengono riletti dal browser, non presi dal messaggio.
  */
 async function checkAddTab(proposal: Proposal, edit: Extract<ProposalEdit, { kind: 'add-tab' }>): Promise<ProposalEdit | null> {
   const inProposal = proposal.groups.flatMap((g) => g.tabs).find((t) => t.tabId === edit.tab.tabId);
   let tab = inProposal;
   if (!tab) {
-    const { excludedDomains } = await loadSettings();
-    const tabs = await browser.tabs.query({ windowId: proposal.windowId });
-    const candidate = selectCandidateTabs(tabs, excludedDomains).find((t) => t.tabId === edit.tab.tabId);
+    const candidate = await findCandidate(edit.tab.tabId, proposal.windowId);
     if (!candidate) return null;
     tab = { tabId: candidate.tabId, title: candidate.title, url: candidate.url, favIconUrl: candidate.favIconUrl };
   }
@@ -54,6 +51,11 @@ async function checkAddTab(proposal: Proposal, edit: Extract<ProposalEdit, { kin
     if (!group || group.windowId !== proposal.windowId) return null;
   }
   return { ...edit, tab };
+}
+
+/** Lo stato, se ha una proposta pronta per questa finestra. */
+function readyIn(state: OrganizerState, windowId: number): ReadyState | undefined {
+  return state.phase === 'ready' && state.windowId === windowId ? state : undefined;
 }
 
 export interface OrganizerOptions {
@@ -215,6 +217,25 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     return state;
   }
 
+  /** Un cambio che rinomina una categoria: un nome rifiutato lascia tutto com'è e torna come avviso (`notice`). */
+  async function orNotice(current: OrganizerState, change: () => Promise<OrganizerState>): Promise<OrganizerState> {
+    try {
+      return await change();
+    } catch (err) {
+      if (err instanceof SettingsError) return setState({ ...current, notice: { key: err.messageKey } });
+      throw err;
+    }
+  }
+
+  /** Un'operazione che tocca solo la barra di Chrome, non la proposta. */
+  function onStrip(change: () => Promise<void>): Promise<OrganizerState> {
+    return exclusive(async () => {
+      const current = await begin();
+      await change();
+      return current;
+    });
+  }
+
   /**
    * Chiude più tab di una finestra e le toglie dalla proposta. Un gruppo aperto rimasto vuoto sparisce
    * da Chrome: il gruppo della proposta che lo estendeva viene scartato e le sue tab tornano libere.
@@ -223,14 +244,14 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
   async function closeTabs(windowId: number, tabIds: number[]): Promise<OrganizerState> {
     const current = await begin();
     if (tabIds.length === 0) return current;
-    const proposal = current.phase === 'ready' && current.proposal?.windowId === windowId ? current.proposal : undefined;
-    if (!proposal) {
+    const ready = readyIn(current, windowId);
+    if (!ready) {
       await browser.tabs.remove(tabIds);
       return current;
     }
-    const next = await keepCurrent(proposal, async () => {
+    const proposal = await keepCurrent(ready.proposal, async () => {
       await browser.tabs.remove(tabIds);
-      let edited = tabIds.reduce((p, tabId) => editProposal(p, { kind: 'remove-tab', tabId }), proposal);
+      let edited = tabIds.reduce((p, tabId) => editProposal(p, { kind: 'remove-tab', tabId }), ready.proposal);
       for (const group of edited.groups) {
         if (group.existingGroupId === undefined) continue;
         if (!(await browser.tabGroups.get(group.existingGroupId).catch(() => null))) {
@@ -239,7 +260,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
       }
       return edited;
     });
-    return setState({ ...current, proposal: next });
+    return setState({ ...ready, proposal });
   }
 
   async function propose(windowId: number, force: boolean, signal: AbortSignal): Promise<OrganizerState> {
@@ -253,14 +274,10 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
       const clock = createStopwatch();
       const inputs = await collectInputs(windowId);
       clock.lap('inputs');
-      const reusable =
-        !force &&
-        current.phase === 'ready' &&
-        current.windowId === windowId &&
-        current.proposal?.signature === signatureOf(inputs);
-      if (reusable) {
-        const { stale: _, ...fresh } = current;
-        return current.stale ? await setState(fresh) : current;
+      const reusable = force ? undefined : readyIn(current, windowId);
+      if (reusable && reusable.proposal.signature === signatureOf(inputs)) {
+        const { stale: _, ...fresh } = reusable;
+        return reusable.stale ? await setState(fresh) : reusable;
       }
 
       // Mentre l'AI lavora il pannello mostra subito la proposta per sito, che costa pochi millisecondi.
@@ -298,25 +315,22 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     edit(edit) {
       return exclusive(async () => {
         const current = await begin();
-        if (current.phase !== 'ready' || !current.proposal) return current;
+        if (current.phase !== 'ready') return current;
         const checked = edit.kind === 'add-tab' ? await checkAddTab(current.proposal, edit) : edit;
         if (!checked) return current;
         // Rinominare un gruppo che è una categoria rinomina anche la categoria (vedi `renameCategory`).
         const target = checked.kind === 'rename' ? current.proposal.groups.find((g) => g.id === checked.groupId) : undefined;
         if (checked.kind === 'rename' && target?.provenance === 'list') {
-          try {
+          return orNotice(current, async () => {
             const proposal = await keepCurrent(current.proposal, async () => {
               await renameCategory(target.name, checked.name);
-              return editProposal(current.proposal!, checked);
+              return editProposal(current.proposal, checked);
             });
             return setState({ ...current, proposal });
-          } catch (err) {
-            if (err instanceof SettingsError) return setState({ ...current, notice: { key: err.messageKey } });
-            throw err;
-          }
+          });
         }
         // Un gruppo nuovo prende un colore che i gruppi aperti nella finestra non usano ancora.
-        const used = checked.kind === 'add-tab' && 'newGroup' in checked.to ? (await browser.tabGroups.query({ windowId: current.proposal.windowId })).map((g) => g.color) : [];
+        const used = checked.kind === 'add-tab' && 'newGroup' in checked.to ? (await browser.tabGroups.query({ windowId: current.windowId })).map((g) => g.color) : [];
         const proposal = editProposal(current.proposal, checked, used);
         const offer = checked.kind === 'add-tab' ? rememberOffer(proposal, checked.tab.tabId, await loadSettings()) : null;
         return setState({ ...current, proposal, ...(offer ? { offer } : {}) });
@@ -326,7 +340,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     saveToList(groupId) {
       return exclusive(async () => {
         const current = await begin();
-        if (current.phase !== 'ready' || !current.proposal) return current;
+        if (current.phase !== 'ready') return current;
         const result = await saveGroupToList(current.proposal, groupId);
         if (!result) return current;
         return setState({ ...current, proposal: result.proposal, notice: result.notice });
@@ -339,10 +353,10 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         const group = await browser.tabGroups.get(groupId).catch(() => null);
         if (!group) return current;
         const tabs = (await browser.tabs.query({ windowId: group.windowId, groupId })).map((t) => ({ title: t.title ?? '', url: t.url ?? '' }));
-        const proposal = current.phase === 'ready' && current.proposal?.windowId === group.windowId ? current.proposal : undefined;
-        const result = await saveOpenGroupToList({ windowId: group.windowId, name: group.title ?? '', color: group.color as GroupColor, tabs }, proposal);
+        const ready = readyIn(current, group.windowId);
+        const result = await saveOpenGroupToList({ windowId: group.windowId, name: group.title ?? '', color: group.color as GroupColor, tabs }, ready?.proposal);
         if (!result) return current;
-        return setState({ ...current, ...(result.proposal ? { proposal: result.proposal } : {}), notice: result.notice });
+        return setState(ready && result.proposal ? { ...ready, proposal: result.proposal, notice: result.notice } : { ...current, notice: result.notice });
       });
     },
 
@@ -357,28 +371,25 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
           await renameCategory(group.title ?? '', title);
           await browser.tabGroups.update(groupId, { title });
         };
-        const proposal = current.phase === 'ready' && current.proposal?.windowId === group.windowId ? current.proposal : undefined;
-        try {
-          if (!proposal) {
+        const ready = readyIn(current, group.windowId);
+        return orNotice(current, async () => {
+          if (!ready) {
             await rename();
             return current;
           }
-          const next = await keepCurrent(proposal, async () => {
+          const proposal = await keepCurrent(ready.proposal, async () => {
             await rename();
-            return { ...proposal, groups: proposal.groups.map((g) => (g.existingGroupId === groupId ? { ...g, name: title } : g)) };
+            return { ...ready.proposal, groups: ready.proposal.groups.map((g) => (g.existingGroupId === groupId ? { ...g, name: title } : g)) };
           });
-          return setState({ ...current, proposal: next });
-        } catch (err) {
-          if (err instanceof SettingsError) return setState({ ...current, notice: { key: err.messageKey } });
-          throw err;
-        }
+          return setState({ ...ready, proposal });
+        });
       });
     },
 
     rememberSite(tabId) {
       return exclusive(async () => {
         const current = await begin();
-        if (current.phase !== 'ready' || !current.proposal) return current;
+        if (current.phase !== 'ready') return current;
         const result = await rememberTabSite(current.proposal, tabId);
         if (!result) return current;
         return setState({ ...current, proposal: result.proposal, notice: result.notice });
@@ -388,11 +399,10 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     apply() {
       return exclusive(async () => {
         const current = await begin();
-        if (current.phase !== 'ready' || !current.proposal) return current;
-        const windowId = current.proposal.windowId;
+        if (current.phase !== 'ready') return current;
         try {
           const undo = await applyProposal(current.proposal, (snapshot) => saveState({ ...current, undo: snapshot }));
-          return await setState({ phase: 'idle', windowId, undo });
+          return await setState({ phase: 'idle', windowId: current.windowId, undo });
         } catch (err) {
           console.error('autoGroup: applicazione fallita', err);
           return await setState({ ...(await load()), error: 'errorApply' });
@@ -448,65 +458,12 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
       });
     },
 
-    groupTab(tabId, groupId) {
-      return exclusive(async () => {
-        const current = await begin();
-        const [tab, group] = await Promise.all([browser.tabs.get(tabId).catch(() => null), browser.tabGroups.get(groupId).catch(() => null)]);
-        if (!tab || !group || group.windowId !== tab.windowId) return current;
-        const { excludedDomains } = await loadSettings();
-        const tabs = await browser.tabs.query({ windowId: tab.windowId });
-        if (!selectCandidateTabs(tabs, excludedDomains).some((t) => t.tabId === tabId)) return current;
-        await browser.tabs.group({ tabIds: [tabId], groupId });
-        return current;
-      });
-    },
-
-    newGroup(tabId) {
-      return exclusive(async () => {
-        const current = await begin();
-        const tab = await browser.tabs.get(tabId).catch(() => null);
-        if (!tab) return current;
-        const { excludedDomains } = await loadSettings();
-        const [tabs, groups] = await Promise.all([browser.tabs.query({ windowId: tab.windowId }), browser.tabGroups.query({ windowId: tab.windowId })]);
-        // Dal drag and drop arriva anche una tab di un gruppo aperto, come per `moveTab`.
-        const free = selectCandidateTabs(tabs, excludedDomains).some((t) => t.tabId === tabId);
-        if (tab.pinned || (!free && (tab.groupId ?? TAB_GROUP_ID_NONE) === TAB_GROUP_ID_NONE)) return current;
-        const color = createColorAssigner(groups.map((g) => g.color)).next();
-        // Prima fuori dal suo gruppo (Chrome la mette subito dopo, o la lascia prima se era la prima), così il gruppo nuovo non lo spezza.
-        if ((tab.groupId ?? TAB_GROUP_ID_NONE) !== TAB_GROUP_ID_NONE) await browser.tabs.ungroup([tabId]);
-        const groupId = await browser.tabs.group({ tabIds: [tabId], createProperties: { windowId: tab.windowId } });
-        await browser.tabGroups.update(groupId, { title: domainOf(tab.url ?? '') ?? '', color });
-        return current;
-      });
-    },
-
-    sortGroups(windowId) {
-      return exclusive(async () => {
-        await sortGroups(windowId);
-        return begin();
-      });
-    },
-
-    sortTabs(windowId) {
-      return exclusive(async () => {
-        await sortTabs(windowId);
-        return begin();
-      });
-    },
-
-    moveTab(tabId, groupId, beforeTabId) {
-      return exclusive(async () => {
-        await moveTab(tabId, groupId, beforeTabId);
-        return begin();
-      });
-    },
-
-    moveGroup(groupId, beforeGroupId) {
-      return exclusive(async () => {
-        await moveGroup(groupId, beforeGroupId);
-        return begin();
-      });
-    },
+    groupTab: (tabId, groupId) => onStrip(() => groupTab(tabId, groupId)),
+    newGroup: (tabId) => onStrip(() => newGroup(tabId)),
+    sortGroups: (windowId) => onStrip(() => sortGroups(windowId)),
+    sortTabs: (windowId) => onStrip(() => sortTabs(windowId)),
+    moveTab: (tabId, groupId, beforeTabId) => onStrip(() => moveTab(tabId, groupId, beforeTabId)),
+    moveGroup: (groupId, beforeGroupId) => onStrip(() => moveGroup(groupId, beforeGroupId)),
 
     autoGroupTab(tabId) {
       return exclusive(async () => {
@@ -522,8 +479,8 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     checkStale() {
       return exclusive(async () => {
         const current = await load();
-        if (current.phase !== 'ready' || !current.proposal) return current;
-        const stale = current.proposal.signature !== signatureOf(await collectInputs(current.proposal.windowId));
+        if (current.phase !== 'ready') return current;
+        const stale = current.proposal.signature !== signatureOf(await collectInputs(current.windowId));
         if (stale === (current.stale ?? false)) return current;
         const { stale: _, ...rest } = current;
         return setState(stale ? { ...rest, stale } : rest);
@@ -537,9 +494,8 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         browser.tabGroups.query({ windowId }),
         loadSettings(),
       ]);
-      const mine = current.windowId === windowId;
-      const proposal = mine && current.phase === 'ready' ? current.proposal : mine && current.phase === 'computing' ? current.preview : undefined;
-      return buildWindowView(tabs, groups, proposal, excludedDomains, Date.now(), categories.map((c) => c.name));
+      const preview = current.phase === 'computing' && current.windowId === windowId ? current.preview : undefined;
+      return buildWindowView(tabs, groups, proposalIn(current, windowId) ?? preview, excludedDomains, Date.now(), categories.map((c) => c.name));
     },
 
     async abort() {

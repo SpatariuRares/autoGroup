@@ -1,6 +1,6 @@
 import type { Proposal, ProposalEdit, ProposedTab } from '../shared/types';
 import { createColorAssigner } from './colors';
-import { domainOf } from './pipeline';
+import { domainOf } from './tab-selection';
 
 /** Una tab spostata dall'utente non è più lì per una regola. */
 const moved = ({ rule: _rule, ...tab }: ProposedTab): ProposedTab => tab;
