@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, type DragEvent } from 'react';
-import { pauseMotion } from './motion';
 
 /*
  * Drag and drop del pannello (nativo del browser), solo sui gruppi già aperti e sulle tab senza
@@ -43,7 +42,6 @@ export function useDragState(enabled: boolean, onDrop: (item: DragItem, target: 
   const [item, setItem] = useState<DragItem | null>(null);
   const [indicator, setIndicator] = useState<Indicator | null>(null);
   const end = () => {
-    pauseMotion(false);
     setItem(null);
     setIndicator(null);
   };
@@ -52,7 +50,6 @@ export function useDragState(enabled: boolean, onDrop: (item: DragItem, target: 
     item,
     indicator,
     start: (next) => {
-      pauseMotion(true);
       setItem(next);
       setIndicator(null);
     },

@@ -4,7 +4,6 @@ import { Icon } from '../../src/ui/Icon';
 import { useTabDrag } from './drag';
 import { useLiveTabs } from './live-tabs';
 import type { Reorder, Target } from './move-targets';
-import { motionKey } from './motion';
 import { openTab, setMuted } from './tab-actions';
 
 /** "1 tab" / "3 tab": chrome.i18n non ha i plurali, quindi il singolare ha una chiave sua. */
@@ -60,7 +59,6 @@ export function TabRow({
       className={`tab${added ? ' added' : ''}${reason ? ' held' : ''}${chrome?.active ? ' current' : ''}${dragClass}`}
       aria-current={chrome?.active ? 'true' : undefined}
       title={tab.url}
-      {...motionKey('tab', tab.tabId)}
       tabIndex={-1}
       onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && openTab(tab.tabId)}
       onDoubleClick={(e) => !(e.target as HTMLElement).closest('button, label') && openTab(tab.tabId)}

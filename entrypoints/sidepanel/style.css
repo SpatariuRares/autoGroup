@@ -767,12 +767,3 @@ button.text.close-group {
 .card-list:empty {
   min-height: 40px;
 }
-
-/* Una riga o una scheda appena sparita, mentre sfuma (motion.ts): sopra il pannello, senza prendere clic. */
-.motion-ghost {
-  position: fixed;
-  z-index: 1;
-  margin: 0;
-  pointer-events: none;
-  list-style: none;
-}

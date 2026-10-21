@@ -5,7 +5,6 @@ import { Icon } from '../../src/ui/Icon';
 import { moveInRadioGroup } from '../../src/ui/radio-keys';
 import { DragContext, useGroupDrag } from './drag';
 import { useExpiring } from './hooks';
-import { motionKey, withMotion } from './motion';
 import { reorderAt, type Reorder, type Target } from './move-targets';
 import { usePanelActions } from './panel-actions';
 import { setCollapsed } from './tab-actions';
@@ -30,7 +29,7 @@ export function GroupCard({ group, targets, readOnly = false }: { group: Propose
 
   if (readOnly) {
     return (
-      <li className="group preview" {...motionKey('group', group.id)}>
+      <li className="group preview">
         <div className="group-header">
           <span className={`swatch static color-${group.color}`} />
           <span className="visually-hidden">{t(`color_${group.color}`)}</span>
@@ -47,7 +46,7 @@ export function GroupCard({ group, targets, readOnly = false }: { group: Propose
   }
 
   return (
-    <li className="group" {...motionKey('group', group.id)}>
+    <li className="group">
       <div className="group-header">
         <button
           ref={swatch}
@@ -273,13 +272,13 @@ export function ExistingCard({
   const { card, header } = useGroupDrag(group.id, nextGroupId);
   const { className: dropClass, ...cardProps } = card;
   return (
-    <li className={`group existing${added.length > 0 ? ' extended' : ''}${dropClass}`} {...motionKey('group', group.id)} {...cardProps}>
+    <li className={`group existing${added.length > 0 ? ' extended' : ''}${dropClass}`} {...cardProps}>
       {/* I pulsanti stanno accanto all'intestazione, non dentro: un controllo dentro un altro (com'era nel
           <summary>) non è valido, e molti screen reader non leggono o non raggiungono quello interno. */}
       {/* Mentre si scrive il nome l'intestazione non si trascina: il trascinamento selezionerebbe il testo. */}
       <div className="group-header" {...(!editing ? header : {})}>
         {!editing ? (
-          <button className="group-toggle" aria-expanded={open} aria-controls={listId} onClick={() => withMotion(() => setOpen(!open), { arrivals: true })}>
+          <button className="group-toggle" aria-expanded={open} aria-controls={listId} onClick={() => setOpen(!open)}>
             {/* La freccia dice che il gruppo si apre: a riposo l'intestazione è solo pallino, nome e conteggio. */}
             <Icon name="chevronRight" size={18} />
             {/* Un aria-label su uno <span> senza ruolo viene ignorato: il colore è testo nascosto. */}

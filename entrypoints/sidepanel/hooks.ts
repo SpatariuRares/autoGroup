@@ -4,7 +4,6 @@ import type { Settings } from '../../src/settings';
 import { onOrganizerState, remoteOrganizer as organizer } from '../../src/shared/organizer-remote';
 import type { OrganizerState, ProposalEdit, WindowView } from '../../src/shared/types';
 import { useExpiring } from '../../src/ui/use-expiring';
-import { layoutOf, withMotion } from './motion';
 
 /**
  * Lo stato dell'Organizzatore per la finestra del pannello. All'apertura lo legge soltanto, senza
@@ -88,8 +87,6 @@ const EMPTY_VIEW: WindowView = { existing: [], created: [], free: [], held: [], 
 export function useWindowView(windowId: number | null, state: OrganizerState | null, settings: Settings | null) {
   const [view, setView] = useState<WindowView>(EMPTY_VIEW);
   const [changes, setChanges] = useState(0);
-  // Si anima solo il passaggio da una vista già mostrata a una con le cose in altri posti.
-  const layout = useRef<string | null>(null);
 
   useEffect(() => {
     if (windowId === null) return;
@@ -135,13 +132,7 @@ export function useWindowView(windowId: number | null, state: OrganizerState | n
     let latest = true;
     organizer
       .view(windowId)
-      .then((next) => {
-        if (!latest) return;
-        const before = layout.current;
-        layout.current = layoutOf(next);
-        if (before !== null && before !== layout.current) withMotion(() => setView(next));
-        else setView(next);
-      })
+      .then((next) => latest && setView(next))
       .catch((err) => console.error('autoGroup:', err));
     return () => {
       latest = false;
