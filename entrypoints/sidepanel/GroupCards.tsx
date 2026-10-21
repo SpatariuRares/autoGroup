@@ -279,7 +279,7 @@ export function ExistingCard({
       {/* Mentre si scrive il nome l'intestazione non si trascina: il trascinamento selezionerebbe il testo. */}
       <div className="group-header" {...(!editing ? header : {})}>
         {!editing ? (
-          <button className="group-toggle" aria-expanded={open} aria-controls={listId} onClick={() => withMotion(() => setOpen(!open))}>
+          <button className="group-toggle" aria-expanded={open} aria-controls={listId} onClick={() => withMotion(() => setOpen(!open), { arrivals: true })}>
             {/* La freccia dice che il gruppo si apre: a riposo l'intestazione è solo pallino, nome e conteggio. */}
             <Icon name="chevronRight" size={18} />
             {/* Un aria-label su uno <span> senza ruolo viene ignorato: il colore è testo nascosto. */}

@@ -274,6 +274,7 @@ The second seam, besides the Organizer: `panelModel` (`entrypoints/sidepanel/pan
 - Banners in a fixed order (error, stale, AI warnings, duplicates, inactive) and their texts in the live region.
 - While computing: the by-site preview is read-only, duplicates and inactive wait.
 - Without a proposal the outcome is an info banner; the outcome of "Add to categories" never is.
+- When to animate (`layoutOf` in `motion.ts`): a new title, favicon or live detail keeps the layout; a tab that changes place or section, or leaves, changes it.
 - The state of another window shows neither its proposal nor its "Undo".
 
 ## Duplicate tabs, in `tests/duplicates.test.ts`

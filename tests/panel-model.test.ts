@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { layoutOf } from '../entrypoints/sidepanel/motion';
 import { panelModel, type PanelInput } from '../entrypoints/sidepanel/panel-model';
 import type { OrganizerState, Proposal, ProposedTab, WindowView } from '../src/shared/types';
 import { installFakeI18n } from './fake-i18n';
@@ -69,5 +70,22 @@ describe('pannello: fasi e banner', () => {
     const other = model({ phase: 'ready', windowId: 2, proposal: { ...proposal(), windowId: 2 }, undo: { windowId: 2, tabs: [], createdGroupIds: [] } });
 
     expect(other).toMatchObject({ proposal: undefined, canUndo: false, banners: [] });
+  });
+});
+
+describe('pannello: quando animare', () => {
+  const view = (free: number[], extra: Partial<WindowView> = {}): WindowView => ({ ...EMPTY, free: free.map(tab), ...extra });
+
+  it('un titolo, un\'icona o i dettagli dal vivo nuovi non cambiano la disposizione', () => {
+    const renamed = view([1, 2], { free: [{ ...tab(1), title: 'Altro', favIconUrl: 'x.png' }, tab(2)], live: { 1: { active: true, audible: false, muted: true } } });
+    expect(layoutOf(renamed)).toBe(layoutOf(view([1, 2])));
+  });
+
+  it('una tab che cambia posto, sezione o se ne va cambia la disposizione', () => {
+    const start = layoutOf(view([1, 2]));
+    expect(layoutOf(view([2, 1]))).not.toBe(start);
+    expect(layoutOf(view([1]))).not.toBe(start);
+    const grouped = view([2], { created: [{ id: 'g0', name: 'G', color: 'blue', provenance: 'manual', tabs: [tab(1)] }] });
+    expect(layoutOf(grouped)).not.toBe(start);
   });
 });
