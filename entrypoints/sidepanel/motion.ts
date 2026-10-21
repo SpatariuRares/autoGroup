@@ -84,6 +84,9 @@ function animate(before: Boxes, after: Boxes, arrivals: boolean) {
   const short = ms(token('duration-short'));
   const enter = { duration: reduced ? short : medium, easing: token('easing-emphasized-decelerate') };
   const exit = { duration: short, easing: token('easing-emphasized-accelerate') };
+  // Chi resta sullo schermo e cambia posto usa la curva standard: quella decelerata fa metà strada nel
+  // primo fotogramma, e lo spostamento sembra un salto.
+  const move = { duration: medium, easing: token('easing-standard') };
 
   // Una riga dentro una scheda che si sposta si muove già con lei: conta solo il resto.
   const shift = new Map<string, { x: number; y: number }>();
@@ -112,7 +115,7 @@ function animate(before: Boxes, after: Boxes, arrivals: boolean) {
       from.clipPath = `inset(0 0 ${now.height - old.height}px 0 round ${round})`;
       to.clipPath = `inset(0 0 0 0 round ${round})`;
     }
-    play(el, [from, to], { duration: medium, easing: enter.easing });
+    play(el, [from, to], move);
   }
 
   // Chi è sparito, o si è nascosto in una scheda chiusa, sfuma dove era, senza prendere clic né focus.
