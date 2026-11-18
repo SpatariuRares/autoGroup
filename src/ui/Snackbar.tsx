@@ -1,11 +1,11 @@
 import type { useExpiring } from './use-expiring';
 
-/** Da spargere sulla snackbar: finché c'è sopra il mouse o il focus non sparisce (vedi `useExpiring`). */
+/** To spread on the snackbar: it does not disappear while the mouse or focus is over it (see `useExpiring`). */
 export type Hold = ReturnType<typeof useExpiring>[2];
 
 /**
- * Snackbar Material 3: il testo e, se c'è, un'azione. Va dentro una regione live sempre presente
- * (`role="status"`), così quando compare viene letta. La posizione la decide la pagina.
+ * Material 3 snackbar: the text and, if present, an action. It goes inside a live region that is always present
+ * (`role="status"`), so it is read when it appears. The page decides the position.
  */
 export function Snackbar({ text, action, hold }: { text: string; action?: { label: string; onClick: () => void }; hold?: Hold }) {
   return (

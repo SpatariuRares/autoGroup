@@ -36,8 +36,8 @@ import volumeUp from '@material-symbols/svg-400/rounded/volume_up.svg?raw';
 import warning from '@material-symbols/svg-400/rounded/warning.svg?raw';
 
 /**
- * Icone Material Symbols (Rounded) incluse nel pacchetto come SVG: niente font remoti, quindi
- * nessuna richiesta a Google aprendo il pannello. Solo le icone importate qui finiscono nella build.
+ * Material Symbols (Rounded) icons bundled in the package as SVG: no remote fonts, so
+ * no request to Google when the panel opens. Only the icons imported here end up in the build.
  */
 const ICONS = {
   add,
@@ -80,7 +80,7 @@ const ICONS = {
 
 export type IconName = keyof typeof ICONS;
 
-/** Icona decorativa: il testo accessibile va sul pulsante che la contiene. */
+/** Decorative icon: the accessible text goes on the button that contains it. */
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   return <span className="md-icon" aria-hidden="true" style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
 }

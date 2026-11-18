@@ -3,10 +3,10 @@ import type { KeyboardEvent } from 'react';
 const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
 
 /**
- * Frecce, Home e Fine dentro un role="radiogroup" fatto di pulsanti role="radio": spostano il focus tra le
- * opzioni (in giro, dall'ultima alla prima). Scegliere resta a Invio o Spazio, perché qui scegliere ha un
- * effetto (ricolora il gruppo, ricalcola la proposta). Va con un solo tab stop: tabIndex 0 sull'opzione
- * scelta e -1 sulle altre.
+ * Arrow keys, Home and End inside a role="radiogroup" made of role="radio" buttons: they move focus between the
+ * options (wrapping around, from the last to the first). Choosing stays on Enter or Space, because here choosing has an
+ * effect (recolors the group, recomputes the proposal). It works with a single tab stop: tabIndex 0 on the chosen option
+ * and -1 on the others.
  */
 export function moveInRadioGroup(e: KeyboardEvent<HTMLElement>) {
   if (!(e.key in STEP) && e.key !== 'Home' && e.key !== 'End') return;

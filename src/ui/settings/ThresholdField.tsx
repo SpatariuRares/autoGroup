@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { t } from '../../shared/i18n';
 
-/** Soglia di confidenza del Classificatore, da 0 a 1, mostrata in percentuale. */
+/** Confidence threshold of the Classifier, from 0 to 1, shown as a percentage. */
 export function ThresholdField({ threshold, onChange }: { threshold: number; onChange: (value: number) => unknown }) {
   const [value, setValue] = useState(threshold);
   return (

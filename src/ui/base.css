@@ -1,6 +1,6 @@
 /*
- * Basi Material 3 comuni a pannello laterale e impostazioni. I colori sono i ruoli --md-sys-color-*
- * generati in md3-tokens.css; qui ci sono tipografia, forme, movimento e i componenti in CSS.
+ * Material 3 basics shared by the side panel and the settings. The colors are the --md-sys-color-* roles
+ * generated in md3-tokens.css; here are the typography, shapes, motion and the components in CSS.
  */
 :root {
   color-scheme: light dark;
@@ -30,7 +30,7 @@
   --md-sys-motion-duration-short: 150ms;
   --md-sys-motion-duration-medium: 300ms;
 
-  /* Opacità degli strati di stato (hover, focus, pressione). */
+  /* Opacity of the state layers (hover, focus, press). */
   --md-sys-state-hover: 8%;
   --md-sys-state-pressed: 10%;
 
@@ -57,12 +57,12 @@ a {
   outline-offset: 2px;
 }
 
-/* Titoli che ricevono il focus da codice (cambio di passo o di pagina): niente contorno. */
+/* Titles that receive focus from code (step or page change): no outline. */
 h1[tabindex='-1']:focus {
   outline: none;
 }
 
-/* Testo solo per gli screen reader, es. le regioni che annunciano i cambiamenti. */
+/* Text only for screen readers, e.g. the regions that announce changes. */
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -72,7 +72,7 @@ h1[tabindex='-1']:focus {
   white-space: nowrap;
 }
 
-/* Icone Material Symbols in linea. */
+/* Inline Material Symbols icons. */
 .md-icon {
   display: inline-flex;
   flex: none;
@@ -84,7 +84,7 @@ h1[tabindex='-1']:focus {
   fill: currentColor;
 }
 
-/* Pulsanti: pieno (default), tonale, con contorno, di testo, a icona. Strato di stato con color-mix. */
+/* Buttons: filled (default), tonal, outlined, text, icon. State layer with color-mix. */
 button {
   --btn-bg: var(--md-sys-color-primary);
   --btn-fg: var(--md-sys-color-on-primary);
@@ -170,8 +170,8 @@ button.icon.small {
   height: 32px;
 }
 
-/* Solo l'icona, centrata: senza questa regola vincerebbe il rientro dei pulsanti con icona e testo
-   (button:has(> .md-icon:first-child), più specifico) e la X finirebbe spostata a destra. */
+/* Icon only, centered: without this rule the indent of buttons with icon and text would win
+   (button:has(> .md-icon:first-child), more specific) and the X would end up shifted to the right. */
 button.icon:has(> .md-icon:first-child),
 button.icon.small:has(> .md-icon:first-child) {
   padding: 0;
@@ -182,11 +182,11 @@ button.icon:disabled {
 }
 
 /*
- * Tooltip semplice Material 3 per le icone: il testo di `data-tooltip` compare subito sotto,
- * allineato a destra (a sinistra con `data-tooltip-align="start"`, per le icone sul bordo sinistro),
- * al passaggio del mouse e con il focus da tastiera, anche su un controllo interno (il menu "Sposta in…").
- * Al posto di `title`, che Chrome mostra solo dopo un attimo. Il nome accessibile resta `aria-label`.
- * Il tooltip esiste solo mentre si vede: nascosto ma presente allungherebbe lo scorrimento dell'elenco.
+ * Simple Material 3 tooltip for icons: the text of `data-tooltip` appears right below,
+ * aligned to the right (to the left with `data-tooltip-align="start"`, for icons on the left edge),
+ * on mouse hover and with keyboard focus, also on an inner control (the "Move to…" menu).
+ * It replaces `title`, which Chrome only shows after a moment. The accessible name stays `aria-label`.
+ * The tooltip exists only while it is visible: hidden but present it would lengthen the list scrolling.
  */
 [data-tooltip] {
   position: relative;
@@ -219,12 +219,12 @@ button.icon:disabled {
   left: 0;
 }
 
-/* Nascosto con Esc (tooltip-dismiss.ts) finché focus o puntatore non vanno altrove. */
+/* Hidden with Esc (tooltip-dismiss.ts) until focus or pointer goes elsewhere. */
 [data-tooltip][data-tooltip-hidden]::after {
   display: none;
 }
 
-/* Pulsante con l'aspetto di un link, per le azioni dentro una frase (es. "Cambia" nel riepilogo). */
+/* Button with the look of a link, for actions inside a sentence (e.g. "Change" in the summary). */
 button.link {
   display: inline;
   height: auto;
@@ -245,7 +245,7 @@ button.icon.danger:hover:not(:disabled) {
   --btn-fg: var(--md-sys-color-error);
 }
 
-/* Campi di testo con contorno. */
+/* Outlined text fields. */
 input[type='text'],
 input[type='number'],
 input[type='password'],
@@ -290,7 +290,7 @@ select option {
   color: var(--md-sys-color-on-surface);
 }
 
-/* Interruttore Material 3. */
+/* Material 3 switch. */
 input[role='switch'] {
   appearance: none;
   flex: none;
@@ -335,7 +335,7 @@ input[role='switch']:disabled {
   cursor: default;
 }
 
-/* Chip ed etichette. */
+/* Chips and labels. */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -353,7 +353,7 @@ input[role='switch']:disabled {
   height: 24px;
 }
 
-/* Barra di avanzamento lineare indeterminata. */
+/* Indeterminate linear progress bar. */
 .md-linear-progress {
   position: relative;
   height: 4px;
@@ -382,7 +382,7 @@ input[role='switch']:disabled {
   }
 }
 
-/* Snackbar (src/ui/Snackbar.tsx): superficie inversa, testo body-medium, azione in inverse-primary. Posizione e margini li decide la pagina. */
+/* Snackbar (src/ui/Snackbar.tsx): inverse surface, body-medium text, action in inverse-primary. The page decides the position and margins. */
 .snackbar {
   display: flex;
   align-items: center;
@@ -407,20 +407,20 @@ input[role='switch']:disabled {
     animation-duration: 4s;
   }
 
-  /* La snackbar compare senza scivolare; il doppio selettore vince sulla regola delle singole pagine. */
+  /* The snackbar appears without sliding; the double selector wins over the rule of the individual pages. */
   .snackbar.snackbar {
     animation: none;
   }
 }
 
-/* Pallini dei colori dei gruppi: sono i 9 colori fissi di Chrome, non colori del tema. */
+/* Group color dots: they are Chrome's 9 fixed colors, not theme colors. */
 .swatch {
   width: 18px;
   height: 18px;
   border-radius: 50%;
   flex: none;
   padding: 0;
-  /* Bordo sottile: giallo e arancione da soli hanno meno di 3:1 sullo sfondo chiaro. */
+  /* Thin border: yellow and orange alone have less than 3:1 on the light background. */
   border: 1px solid var(--md-sys-color-outline);
   cursor: pointer;
 }
