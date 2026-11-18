@@ -33,7 +33,7 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
     )) as { choices?: { message?: { content?: unknown }; finish_reason?: unknown }[] };
     const choice = json?.choices?.[0];
     const content = choice?.message?.content;
-    if (typeof content !== 'string') throw new ProviderError('invalid-response', 'risposta senza contenuto');
+    if (typeof content !== 'string') throw new ProviderError('invalid-response', 'response without content');
     return { content, truncated: choice?.finish_reason === 'length' };
   }
 
@@ -60,7 +60,7 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
       }
       // A response cut off by the cap is not complete JSON: reading it discards it as invalid.
       const groups = parseGroups(content);
-      if (!groups) throw new ProviderError('invalid-response', 'JSON fuori schema');
+      if (!groups) throw new ProviderError('invalid-response', 'JSON outside the schema');
       return groups as RawGroup[];
     },
 
@@ -73,7 +73,7 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
         signal,
       );
       // A cut-off sentence must not be saved as a description: better empty, to be completed in the settings.
-      if (truncated) throw new ProviderError('invalid-response', 'descrizione troncata');
+      if (truncated) throw new ProviderError('invalid-response', 'truncated description');
       return cleanDescription(content);
     },
   };

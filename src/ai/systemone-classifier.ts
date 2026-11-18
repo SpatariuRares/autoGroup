@@ -54,7 +54,7 @@ export function createSystemOneClassifier(config: SystemOneConfig): Classifier {
       { apiKey: config.apiKey, timeoutMs: config.timeoutMs ?? TIMINGS.classifier, signal },
     )) as { answers?: unknown };
     if (typeof json?.answers !== 'object' || json.answers === null) {
-      throw new ProviderError('invalid-response', 'risposta senza answers');
+      throw new ProviderError('invalid-response', 'response without answers');
     }
     return json.answers as Record<string, ChoiceAnswer>;
   }

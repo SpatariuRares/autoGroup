@@ -86,7 +86,7 @@ async function postOnce(url: string, body: unknown, options: PostJsonOptions): P
     } catch (err) {
       if (options.signal?.aborted) throw err;
       if (time.expired) throw new ProviderError('timeout', 'timeout');
-      throw new ProviderError('invalid-response', 'risposta non JSON');
+      throw new ProviderError('invalid-response', 'non-JSON response');
     }
   } finally {
     time.done();

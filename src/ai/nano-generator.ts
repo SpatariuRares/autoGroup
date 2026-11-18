@@ -208,7 +208,7 @@ async function promptBlock(base: Session, request: GenerateRequest, signal: Abor
     session?.destroy();
   }
   const groups = parseGroups(content);
-  if (!groups) throw new ProviderError('invalid-response', 'JSON fuori schema');
+  if (!groups) throw new ProviderError('invalid-response', 'JSON outside the schema');
   return groups as RawGroup[];
 }
 
