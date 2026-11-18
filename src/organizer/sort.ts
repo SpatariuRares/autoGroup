@@ -2,12 +2,12 @@ import { browser, type Browser } from 'wxt/browser';
 
 const NONE = -1;
 
-/** Un pezzo della barra dopo le tab fissate: un gruppo intero oppure una tab libera. */
+/** A piece of the tab strip after the pinned tabs: a whole group or a free tab. */
 type Block = { groupId: number; tabIds: number[] } | { tabId: number };
 
 const byTitle = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true });
 
-/** La barra della finestra senza le tab fissate, in pezzi, nell'ordine attuale. */
+/** The window's tab strip without the pinned tabs, in pieces, in the current order. */
 async function blocksOf(windowId: number): Promise<{ start: number; blocks: Block[]; tabs: Map<number, Browser.tabs.Tab> }> {
   const all = (await browser.tabs.query({ windowId })).filter((t) => t.id !== undefined).sort((a, b) => a.index - b.index);
   const pinned = all.filter((t) => t.pinned).length;
@@ -22,12 +22,12 @@ async function blocksOf(windowId: number): Promise<{ start: number; blocks: Bloc
 }
 
 /**
- * Mette i pezzi nell'ordine dato, da sinistra. Ogni spostamento va verso sinistra e i gruppi si
- * spostano interi (`tabGroups.move`): una tab libera non finisce mai in mezzo a un gruppo e nessuna
- * tab cambia gruppo. Dentro un gruppo le tab si spostano solo entro il gruppo.
+ * Puts the pieces in the given order, from the left. Every move goes leftward and groups move
+ * whole (`tabGroups.move`): a free tab never ends up in the middle of a group and no tab changes
+ * group. Inside a group the tabs move only within the group.
  */
 async function arrange(start: number, blocks: Block[]): Promise<void> {
-  // Una tab già al suo posto resta ferma: spostata su sé stessa, l'unica tab di un gruppo potrebbe uscirne.
+  // A tab already in its place stays still: moved onto itself, the only tab of a group could otherwise leave it.
   const moveTab = async (tabId: number, index: number) => {
     if ((await browser.tabs.get(tabId)).index !== index) await browser.tabs.move(tabId, { index });
   };
@@ -45,8 +45,8 @@ async function arrange(start: number, blocks: Block[]): Promise<void> {
 }
 
 /**
- * "Gruppi A-Z": i gruppi della finestra in ordine alfabetico subito dopo le tab fissate (quelli senza
- * nome in fondo), poi le tab libere nel loro ordine. Le tab dentro i gruppi non si muovono.
+ * "Sort groups A to Z": the groups of the window in alphabetical order right after the pinned tabs (those
+ * without a name at the end), then the free tabs in their order. The tabs inside the groups do not move.
  */
 export async function sortGroups(windowId: number): Promise<void> {
   const { start, blocks } = await blocksOf(windowId);
@@ -60,8 +60,8 @@ export async function sortGroups(windowId: number): Promise<void> {
 }
 
 /**
- * "Tab A-Z": per titolo le tab dentro ogni gruppo e le tab libere tra loro, che restano negli stessi
- * posti tra i gruppi. I gruppi restano dove sono e nessuna tab cambia gruppo; le fissate non si muovono.
+ * "Sort tabs A to Z": by title, the tabs inside each group and the free tabs among themselves, which stay
+ * in the same places between the groups. The groups stay where they are and no tab changes group; the pinned ones do not move.
  */
 export async function sortTabs(windowId: number): Promise<void> {
   const { start, blocks, tabs } = await blocksOf(windowId);

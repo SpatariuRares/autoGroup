@@ -9,9 +9,9 @@ interface RememberResult {
 }
 
 /**
- * La categoria e il sito che "Metti sempre qui" salverebbe per una tab della proposta: il sito della
- * regola che oggi la decide, oppure, senza regole, il suo dominio. Solo per i gruppi che sono una
- * categoria: della lista, o un gruppo aperto con lo stesso nome.
+ * The category and site that "Always put here" would save for a tab of the proposal: the site of the
+ * rule that decides it today or, without rules, its domain. Only for the groups that are a category:
+ * one from the list, or an open group with the same name.
  */
 function rememberable(proposal: Proposal, tabId: number, settings: Settings) {
   const group = proposal.groups.find((g) => g.tabs.some((t) => t.tabId === tabId));
@@ -23,7 +23,7 @@ function rememberable(proposal: Proposal, tabId: number, settings: Settings) {
   return { group, category, site };
 }
 
-/** L'offerta "Metti sempre qui" dopo aver messo una tab in un gruppo; nessuna se il sito ci va già. */
+/** The "Always put here" offer after putting a tab in a group; none if the site already goes there. */
 export function rememberOffer(proposal: Proposal, tabId: number, settings: Settings): RememberOffer | null {
   const found = rememberable(proposal, tabId, settings);
   if (!found || settings.categorySites[found.category.id]?.includes(found.site)) return null;
@@ -31,9 +31,9 @@ export function rememberOffer(proposal: Proposal, tabId: number, settings: Setti
 }
 
 /**
- * "Metti sempre qui": la tab andrà sempre nella categoria del gruppo in cui si trova ora nella
- * proposta (vedi `rememberable`); il sito viene tolto dalle altre categorie. Se la proposta era
- * attuale resta attuale.
+ * "Always put here": the tab will always go to the category of the group it is in now in the
+ * proposal (see `rememberable`); the site is removed from the other categories. If the proposal was
+ * current, it stays current.
  */
 export async function rememberTabSite(proposal: Proposal, tabId: number): Promise<RememberResult | null> {
   const settings = await loadSettings();

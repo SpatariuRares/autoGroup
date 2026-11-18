@@ -1,16 +1,16 @@
 import type { Phase, Timings } from '../shared/types';
 
 export interface Stopwatch {
-  /** Chiude la fase in corso: il tempo dall'ultimo `lap` (o dall'avvio) va alla fase indicata. */
+  /** Closes the current phase: the time since the last `lap` (or since the start) goes to the given phase. */
   lap(phase: Phase): void;
-  /** Le fasi chiuse finora e il tempo totale dall'avvio. */
+  /** The phases closed so far and the total time since the start. */
   timings(): Timings;
 }
 
 /**
- * Cronometro di un calcolo: dice dove va il tempo (lettura del browser, descrizioni, Classificatore,
- * Generatore, dominio). I tempi finiscono nel log del service worker e nella proposta, così gli
- * script di prova li leggono senza strumenti a parte.
+ * Stopwatch for a computation: it tells where the time goes (browser reading, descriptions, Classifier,
+ * Generator, domain). The timings end up in the service worker log and in the proposal, so the test
+ * scripts read them without separate tools.
  */
 export function createStopwatch(now: () => number = () => performance.now()): Stopwatch {
   const start = now();

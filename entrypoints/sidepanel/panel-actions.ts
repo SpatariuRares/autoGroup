@@ -26,6 +26,6 @@ export const PanelActionsContext = createContext<PanelActions | null>(null);
 
 export function usePanelActions(): PanelActions {
   const actions = useContext(PanelActionsContext);
-  if (!actions) throw new Error('usePanelActions fuori da PanelActionsContext');
+  if (!actions) throw new Error('usePanelActions outside PanelActionsContext');
   return actions;
 }

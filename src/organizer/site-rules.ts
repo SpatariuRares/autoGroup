@@ -1,7 +1,7 @@
 import { normalizeDomain, type CategorySites } from '../settings';
 import type { Category } from '../shared/types';
 
-/** Una tab presa da una regola: il sito della regola e la categoria in cui va. */
+/** A tab taken by a rule: the site of the rule and the category it goes to. */
 export interface SiteMatch {
   site: string;
   category: Category;
@@ -12,7 +12,7 @@ interface Rule extends SiteMatch {
   path: string[];
 }
 
-/** Host e segmenti del percorso di un URL, in minuscolo; null se l'URL non ha un host (es. file://). */
+/** Host and path segments of a URL, in lowercase; null if the URL has no host (e.g. file://). */
 function urlParts(url: string): { host: string; segments: string[] } | null {
   try {
     const u = new URL(url);
@@ -24,7 +24,7 @@ function urlParts(url: string): { host: string; segments: string[] } | null {
   }
 }
 
-/** Un dominio vale anche per i sottodomini; il percorso si confronta per segmenti interi. */
+/** A domain also covers its subdomains; the path is compared by whole segments. */
 function matches(rule: Rule, host: string, segments: string[]): boolean {
   return (host === rule.host || host.endsWith(`.${rule.host}`)) && rule.path.every((segment, i) => segments[i] === segment);
 }
@@ -32,9 +32,9 @@ function matches(rule: Rule, host: string, segments: string[]): boolean {
 const components = (rule: Rule) => rule.host.split('.').length + rule.path.length;
 
 /**
- * Prepara le regole una volta sola e restituisce la funzione che trova la regola di un URL. Se più
- * regole corrispondono vince la più specifica: più componenti (parti del dominio + segmenti del
- * percorso), a parità il percorso più lungo. I siti di categorie che non esistono sono ignorati.
+ * Prepares the rules once and returns the function that finds the rule of a URL. If more
+ * rules match, the most specific one wins: more components (parts of the domain + path segments),
+ * and on a tie the longer path. Sites of categories that do not exist are ignored.
  */
 export function createSiteMatcher(categories: Category[], categorySites: CategorySites): (url: string) => SiteMatch | null {
   const rules = categories
@@ -53,8 +53,8 @@ export function createSiteMatcher(categories: Category[], categorySites: Categor
 }
 
 /**
- * Il sito da ricordare per una tab ("Metti sempre qui"): quello della regola che oggi la decide, così
- * spostarlo cambia davvero dove andrà; senza regole il suo dominio. Null se l'URL non ha un dominio.
+ * The site to remember for a tab ("Always put here"): that of the rule that decides it today, so
+ * moving it really changes where it will go; without rules, its domain. Null if the URL has no domain.
  */
 export function siteToRemember(url: string, categories: Category[], categorySites: CategorySites): string | null {
   return createSiteMatcher(categories, categorySites)(url)?.site ?? normalizeDomain(url);

@@ -1,8 +1,8 @@
 import { GROUP_COLORS, type GroupColor } from '../shared/types';
 
 /**
- * Assegna ai gruppi nuovi, a rotazione, i colori non ancora usati nella finestra.
- * Quando i colori liberi finiscono si riparte dal meno usato.
+ * Assigns to new groups, in rotation, the colors not yet used in the window.
+ * When the free colors run out, it restarts from the least used one.
  */
 export function createColorAssigner(usedColors: Iterable<string>) {
   const usage = new Map<GroupColor, number>(GROUP_COLORS.map((c) => [c, 0]));
@@ -10,7 +10,7 @@ export function createColorAssigner(usedColors: Iterable<string>) {
     if (usage.has(color as GroupColor)) usage.set(color as GroupColor, usage.get(color as GroupColor)! + 1);
   }
   return {
-    /** Registra un colore già scelto altrove (es. colore fisso di una categoria). */
+    /** Records a color already chosen elsewhere (e.g. the fixed color of a category). */
     reserve(color: GroupColor) {
       usage.set(color, usage.get(color)! + 1);
     },

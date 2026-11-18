@@ -4,16 +4,16 @@ import { isExcludedHost, loadSettings } from '../settings';
 
 export const TAB_GROUP_ID_NONE = -1;
 
-/** Una tab libera della finestra, candidata a entrare in un gruppo. */
+/** A free tab of the window, a candidate to join a group. */
 export interface CandidateTab extends ProposedTab {
   index: number;
-  /** Tab sospesa da Risparmio memoria: non va mai letta né risvegliata. */
+  /** Tab suspended by Memory Saver: it is never read nor woken up. */
   discarded: boolean;
 }
 
 const WEB_PROTOCOLS = new Set(['http:', 'https:', 'file:']);
 
-/** Pagine interne del browser: chrome://, nuova scheda, pagine di estensioni, about:, ecc. */
+/** Internal browser pages: chrome://, new tab, extension pages, about:, etc. */
 export function isInternalUrl(url: string | undefined): boolean {
   if (!url) return true;
   try {
@@ -23,7 +23,7 @@ export function isInternalUrl(url: string | undefined): boolean {
   }
 }
 
-/** Una tab ancora in caricamento ha un titolo vuoto, oppure uguale all'URL. */
+/** A tab still loading has an empty title, or one equal to the URL. */
 export function hasRealTitle(tab: Browser.tabs.Tab): boolean {
   const title = tab.title?.trim();
   if (!title) return false;
@@ -40,8 +40,8 @@ export function isExcluded(url: string, excludedDomains: string[]): boolean {
 }
 
 /**
- * Una tab libera con una pagina web: non fissata, non in un gruppo, non interna e non di un dominio
- * escluso (compresi i sottodomini). Il titolo non conta: vedi `selectCandidateTabs`.
+ * A free tab with a web page: not pinned, not in a group, not internal and not of an excluded domain
+ * (subdomains included). The title does not matter: see `selectCandidateTabs`.
  */
 export function isFreeWebTab(tab: Browser.tabs.Tab, excludedDomains: string[]): boolean {
   return (
@@ -54,8 +54,8 @@ export function isFreeWebTab(tab: Browser.tabs.Tab, excludedDomains: string[]): 
 }
 
 /**
- * Estrae le tab libere (`isFreeWebTab`) che hanno già un titolo vero, ordinate come nella barra.
- * Le tab vanno passate già filtrate per finestra.
+ * Extracts the free tabs (`isFreeWebTab`) that already have a real title, sorted as in the tab strip.
+ * The tabs must be passed already filtered by window.
  */
 export function selectCandidateTabs(tabs: Browser.tabs.Tab[], excludedDomains: string[] = []): CandidateTab[] {
   return tabs
@@ -71,13 +71,13 @@ export function selectCandidateTabs(tabs: Browser.tabs.Tab[], excludedDomains: s
     }));
 }
 
-/** La tab, se nella sua finestra è candidata (vedi `selectCandidateTabs`) con i domini esclusi salvati. */
+/** The tab, if it is a candidate in its window (see `selectCandidateTabs`) with the saved excluded domains. */
 export async function findCandidate(tabId: number, windowId: number): Promise<CandidateTab | undefined> {
   const [tabs, { excludedDomains }] = await Promise.all([browser.tabs.query({ windowId }), loadSettings()]);
   return selectCandidateTabs(tabs, excludedDomains).find((t) => t.tabId === tabId);
 }
 
-/** Dominio di una tab senza "www.", oppure null se l'URL non ha un host (es. file://). */
+/** Domain of a tab without "www.", or null if the URL has no host (e.g. file://). */
 export function domainOf(url: string): string | null {
   try {
     const host = new URL(url).hostname.toLowerCase();

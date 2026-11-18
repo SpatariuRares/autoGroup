@@ -175,7 +175,7 @@ With local providers the AI proposal arrives in 10–30 s, and after a timeout t
 
 ### Computation times (`stopwatch.ts`)
 
-Each `propose` that actually computes measures its phases with a stopwatch: `inputs` (`collectInputs`), `preview` (preview and first save of the state), `descriptions`, `classifier`, `generator`, `domain` (fallback or by-site mode) and `total`. A phase that does not start does not appear. The times, in whole milliseconds, go to the service worker log (`autoGroup: tempi del calcolo (ms)`) and to `proposal.timings`, so the smoke test and the measurement scripts read them from `storage.session`. They are diagnostics only: they are not part of the signature and the panel does not show them.
+Each `propose` that actually computes measures its phases with a stopwatch: `inputs` (`collectInputs`), `preview` (preview and first save of the state), `descriptions`, `classifier`, `generator`, `domain` (fallback or by-site mode) and `total`. A phase that does not start does not appear. The times, in whole milliseconds, go to the service worker log (`autoGroup: computation timings (ms)`) and to `proposal.timings`, so the smoke test and the measurement scripts read them from `storage.session`. They are diagnostics only: they are not part of the signature and the panel does not show them.
 
 ### Proposal signature
 

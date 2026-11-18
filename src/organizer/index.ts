@@ -20,7 +20,7 @@ import { buildWindowView } from './window-view';
 
 const STATE_KEY = 'organizer';
 
-/** Stato dell'Organizzatore in chrome.storage.session: sopravvive al pannello, non alla chiusura di Chrome. */
+/** Organizer state in chrome.storage.session: it survives the side panel, not Chrome being closed. */
 async function loadState(): Promise<OrganizerState> {
   const stored = await browser.storage.session.get(STATE_KEY);
   return (stored[STATE_KEY] as OrganizerState | undefined) ?? { phase: 'idle' };
@@ -30,13 +30,13 @@ async function saveState(state: OrganizerState): Promise<void> {
   await browser.storage.session.set({ [STATE_KEY]: state });
 }
 
-/** Motivo dell'interruzione chiesta da "Usa questa": il calcolo finisce con l'anteprima per sito. */
+/** Reason for the interruption requested by "Use this": the computation ends with the per-site preview. */
 const ACCEPT_PREVIEW = 'accept-preview';
 
 /**
- * "add-tab" arriva dal pannello con i dati della tab: si accetta solo una tab già nella proposta o
- * ancora candidata nella finestra, e solo verso un gruppo di quella finestra.
- * I dati della tab vengono riletti dal browser, non presi dal messaggio.
+ * "add-tab" comes from the panel with the tab's data: only a tab already in the proposal or still
+ * a candidate in the window is accepted, and only toward a group of that window.
+ * The tab's data is read again from the browser, not taken from the message.
  */
 async function checkAddTab(proposal: Proposal, edit: Extract<ProposalEdit, { kind: 'add-tab' }>): Promise<ProposalEdit | null> {
   const inProposal = proposal.groups.flatMap((g) => g.tabs).find((t) => t.tabId === edit.tab.tabId);
@@ -53,141 +53,141 @@ async function checkAddTab(proposal: Proposal, edit: Extract<ProposalEdit, { kin
   return { ...edit, tab };
 }
 
-/** Lo stato, se ha una proposta pronta per questa finestra. */
+/** The state, if it has a proposal ready for this window. */
 function readyIn(state: OrganizerState, windowId: number): ReadyState | undefined {
   return state.phase === 'ready' && state.windowId === windowId ? state : undefined;
 }
 
 export interface OrganizerOptions {
-  /** Chiamato a ogni cambio di stato, per avvisare il pannello se è aperto. */
+  /** Called at every state change, to notify the side panel if it is open. */
   onStateChange?: (state: OrganizerState) => void;
 }
 
 export interface Organizer {
   /**
-   * Calcola una proposta per la finestra e la salva nello stato.
-   * Riusa la proposta salvata (con le modifiche dell'utente) se è per la stessa finestra e le tab libere
-   * e le impostazioni non sono cambiate, salvo `force`. Un calcolo già in corso per la stessa finestra
-   * viene condiviso; per un'altra finestra, o con `force`, ne parte uno nuovo dopo.
+   * Computes a proposal for the window and saves it in the state.
+   * Reuses the saved proposal (with the user's edits) if it is for the same window and the free tabs
+   * and the settings have not changed, unless `force`. A computation already in progress for the same
+   * window is shared; for another window, or with `force`, a new one starts afterwards.
    */
   propose(windowId: number, options?: { force?: boolean }): Promise<OrganizerState>;
   /**
-   * Modifica la proposta corrente (rinomina, colore, togli o sposta tab, scarta gruppo). Rinominare un
-   * gruppo "lista" rinomina anche la sua categoria, come `renameGroup`. Dopo "add-tab"
-   * verso una categoria lo stato restituito porta l'offerta "Metti sempre qui" (vedi `rememberOffer`),
-   * che sparisce alla prossima operazione.
+   * Edits the current proposal (rename, color, remove or move tabs, discard a group). Renaming a
+   * "list" group also renames its category, like `renameGroup`. After "add-tab" toward a category,
+   * the returned state carries the "Always put here" offer (see `rememberOffer`), which disappears
+   * at the next operation.
    */
   edit(edit: ProposalEdit): Promise<OrganizerState>;
-  /** "Aggiungi alle categorie": aggiunge alla lista un gruppo nuovo della proposta che non è già una categoria. */
+  /** "Add to categories": adds to the list a new group of the proposal that is not already a category. */
   saveToList(groupId: string): Promise<OrganizerState>;
   /**
-   * "Aggiungi alle categorie" per un gruppo già aperto in Chrome (nome, colore e tab di Chrome); una
-   * proposta della sua finestra resta attuale se lo era. Lo stato restituito porta l'esito (`notice`).
+   * "Add to categories" for a group already open in Chrome (name, color and tabs from Chrome); a
+   * proposal of its window stays current if it was. The returned state carries the outcome (`notice`).
    */
   saveOpenGroupToList(groupId: number): Promise<OrganizerState>;
   /**
-   * Rinomina un gruppo aperto in Chrome. Se è una categoria rinomina anche la categoria (vedi
-   * `renameCategory`); un nome rifiutato lascia tutto com'è e torna come avviso (`notice`). Il gruppo
-   * della proposta che lo estende prende il nome nuovo; una proposta attuale resta attuale.
+   * Renames a group open in Chrome. If it is a category it also renames the category (see
+   * `renameCategory`); a rejected name leaves everything as it is and comes back as a warning (`notice`).
+   * The group of the proposal that extends it takes the new name; a current proposal stays current.
    */
   renameGroup(groupId: number, name: string): Promise<OrganizerState>;
   /**
-   * "Metti sempre qui": la tab andrà sempre nella categoria del suo gruppo nella proposta (vedi
-   * `rememberTabSite`). Non fa nulla per i gruppi che non sono una categoria.
+   * "Always put here": the tab will always go to the category of its group in the proposal (see
+   * `rememberTabSite`). Does nothing for groups that are not a category.
    */
   rememberSite(tabId: number): Promise<OrganizerState>;
-  /** Crea in Chrome i gruppi della proposta corrente, dopo aver salvato la foto per "Annulla". */
+  /** Creates in Chrome the groups of the current proposal, after saving the snapshot for "Undo". */
   apply(): Promise<OrganizerState>;
-  /** Annulla l'ultima organizzazione applicata. */
+  /** Undoes the last applied organization. */
   undo(): Promise<OrganizerState>;
   /**
-   * Chiude una tab dal pannello e la toglie dalla proposta. Se la proposta era ancora attuale resta
-   * attuale (nuova impronta), così chiudere una tab non costa un nuovo calcolo. Se era l'ultima di un
-   * gruppo aperto, il gruppo sparisce e le tab che la proposta gli aggiungeva tornano libere.
+   * Closes a tab from the panel and removes it from the proposal. If the proposal was still current it
+   * stays current (new fingerprint), so closing a tab costs no new computation. If it was the last of an
+   * open group, the group disappears and the tabs the proposal added to it become free again.
    */
   closeTab(tabId: number): Promise<OrganizerState>;
   /**
-   * "Chiudi doppioni": chiude le tab scelte nell'anteprima del pannello, ma solo quelle che sono ancora
-   * doppioni (vedi `findDuplicates`, ricalcolato qui): una tab che non lo è più resta aperta. Come
-   * `closeTab`, una proposta ancora attuale resta attuale, senza le tab chiuse.
+   * "Close duplicates": closes the tabs chosen in the side panel's preview, but only those that are still
+   * duplicates (see `findDuplicates`, recomputed here): a tab that no longer is stays open. Like
+   * `closeTab`, a proposal still current stays current, without the closed tabs.
    */
   closeDuplicates(windowId: number, tabIds: number[]): Promise<OrganizerState>;
   /**
-   * "Chiudi inattive": chiude le tab scelte nell'anteprima del pannello, ma solo quelle ancora inattive
-   * (vedi `findInactive`, ricalcolato qui). Come `closeDuplicates`, la proposta resta attuale.
+   * "Close inactive": closes the tabs chosen in the side panel's preview, but only those still inactive
+   * (see `findInactive`, recomputed here). Like `closeDuplicates`, the proposal stays current.
    */
   closeInactive(windowId: number, tabIds: number[]): Promise<OrganizerState>;
   /**
-   * Chiude tutte le tab di un gruppo aperto in Chrome. Le tab che la proposta gli aggiungeva tornano
-   * libere; la proposta resta attuale.
+   * Closes all the tabs of a group open in Chrome. The tabs the proposal added to it become free again;
+   * the proposal stays current.
    */
   closeGroup(groupId: number): Promise<OrganizerState>;
   /**
-   * "Sposta in…" senza proposta: mette subito una tab libera in un gruppo aperto della sua finestra.
-   * Si accetta solo una tab che la selezione prenderebbe (non fissata, non interna, non esclusa).
+   * "Move to…" without a proposal: immediately puts a free tab into an open group of its window.
+   * Only a tab that the selection would take (not pinned, not internal, not excluded) is accepted.
    */
   groupTab(tabId: number, groupId: number): Promise<OrganizerState>;
   /**
-   * "Nuovo gruppo" senza proposta, o con il drag and drop: mette subito la tab in un gruppo nuovo, col
-   * nome del suo sito e un colore non ancora usato nella finestra, accanto al gruppo da cui esce.
-   * Accetta le tab libere che prende `groupTab` e, come `moveTab`, quelle già in un gruppo; mai le fissate.
+   * "New group" without a proposal, or with drag and drop: immediately puts the tab in a new group, with
+   * the name of its site and a color not yet used in the window, next to the group it leaves.
+   * It accepts the free tabs that `groupTab` takes and, as `moveTab` does, those already in a group; never the pinned ones.
    */
   newGroup(tabId: number): Promise<OrganizerState>;
   /**
-   * "Gruppi A-Z": mette in ordine alfabetico i gruppi della finestra nella barra (vedi `sortGroups`).
-   * Non tocca la proposta: l'ordine delle tab non fa parte della sua impronta.
+   * "Sort groups A to Z": puts the groups of the window in alphabetical order in the strip (see `sortGroups`).
+   * Does not touch the proposal: the order of the tabs is not part of its fingerprint.
    */
   sortGroups(windowId: number): Promise<OrganizerState>;
-  /** "Tab A-Z": ordina per titolo le tab di ogni gruppo e quelle libere (vedi `sortTabs`). Come `sortGroups`. */
+  /** "Sort tabs A to Z": sorts by title the tabs of each group and the free ones (see `sortTabs`). Like `sortGroups`. */
   sortTabs(windowId: number): Promise<OrganizerState>;
   /**
-   * Drag and drop di una tab: la sposta in un gruppo aperto della sua finestra (o fuori da ogni gruppo
-   * con `groupId` null), prima di `beforeTabId` o in fondo (vedi `moveTab`). Le tab fissate non si
-   * spostano. Come per "Sposta in…" senza proposta, una proposta che ne dipende diventa superata.
+   * Drag and drop of a tab: moves it into an open group of its window (or out of every group with
+   * `groupId` null), before `beforeTabId` or at the end (see `moveTab`). Pinned tabs do not move.
+   * As for "Move to…" without a proposal, a proposal that depends on it becomes stale.
    */
   moveTab(tabId: number, groupId: number | null, beforeTabId: number | null): Promise<OrganizerState>;
-  /** Drag and drop di un gruppo aperto, intero: prima di `beforeGroupId` o dopo l'ultimo gruppo (vedi `moveGroup`). */
+  /** Drag and drop of an open group, whole: before `beforeGroupId` or after the last group (see `moveGroup`). */
   moveGroup(groupId: number, beforeGroupId: number | null): Promise<OrganizerState>;
   /**
-   * Raggruppamento automatico di una tab che ha appena cambiato URL, con le sole regole sui siti
-   * (vedi `autoGroupTab`). Non cambia lo stato: una proposta che conteneva la tab diventa superata.
+   * Automatic grouping of a tab that has just changed URL, with the site rules only
+   * (see `autoGroupTab`). It does not change the state: a proposal that contained the tab becomes stale.
    */
   autoGroupTab(tabId: number): Promise<void>;
-  /** "Interrompi": annulla le richieste in corso e i calcoli in coda; nessuno produce una proposta. */
+  /** "Stop": cancels the requests in progress and the queued computations; none produces a proposal. */
   abort(): Promise<OrganizerState>;
   /**
-   * "Usa questa": come "Interrompi", ma il calcolo che sta mostrando l'anteprima per sito finisce con
-   * quella come proposta corrente, modificabile e applicabile. Senza anteprima equivale a "Interrompi".
+   * "Use this": like "Stop", but the computation that is showing the per-site preview ends with that
+   * as the current proposal, editable and applicable. Without a preview it is the same as "Stop".
    */
   acceptPreview(): Promise<OrganizerState>;
   /**
-   * Ricontrolla se la proposta corrente è ancora attuale (tab candidate, gruppi aperti, impostazioni,
-   * provider) e lo scrive in `stale`. Il service worker lo chiama quando cambiano tab, gruppi,
-   * impostazioni o permessi; le operazioni dell'Organizzatore che tengono attuale la proposta non la
-   * fanno risultare scaduta, perché passano dalla stessa coda.
+   * Rechecks whether the current proposal is still current (candidate tabs, open groups, settings,
+   * providers) and writes it to `stale`. The service worker calls it when tabs, groups, settings or
+   * permissions change; the Organizer's operations that keep the proposal current do not make it appear
+   * stale, because they go through the same queue.
    */
   checkStale(): Promise<OrganizerState>;
   /**
-   * Tutta la finestra come la mostra il pannello: gruppi aperti, gruppi nuovi della proposta (o
-   * dell'anteprima per sito durante il calcolo), tab libere, tab mai toccate, doppioni, inattive e i
-   * dettagli dal vivo. Non aspetta la coda: si può chiedere mentre l'AI calcola.
+   * The whole window as the panel shows it: open groups, new groups of the proposal (or of the per-site
+   * preview during the computation), free tabs, held tabs, duplicates, inactive tabs and the live details.
+   * It does not wait for the queue: it can be asked while the AI computes.
    */
   view(windowId: number): Promise<WindowView>;
-  /** Stato corrente: fase, proposta, annulla disponibile. */
+  /** Current state: phase, proposal, undo available. */
   state(): Promise<OrganizerState>;
 }
 
 export function createOrganizer(options: OrganizerOptions = {}): Organizer {
-  /** L'ultimo calcolo chiesto, condiviso con le richieste successive per la stessa finestra. */
+  /** The last computation requested, shared with the following requests for the same window. */
   let computing: { windowId: number; result: Promise<OrganizerState> } | null = null;
-  /** Un controller per ogni calcolo in corso o in coda, usati da "Interrompi". */
+  /** One controller per computation in progress or queued, used by "Stop". */
   const controllers = new Set<AbortController>();
   let queue: Promise<unknown> = Promise.resolve();
 
   /**
-   * Esegue le operazioni una alla volta, nell'ordine di arrivo. Ognuna legge lo stato, tocca le tab
-   * e riscrive lo stato: due operazioni intrecciate potrebbero cancellarsi a vicenda (es. una proposta
-   * calcolata durante "Applica" che riscrive la vecchia foto per "Annulla").
+   * Runs the operations one at a time, in arrival order. Each one reads the state, touches the tabs
+   * and rewrites the state: two intertwined operations could cancel each other out (e.g. a proposal
+   * computed during "Apply" that rewrites the old snapshot for "Undo").
    */
   function exclusive<T>(operation: () => Promise<T>): Promise<T> {
     const result = queue.then(operation, operation);
@@ -195,15 +195,15 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     return result;
   }
 
-  /** Lo stato salvato, senza l'offerta "Metti sempre qui": vale solo per la risposta a `edit`. */
+  /** The saved state, without the "Always put here" offer: it is valid only for the response to `edit`. */
   async function load(): Promise<OrganizerState> {
     const { offer: _, ...state } = await loadState();
     return state;
   }
 
   /**
-   * Lo stato da cui parte un'operazione dell'utente. L'esito della precedente (`notice`) vale fino a
-   * questa, anche riaprendo il pannello, quindi sparisce pure dallo stato salvato.
+   * The state from which a user operation starts. The outcome of the previous one (`notice`) lasts until
+   * this one, even when the panel is reopened, so it also disappears from the saved state.
    */
   async function begin(): Promise<OrganizerState> {
     const { notice, ...state } = await load();
@@ -216,7 +216,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     return state;
   }
 
-  /** Un cambio che rinomina una categoria: un nome rifiutato lascia tutto com'è e torna come avviso (`notice`). */
+  /** A change that renames a category: a rejected name leaves everything as it is and comes back as a warning (`notice`). */
   async function orNotice(current: OrganizerState, change: () => Promise<OrganizerState>): Promise<OrganizerState> {
     try {
       return await change();
@@ -226,7 +226,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     }
   }
 
-  /** Un'operazione che tocca solo la barra di Chrome, non la proposta. */
+  /** An operation that touches only Chrome's tab strip, not the proposal. */
   function onStrip(change: () => Promise<void>): Promise<OrganizerState> {
     return exclusive(async () => {
       const current = await begin();
@@ -236,9 +236,9 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
   }
 
   /**
-   * Chiude più tab di una finestra e le toglie dalla proposta. Un gruppo aperto rimasto vuoto sparisce
-   * da Chrome: il gruppo della proposta che lo estendeva viene scartato e le sue tab tornano libere.
-   * Così una proposta attuale resta attuale (nuova impronta), senza un nuovo calcolo.
+   * Closes several tabs of a window and removes them from the proposal. An open group left empty disappears
+   * from Chrome: the group of the proposal that extended it is discarded and its tabs become free again.
+   * This way a current proposal stays current (new fingerprint), without a new computation.
    */
   async function closeTabs(windowId: number, tabIds: number[]): Promise<OrganizerState> {
     const current = await begin();
@@ -264,11 +264,11 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
 
   async function propose(windowId: number, force: boolean, signal: AbortSignal): Promise<OrganizerState> {
     const current = await begin();
-    // La foto per "Annulla" resta valida fino alla prossima organizzazione applicata.
+    // The snapshot for "Undo" stays valid until the next organization is applied.
     const { undo } = current;
     let preview: Proposal | undefined;
     try {
-      // "Interrompi" premuto mentre il calcolo era ancora in coda.
+      // "Stop" pressed while the computation was still queued.
       signal.throwIfAborted();
       const clock = createStopwatch();
       const inputs = await collectInputs(windowId);
@@ -279,27 +279,27 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         return reusable.stale ? await setState(fresh) : reusable;
       }
 
-      // Mentre l'AI lavora il pannello mostra subito la proposta per sito, che costa pochi millisecondi.
+      // While the AI works, the panel shows the per-site proposal right away, which costs a few milliseconds.
       preview = willAskAi(inputs) ? buildPreview(inputs) : undefined;
       await setState({ phase: 'computing', windowId, undo, ...(preview ? { preview } : {}) });
       clock.lap('preview');
       const proposal = await buildProposal(inputs, signal, clock);
       signal.throwIfAborted();
-      console.info('autoGroup: tempi del calcolo (ms)', proposal.timings);
+      console.info('autoGroup: computation timings (ms)', proposal.timings);
       return await setState({ phase: 'ready', windowId, proposal, undo });
     } catch (err) {
       if (signal.aborted && signal.reason === ACCEPT_PREVIEW && preview) {
         return await setState({ phase: 'ready', windowId, proposal: preview, undo });
       }
       if (signal.aborted) return await setState({ phase: 'idle', windowId, undo, notice: { key: 'popupAborted' } });
-      console.error('autoGroup: calcolo della proposta fallito', err);
+      console.error('autoGroup: proposal computation failed', err);
       return await setState({ phase: 'idle', windowId, error: 'errorPropose', undo });
     }
   }
 
   return {
     propose(windowId, { force = false } = {}) {
-      // Due richieste ravvicinate per la stessa finestra (es. il pannello aperto due volte) condividono il calcolo.
+      // Two close requests for the same window (e.g. the panel open twice) share the computation.
       if (computing && computing.windowId === windowId && !force) return computing.result;
       const controller = new AbortController();
       controllers.add(controller);
@@ -317,7 +317,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         if (current.phase !== 'ready') return current;
         const checked = edit.kind === 'add-tab' ? await checkAddTab(current.proposal, edit) : edit;
         if (!checked) return current;
-        // Rinominare un gruppo che è una categoria rinomina anche la categoria (vedi `renameCategory`).
+        // Renaming a group that is a category also renames the category (see `renameCategory`).
         const target = checked.kind === 'rename' ? current.proposal.groups.find((g) => g.id === checked.groupId) : undefined;
         if (checked.kind === 'rename' && target?.provenance === 'list') {
           return orNotice(current, async () => {
@@ -328,7 +328,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
             return setState({ ...current, proposal });
           });
         }
-        // Un gruppo nuovo prende un colore che i gruppi aperti nella finestra non usano ancora.
+        // A new group takes a color that the groups open in the window do not use yet.
         const used = checked.kind === 'add-tab' && 'newGroup' in checked.to ? (await browser.tabGroups.query({ windowId: current.windowId })).map((g) => g.color) : [];
         const proposal = editProposal(current.proposal, checked, used);
         const offer = checked.kind === 'add-tab' ? rememberOffer(proposal, checked.tab.tabId, await loadSettings()) : null;
@@ -365,7 +365,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         const group = await browser.tabGroups.get(groupId).catch(() => null);
         if (!group) return current;
         const title = name.trim();
-        // Prima la categoria: se il nome nuovo è rifiutato, anche il gruppo resta com'è.
+        // The category first: if the new name is rejected, the group stays as it is too.
         const rename = async () => {
           await renameCategory(group.title ?? '', title);
           await browser.tabGroups.update(groupId, { title });
@@ -403,7 +403,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
           const undo = await applyProposal(current.proposal, (snapshot) => saveState({ ...current, undo: snapshot }));
           return await setState({ phase: 'idle', windowId: current.windowId, undo });
         } catch (err) {
-          console.error('autoGroup: applicazione fallita', err);
+          console.error('autoGroup: apply failed', err);
           return await setState({ ...(await load()), error: 'errorApply' });
         }
       });
@@ -415,10 +415,10 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         if (!current.undo) return current;
         try {
           await restoreSnapshot(current.undo);
-          // Una proposta calcolata dopo l'organizzazione non vale più: le tab sono di nuovo libere.
+          // A proposal computed after the organization is no longer valid: the tabs are free again.
           return await setState({ phase: 'idle', windowId: current.undo.windowId });
         } catch (err) {
-          console.error('autoGroup: annullamento fallito', err);
+          console.error('autoGroup: undo failed', err);
           return await setState({ ...current, error: 'errorUndo' });
         }
       });
@@ -469,8 +469,8 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
         try {
           await autoGroupTab(tabId);
         } catch (err) {
-          // Es. una finestra che non accetta gruppi, o una tab chiusa a metà: la tab resta dov'è.
-          console.error('autoGroup: raggruppamento automatico fallito', err);
+          // E.g. a window that does not accept groups, or a tab closed midway: the tab stays where it is.
+          console.error('autoGroup: automatic grouping failed', err);
         }
       });
     },
@@ -497,7 +497,7 @@ export function createOrganizer(options: OrganizerOptions = {}): Organizer {
     },
 
     async abort() {
-      // Non passa dalla coda: deve agire proprio mentre il calcolo la occupa.
+      // It does not go through the queue: it must act precisely while the computation occupies it.
       for (const controller of controllers) controller.abort();
       return computing?.result ?? load();
     },

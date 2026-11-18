@@ -32,7 +32,7 @@ Two flaws made things worse:
 
 `src/organizer/stopwatch.ts` measures every computation by phase: reading the browser (`inputs`), preview, descriptions, Classifier, Generator, by-site fallback and total. The timings end up:
 
-- in the service worker log: `autoGroup: tempi del calcolo (ms) {…}`;
+- in the service worker log: `autoGroup: computation timings (ms) {…}`;
 - in `proposal.timings`, inside `chrome.storage.session`, so the smoke test and the measurement scripts read them without separate tools.
 
 This way every later change can be verified with numbers, and a future regression shows up immediately.

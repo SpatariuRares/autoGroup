@@ -9,7 +9,7 @@ interface SaveResult {
   notice: NonNullable<OrganizerState['notice']>;
 }
 
-/** Il gruppo da aggiungere alle categorie: nome, colore e le tab da cui si ricava la descrizione. */
+/** The group to add to the categories: name, color and the tabs the description is taken from. */
 interface GroupToSave {
   windowId: number;
   name: string;
@@ -18,17 +18,16 @@ interface GroupToSave {
 }
 
 /**
- * Aggiunge un gruppo alla lista delle categorie, con il nome e il colore che ha ora. La categoria si
- * salva subito, senza descrizione; poi, solo in modalità AI (per sito all'AI non arriva nulla), la
- * descrizione si chiede al Generatore e si aggiunge quando arriva. Intanto la categoria è segnata "in
- * descrizione" (`setDescribing`), così la pagina delle impostazioni mostra che sta arrivando; se nel
- * frattempo l'utente ne scrive una, resta la sua. Senza risposta del Generatore resta vuota. Una
- * categoria con lo stesso nome (senza distinguere maiuscole e minuscole) non viene duplicata; un
- * gruppo senza nome non si salva (null).
+ * Adds a group to the list of categories, with the name and color it has now. The category is saved
+ * right away, without a description; then, only in AI mode (in per-site mode nothing reaches the AI), the
+ * description is asked of the Generator and added when it arrives. Meanwhile the category is marked
+ * "being described" (`setDescribing`), so the settings page shows that it is coming; if in the meantime
+ * the user writes one, theirs stays. Without a reply from the Generator it stays empty. A category with
+ * the same name (case-insensitive) is not duplicated; a group without a name is not saved (null).
  *
- * Con una proposta della finestra, `mark` la aggiorna dopo il salvataggio e, se era attuale, resta
- * attuale con la nuova lista e con la descrizione. Se le tab cambiano mentre il Generatore risponde,
- * la proposta resta scaduta.
+ * With a proposal of the window, `mark` updates it after the save and, if it was current, it stays
+ * current with the new list and with the description. If the tabs change while the Generator answers,
+ * the proposal stays stale.
  */
 async function addCategory(
   group: GroupToSave,
@@ -38,7 +37,7 @@ async function addCategory(
 ): Promise<{ proposal?: Proposal; notice: SaveResult['notice'] } | null> {
   const name = group.name.trim();
   if (!name) return null;
-  // L'esito si legge subito nella snackbar: riaprendo il pannello non torna (`snackbar`).
+  // The outcome is read right away in the snackbar: it does not come back when the panel is reopened (`snackbar`).
   const outcome = (proposal: Proposal | undefined, key: string, arg?: string) => ({ proposal, notice: { key, ...(arg ? { arg } : {}), snackbar: true as const } });
 
   const { categories, mode } = await loadSettings();
@@ -64,7 +63,7 @@ async function addCategory(
     description = await describeCategory(await collectInputs(group.windowId), name, group.tabs, signal);
     if (description) {
       saved = await changeKeepingCurrent(saved, async () => {
-        // Riletta adesso: nel frattempo l'utente può aver cambiato la lista o scritto la descrizione.
+        // Re-read now: in the meantime the user may have changed the list or written the description.
         const current = (await loadSettings()).categories;
         const category = current.find((c) => c.id === id);
         if (!category || category.description) {
@@ -80,7 +79,7 @@ async function addCategory(
   return outcome(saved, description ? 'saveToListSaved' : 'saveToListNoDescription', name);
 }
 
-/** Esegue `change` mantenendo attuale la proposta (se c'è ed era attuale), aggiornata da `mark`. */
+/** Runs `change` keeping the proposal current (if there is one and it was current), updated by `mark`. */
 async function changeKeepingCurrent(
   proposal: Proposal | undefined,
   change: () => Promise<void>,
@@ -97,9 +96,9 @@ async function changeKeepingCurrent(
 }
 
 /**
- * "Aggiungi alle categorie" per un gruppo nuovo della proposta che non è già una categoria (nuovo AI,
- * per sito o creato dall'utente), vedi `addCategory`. Dopo il salvataggio il gruppo diventa "lista",
- * così (con le modifiche dell'utente) la proposta resta valida riaprendo il pannello.
+ * "Add to categories" for a new group of the proposal that is not already a category (new from the AI,
+ * per site or created by the user), see `addCategory`. After the save the group becomes "list",
+ * so (with the user's edits) the proposal stays valid when the panel is reopened.
  */
 export async function saveGroupToList(proposal: Proposal, groupId: string, signal?: AbortSignal): Promise<SaveResult | null> {
   const group = proposal.groups.find((g) => g.id === groupId);
@@ -114,8 +113,8 @@ export async function saveGroupToList(proposal: Proposal, groupId: string, signa
 }
 
 /**
- * "Aggiungi alle categorie" per un gruppo già aperto in Chrome, con il nome e il colore di Chrome e le
- * sue tab, vedi `addCategory`. Una proposta della finestra (`proposal`) resta attuale se lo era.
+ * "Add to categories" for a group already open in Chrome, with Chrome's name and color and its
+ * tabs, see `addCategory`. A proposal of the window (`proposal`) stays current if it was.
  */
 export async function saveOpenGroupToList(group: GroupToSave, proposal: Proposal | undefined): Promise<{ proposal?: Proposal; notice: SaveResult['notice'] } | null> {
   return addCategory(group, proposal, (p) => p);

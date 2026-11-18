@@ -4,11 +4,11 @@ import { createSiteMatcher } from './site-rules';
 import { isFreeWebTab } from './tab-selection';
 
 /**
- * Raggruppamento automatico con le regole sui siti, senza AI: se la tab è libera e il suo URL è di un
- * sito di una categoria, entra nel gruppo aperto della sua finestra con il nome della categoria (anche
- * da sola, senza cambiarne nome e colore). Senza quel gruppo, ne crea uno con nome e colore della
- * categoria solo se, insieme alle altre tab libere della finestra della stessa categoria, raggiunge il
- * minimo di tab. Non salva nessuna foto per "Annulla": basta l'interruttore nelle impostazioni.
+ * Automatic grouping with the site rules, without AI: if the tab is free and its URL belongs to a
+ * site of a category, it joins the open group of its window with the category's name (even
+ * alone, without changing name and color). Without that group, it creates one with the category's
+ * name and color only if, together with the other free tabs of the window in the same category, it
+ * reaches the minimum number of tabs. It saves no snapshot for "Undo": the switch in the settings is enough.
  */
 export async function autoGroupTab(tabId: number): Promise<void> {
   const settings = await loadSettings();

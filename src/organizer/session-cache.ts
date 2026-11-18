@@ -1,14 +1,14 @@
 import { browser } from 'wxt/browser';
 
 /**
- * Cache chiave → valore in chrome.storage.session, con un numero massimo di voci: oltre il limite
- * escono le più vecchie. Come lo stato dell'Organizzatore, sopravvive al pannello e al riavvio del
- * service worker ma non alla chiusura di Chrome, quindi titoli e URL non restano sul disco.
+ * Key → value cache in chrome.storage.session, with a maximum number of entries: beyond the limit
+ * the oldest ones are evicted. Like the Organizer's state, it survives the side panel and the service
+ * worker restarting but not Chrome being closed, so titles and URLs do not stay on disk.
  */
 export interface SessionCache<T> {
-  /** I valori trovati, per chiave; le chiavi assenti mancano. */
+  /** The values found, by key; the keys not found are absent. */
   getMany(keys: string[]): Promise<Map<string, T>>;
-  /** Aggiunge o sostituisce le voci; una voce riscritta torna la più recente. */
+  /** Adds or replaces the entries; a rewritten entry becomes the most recent. */
   setMany(entries: Map<string, T>): Promise<void>;
 }
 
@@ -29,7 +29,7 @@ export function createSessionCache<T>(storageKey: string, maxEntries: number): S
     async setMany(entries) {
       if (entries.size === 0) return;
       const all = await read();
-      // Le chiavi di un oggetto (non numeriche) restano nell'ordine di inserimento: le prime sono le più vecchie.
+      // The keys of an object (non-numeric ones) stay in insertion order: the first ones are the oldest.
       for (const [key, value] of entries) {
         delete all[key];
         all[key] = value;
@@ -41,7 +41,7 @@ export function createSessionCache<T>(storageKey: string, maxEntries: number): S
   };
 }
 
-/** Impronta breve (SHA-256 in esadecimale) di un valore qualsiasi, per chiavi di cache compatte. */
+/** Short digest (SHA-256 in hexadecimal) of any value, for compact cache keys. */
 export async function digest(value: unknown): Promise<string> {
   const bytes = new TextEncoder().encode(JSON.stringify(value));
   const hash = await crypto.subtle.digest('SHA-256', bytes);

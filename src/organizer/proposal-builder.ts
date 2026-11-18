@@ -16,18 +16,18 @@ import { domainGroups, runPipeline } from './pipeline';
 import type { Stopwatch } from './stopwatch';
 import { selectCandidateTabs, type CandidateTab } from './tab-selection';
 
-/** Un provider configurato dall'utente, con quello che serve per usarlo. */
+/** A provider configured by the user, with what is needed to use it. */
 export interface ProviderInput {
   settings: ProviderSettings;
-  /** Mai salvata nello stato né nell'impronta. */
+  /** Never saved in the state nor in the fingerprint. */
   apiKey: string;
-  /** Vero se il provider è configurato e il suo permesso host è stato concesso. */
+  /** True if the provider is configured and its host permission has been granted. */
   usable: boolean;
-  /** Vero se il provider è configurato ma manca il permesso host. */
+  /** True if the provider is configured but the host permission is missing. */
   missingPermission: boolean;
 }
 
-/** Tutto ciò che serve per calcolare una proposta, letto dal browser in un colpo solo. */
+/** Everything needed to compute a proposal, read from the browser in one go. */
 export interface ProposalInputs {
   windowId: number;
   candidates: CandidateTab[];
@@ -35,9 +35,9 @@ export interface ProposalInputs {
   settings: Settings;
   classifier: ProviderInput;
   generator: ProviderInput;
-  /** Stato di Gemini Nano; letto solo se l'utente ha scelto Nano come Generatore e la modalità AI. */
+  /** Gemini Nano status; read only if the user has chosen Nano as the Generator and the AI mode. */
   nano: NanoAvailability;
-  /** Vero se l'opzione "descrizione delle pagine" è accesa e il permesso <all_urls> è concesso. */
+  /** True if the "Read page descriptions" option is on and the <all_urls> permission has been granted. */
   readDescriptions: boolean;
 }
 
@@ -75,13 +75,13 @@ export async function collectInputs(windowId: number): Promise<ProposalInputs> {
 }
 
 /**
- * Impronta delle tab candidate (ID e URL), dei gruppi aperti, delle impostazioni e della
- * disponibilità dei provider: se cambia, una proposta salvata non è più attuale. Il titolo resta
- * fuori perché cambia spesso da solo (contatori come "(3) Posta"); l'ordine delle tab anche, perché
- * spostarle non cambia i gruppi; le chiavi API non ci sono mai.
+ * Fingerprint of the candidate tabs (ID and URL), of the open groups, of the settings and of the
+ * availability of the providers: if it changes, a saved proposal is no longer current. The title stays
+ * out because it often changes on its own (counters like "(3) Mail"); the order of the tabs too, because
+ * moving them does not change the groups; the API keys are never in it.
  */
 export function signatureOf(inputs: ProposalInputs): string {
-  // Il raggruppamento automatico non cambia la proposta: accenderlo o spegnerlo non la rende superata.
+  // Automatic grouping does not change the proposal: turning it on or off does not make it stale.
   const { autoGroupSites: _, ...settings } = inputs.settings;
   return JSON.stringify([
     [...inputs.candidates].sort((a, b) => a.tabId - b.tabId).map((t) => [t.tabId, t.url]),
@@ -95,9 +95,9 @@ export function signatureOf(inputs: ProposalInputs): string {
 }
 
 /**
- * Esegue un cambio che tocca la finestra o le impostazioni e anche la proposta (tab chiuse, sito
- * ricordato, categoria salvata). Se la proposta era attuale subito prima del cambio resta attuale:
- * l'impronta viene riletta dopo. Se era già scaduta resta scaduta, con la vecchia impronta.
+ * Runs a change that touches the window or the settings and also the proposal (closed tabs, remembered
+ * site, saved category). If the proposal was current right before the change, it stays current:
+ * the fingerprint is read again afterwards. If it was already stale, it stays stale, with the old fingerprint.
  */
 export async function keepCurrent(proposal: Proposal, change: () => Promise<Proposal>): Promise<Proposal> {
   const wasCurrent = proposal.signature === signatureOf(await collectInputs(proposal.windowId));
@@ -106,8 +106,8 @@ export async function keepCurrent(proposal: Proposal, change: () => Promise<Prop
 }
 
 /**
- * Calcola la proposta passando dalla pipeline (livelli AI e raggruppamento per dominio).
- * Con `clock` la proposta riporta anche la durata di ogni fase.
+ * Computes the proposal going through the pipeline (AI levels and grouping by domain).
+ * With `clock`, the proposal also reports the duration of each phase.
  */
 export async function buildProposal(inputs: ProposalInputs, signal?: AbortSignal, clock?: Stopwatch): Promise<Proposal> {
   const { groups, warnings } = await runPipeline(inputs, signal, clock);
@@ -116,8 +116,8 @@ export async function buildProposal(inputs: ProposalInputs, signal?: AbortSignal
 }
 
 /**
- * Anteprima per sito: il raggruppamento per dominio delle stesse tab, senza AI né pagine lette.
- * Ha la stessa impronta della proposta AI che sta per arrivare, quindi se l'utente la sceglie resta attuale.
+ * Per-site preview: the grouping by domain of the same tabs, without AI nor pages read.
+ * It has the same fingerprint as the AI proposal about to arrive, so if the user chooses it, it stays current.
  */
 export function buildPreview(inputs: ProposalInputs): Proposal {
   return { windowId: inputs.windowId, createdAt: Date.now(), signature: signatureOf(inputs), groups: domainGroups(inputs), warnings: [] };

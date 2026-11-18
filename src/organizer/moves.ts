@@ -3,26 +3,26 @@ import { createColorAssigner } from './colors';
 import { domainOf, findCandidate, TAB_GROUP_ID_NONE as NONE } from './tab-selection';
 
 /*
- * Spostamenti del drag and drop del pannello, sui gruppi già aperti e sulle tab senza gruppo.
- * Le tab fissate non si spostano mai. Dove si può, ogni spostamento va verso sinistra: con
- * `tabs.move` e `tabGroups.move` l'indice di arrivo è allora senza ambiguità.
+ * Drag-and-drop moves of the side panel, onto the groups already open and onto tabs without a group.
+ * Pinned tabs never move. Where possible, every move goes leftward: with
+ * `tabs.move` and `tabGroups.move` the arrival index is then unambiguous.
  */
 
 async function stripOf(windowId: number): Promise<Browser.tabs.Tab[]> {
   return (await browser.tabs.query({ windowId })).filter((t) => t.id !== undefined).sort((a, b) => a.index - b.index);
 }
 
-/** Indice di arrivo per mettere la tab subito prima di `before`, contando che lei stessa esce dalla barra. */
+/** Arrival index to put the tab right before `before`, counting that the tab itself leaves the strip. */
 const indexBefore = (tab: Browser.tabs.Tab, before: Browser.tabs.Tab) => (tab.index < before.index ? before.index - 1 : before.index);
 
-/** Indice di arrivo per mettere la tab subito dopo `after`, come sopra. */
+/** Arrival index to put the tab right after `after`, as above. */
 const indexAfter = (tab: Browser.tabs.Tab, after: Browser.tabs.Tab) => (tab.index <= after.index ? after.index : after.index + 1);
 
 /**
- * Sposta una tab non fissata in un gruppo aperto della sua finestra (`groupId`) o fuori da ogni gruppo
- * (`null`), subito prima di `beforeTabId` o, con `null`, in fondo al gruppo (o dopo l'ultima tab senza
- * gruppo). `beforeTabId` deve stare nel gruppo di arrivo, o essere senza gruppo per `groupId` null;
- * altrimenti non succede nulla.
+ * Moves a non-pinned tab into an open group of its window (`groupId`) or out of every group
+ * (`null`), right before `beforeTabId` or, with `null`, at the end of the group (or after the last tab
+ * without a group). `beforeTabId` must be in the arrival group, or without a group for `groupId` null;
+ * otherwise nothing happens.
  */
 export async function moveTab(tabId: number, groupId: number | null, beforeTabId: number | null): Promise<void> {
   if (tabId === beforeTabId) return;
@@ -37,8 +37,8 @@ export async function moveTab(tabId: number, groupId: number | null, beforeTabId
   const before = beforeTabId === null ? null : await browser.tabs.get(beforeTabId).catch(() => null);
   if (beforeTabId !== null && (!before || before.windowId !== windowId || before.pinned || before.groupId !== target)) return;
 
-  // Prima nel gruppo giusto: `tabs.group` la mette in fondo al gruppo, `tabs.ungroup` subito dopo il suo vecchio
-  // gruppo (la prima tab del gruppo, o l'unica, resta invece dov'è, subito prima). Dopo la si mette al suo posto.
+  // First into the right group: `tabs.group` puts it at the end of the group, `tabs.ungroup` right after its old
+  // group (the first tab of a group, or the only one, instead stays where it is, right before). Afterwards it is put in its place.
   if (tab.groupId !== target) {
     if (groupId !== null) await browser.tabs.group({ tabIds: [tabId], groupId });
     else await browser.tabs.ungroup([tabId]);
@@ -49,7 +49,7 @@ export async function moveTab(tabId: number, groupId: number | null, beforeTabId
   const at = (id: number) => strip.find((t) => t.id === id)!;
   tab = at(tabId);
   if (before) {
-    // Con la tab di arrivo come vicina a destra la tab resta nel gruppo giusto (o senza gruppo).
+    // With the arrival tab as its right neighbor, the tab stays in the right group (or without a group).
     const index = indexBefore(tab, at(before.id!));
     if (index !== tab.index) await browser.tabs.move(tabId, { index });
     return;
@@ -57,11 +57,11 @@ export async function moveTab(tabId: number, groupId: number | null, beforeTabId
   const last = strip.filter((t) => !t.pinned && t.groupId === target).at(-1);
   if (!last || last.id === tabId) return;
   await browser.tabs.move(tabId, { index: indexAfter(tab, last) });
-  // In fondo al gruppo la tab ha a destra un'altra tab: se Chrome l'ha tolta dal gruppo, ci torna (in fondo).
+  // At the end of the group the tab has another tab on its right: if Chrome has removed it from the group, it goes back in (at the end).
   if (groupId !== null && (await browser.tabs.get(tabId)).groupId !== groupId) await browser.tabs.group({ tabIds: [tabId], groupId });
 }
 
-/** I gruppi della barra in ordine, ognuno con le sue tab. */
+/** The groups of the strip in order, each with its tabs. */
 function groupsOf(strip: Browser.tabs.Tab[]): { groupId: number; tabs: Browser.tabs.Tab[] }[] {
   const groups: { groupId: number; tabs: Browser.tabs.Tab[] }[] = [];
   for (const tab of strip) {
@@ -74,9 +74,9 @@ function groupsOf(strip: Browser.tabs.Tab[]): { groupId: number; tabs: Browser.t
 }
 
 /**
- * Sposta un gruppo aperto, intero, subito prima del gruppo `beforeGroupId` della stessa finestra o,
- * con `null`, subito dopo l'ultimo gruppo. Non entra mai in un altro gruppo. Verso destra si spostano
- * invece verso sinistra, prima di lui, i pezzi che deve scavalcare (gruppi interi e tab senza gruppo).
+ * Moves an open group, whole, right before the group `beforeGroupId` of the same window or,
+ * with `null`, right after the last group. It never enters another group. Moving it to the right
+ * instead moves leftward, before it, the pieces it must overtake (whole groups and tabs without a group).
  */
 export async function moveGroup(groupId: number, beforeGroupId: number | null): Promise<void> {
   if (groupId === beforeGroupId) return;
@@ -93,7 +93,7 @@ export async function moveGroup(groupId: number, beforeGroupId: number | null): 
     await browser.tabGroups.move(groupId, { index: groups[to]!.tabs[0]!.index });
     return;
   }
-  // Tutto quello che sta tra la fine del gruppo e l'inizio del gruppo di arrivo (o la fine dell'ultimo gruppo).
+  // Everything between the end of the group and the start of the arrival group (or the end of the last group).
   const start = self.tabs.at(-1)!.index + 1;
   const end = to < groups.length ? groups[to]!.tabs[0]!.index : groups.at(-1)!.tabs.at(-1)!.index + 1;
   let index = self.tabs[0]!.index;
@@ -109,7 +109,7 @@ export async function moveGroup(groupId: number, beforeGroupId: number | null): 
   }
 }
 
-/** "Sposta in…" senza proposta: mette subito una tab candidata (vedi `findCandidate`) in un gruppo aperto della sua finestra. */
+/** "Move to…" without a proposal: immediately puts a candidate tab (see `findCandidate`) into an open group of its window. */
 export async function groupTab(tabId: number, groupId: number): Promise<void> {
   const [tab, group] = await Promise.all([browser.tabs.get(tabId).catch(() => null), browser.tabGroups.get(groupId).catch(() => null)]);
   if (!tab || !group || group.windowId !== tab.windowId) return;
@@ -118,9 +118,9 @@ export async function groupTab(tabId: number, groupId: number): Promise<void> {
 }
 
 /**
- * "Nuovo gruppo": mette subito la tab in un gruppo nuovo, col nome del suo sito e un colore non ancora
- * usato nella finestra, accanto al gruppo da cui esce. Accetta le tab candidate e, dal drag and drop come
- * per `moveTab`, quelle già in un gruppo; mai le fissate.
+ * "New group": immediately puts the tab in a new group, with the name of its site and a color not yet
+ * used in the window, next to the group it leaves. It accepts the candidate tabs and, from the drag and drop
+ * as in `moveTab`, those already in a group; never the pinned ones.
  */
 export async function newGroup(tabId: number): Promise<void> {
   const tab = await browser.tabs.get(tabId).catch(() => null);
@@ -129,7 +129,7 @@ export async function newGroup(tabId: number): Promise<void> {
   if (!grouped && !(await findCandidate(tabId, tab.windowId))) return;
   const groups = await browser.tabGroups.query({ windowId: tab.windowId });
   const color = createColorAssigner(groups.map((g) => g.color)).next();
-  // Prima fuori dal suo gruppo (Chrome la mette subito dopo, o la lascia prima se era la prima), così il gruppo nuovo non lo spezza.
+  // First out of its group (Chrome puts it right after, or leaves it before if it was the first), so the new group does not split it.
   if (grouped) await browser.tabs.ungroup([tabId]);
   const groupId = await browser.tabs.group({ tabIds: [tabId], createProperties: { windowId: tab.windowId } });
   await browser.tabGroups.update(groupId, { title: domainOf(tab.url ?? '') ?? '', color });
