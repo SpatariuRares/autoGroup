@@ -1,7 +1,7 @@
 import type { Browser } from 'wxt/browser';
 import { isExcluded, isInternalUrl, TAB_GROUP_ID_NONE } from './tab-selection';
 
-/** La pagina di una tab per riconoscere i doppioni: l'URL senza il frammento (#sezione); i parametri contano. */
+/** The page of a tab, to recognize duplicates: the URL without the fragment (#section); the parameters count. */
 function pageOf(url: string): string {
   const hash = url.indexOf('#');
   return hash === -1 ? url : url.slice(0, hash);
@@ -9,14 +9,14 @@ function pageOf(url: string): string {
 
 const grouped = (tab: Browser.tabs.Tab) => (tab.groupId ?? TAB_GROUP_ID_NONE) !== TAB_GROUP_ID_NONE;
 
-/** Si può chiudere solo una copia libera, non attiva: mai tab fissate, raggruppate o che l'utente sta guardando. */
+/** Only a free, non-active copy can be closed: never pinned or grouped tabs, nor the ones the user is looking at. */
 const closable = (tab: Browser.tabs.Tab) => !tab.pinned && !grouped(tab) && !tab.active;
 
 /**
- * Le tab da chiudere perché doppioni di un'altra tab della stessa finestra, nell'ordine della barra.
- * Per ogni pagina aperta più volte resta la copia fissata, poi quella in un gruppo, poi quella attiva,
- * poi la più a sinistra; delle altre si chiudono solo quelle libere. Pagine del browser e domini
- * esclusi non sono mai toccati. Le tab vanno passate già filtrate per finestra.
+ * The tabs to close because they are duplicates of another tab in the same window, in tab-strip order.
+ * For each page open more than once, the pinned copy stays, then the one in a group, then the active one,
+ * then the leftmost; of the others only the free ones are closed. Browser pages and excluded domains
+ * are never touched. The tabs must be passed already filtered by window.
  */
 export function findDuplicates(tabs: Browser.tabs.Tab[], excludedDomains: string[]): number[] {
   const pages = new Map<string, Browser.tabs.Tab[]>();
@@ -29,7 +29,7 @@ export function findDuplicates(tabs: Browser.tabs.Tab[], excludedDomains: string
   const duplicates: Browser.tabs.Tab[] = [];
   for (const copies of pages.values()) {
     if (copies.length < 2) continue;
-    // sort è stabile: a parità di rango resta la più a sinistra.
+    // sort is stable: on equal rank the leftmost stays.
     const [, ...others] = [...copies].sort((a, b) => rank(a) - rank(b));
     duplicates.push(...others.filter(closable));
   }

@@ -9,7 +9,7 @@ beforeEach(() => {
   installFakeI18n('it');
 });
 
-/** Il messaggio con cui `saveSettings` rifiuta la patch, o null se la salva. */
+/** The message with which `saveSettings` rejects the patch, or null if it saves it. */
 async function rejection(patch: Partial<Settings>): Promise<string | null> {
   try {
     await saveSettings(patch);
@@ -19,34 +19,34 @@ async function rejection(patch: Partial<Settings>): Promise<string | null> {
   }
 }
 
-describe('salvataggio delle impostazioni', () => {
+describe('saving settings', () => {
   it.each<[string, Partial<Settings>, string]>([
-    ['modalità sconosciuta', { mode: 'boh' as never }, 'errorSaveSettings'],
-    ['minimo non intero', { minTabs: 1.5 }, 'optionsMinTabsInvalid'],
-    ['soglia oltre 1', { threshold: 2 }, 'optionsThresholdInvalid'],
-    ['domini esclusi non lista', { excludedDomains: 'banca.it' as never }, 'errorSaveSettings'],
-    ['descrizioni non booleano', { readDescriptions: 'sì' as never }, 'errorSaveSettings'],
-    ['raggruppamento automatico non booleano', { autoGroupSites: 1 as never }, 'errorSaveSettings'],
-  ])('rifiuta %s e non salva nulla', async (_name, patch, key) => {
+    ['unknown mode', { mode: 'boh' as never }, 'errorSaveSettings'],
+    ['minTabs not an integer', { minTabs: 1.5 }, 'optionsMinTabsInvalid'],
+    ['threshold above 1', { threshold: 2 }, 'optionsThresholdInvalid'],
+    ['excluded domains not a list', { excludedDomains: 'banca.it' as never }, 'errorSaveSettings'],
+    ['descriptions not a boolean', { readDescriptions: 'sì' as never }, 'errorSaveSettings'],
+    ['automatic grouping not a boolean', { autoGroupSites: 1 as never }, 'errorSaveSettings'],
+  ])('rejects %s and saves nothing', async (_name, patch, key) => {
     expect(await rejection(patch)).toBe(key);
     expect(await browser.storage.sync.get(null)).toEqual({});
   });
 
-  it('i domini esclusi vengono normalizzati, senza doppioni, e quelli non validi scartati', async () => {
+  it('excluded domains are normalized, without duplicates, and invalid ones are discarded', async () => {
     await saveSettings({ excludedDomains: ['https://www.Banca.it/conto', 'banca.it', 'non valido!', 'posta.it'] });
 
     expect((await loadSettings()).excludedDomains).toEqual(['banca.it', 'posta.it']);
   });
 
-  it('salva solo i campi indicati e li rilegge', async () => {
+  it('saves only the given fields and reads them back', async () => {
     await saveSettings({ minTabs: 4, excludedDomains: ['banca.it'], autoGroupSites: false });
 
     expect(await loadSettings()).toMatchObject({ mode: 'ai', minTabs: 4, excludedDomains: ['banca.it'], autoGroupSites: false, readDescriptions: false });
   });
 });
 
-describe('lettura delle impostazioni', () => {
-  it('senza nulla di salvato valgono i default', async () => {
+describe('reading settings', () => {
+  it('with nothing saved the defaults apply', async () => {
     const settings = await loadSettings();
 
     expect(settings).toMatchObject({
@@ -63,19 +63,19 @@ describe('lettura delle impostazioni', () => {
     expect(settings.categories).toHaveLength(10);
   });
 
-  it('un valore rovinato nello storage torna al default, gli altri restano', async () => {
+  it('a corrupted value in storage goes back to the default, the others stay', async () => {
     await browser.storage.sync.set({ minTabs: -1, threshold: 'alta', excludedDomains: 'x', autoGroupSites: 'no', readDescriptions: true, mode: 'domain' });
 
     expect(await loadSettings()).toMatchObject({ minTabs: 2, threshold: 0.7, excludedDomains: [], autoGroupSites: true, readDescriptions: true, mode: 'domain' });
   });
 
-  it('un dominio escluso rovinato nello storage non toglie gli altri dalla lista', async () => {
+  it('a corrupted excluded domain in storage does not remove the others from the list', async () => {
     await browser.storage.sync.set({ excludedDomains: ['banca.it', 'www.posta.it', 42] });
 
     expect((await loadSettings()).excludedDomains).toEqual(['banca.it', 'posta.it']);
   });
 
-  it('ogni impostazione salvata viene riletta', async () => {
+  it('every saved setting is read back', async () => {
     const saved: Partial<Settings> = {
       mode: 'domain',
       minTabs: 5,

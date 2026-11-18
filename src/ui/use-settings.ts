@@ -3,9 +3,9 @@ import { browser } from 'wxt/browser';
 import { loadSettings, type Settings } from '../settings';
 
 /**
- * Impostazioni lette dal vivo: si rileggono quando un'altra pagina o il service worker le salva
- * (es. "Metti sempre qui" dal pannello aggiunge un sito mentre le opzioni sono aperte). `null` finché
- * non sono lette. Il setter serve a mostrare subito un salvataggio fatto dalla pagina stessa.
+ * Settings read live: they are read again when another page or the service worker saves them
+ * (e.g. "Always put here" from the panel adds a site while the options are open). `null` until
+ * they are read. The setter is there to show right away a save made by the page itself.
  */
 export function useSettings() {
   const [settings, setSettings] = useState<Settings | null>(null);

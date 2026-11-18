@@ -1,4 +1,4 @@
-/* Pannello laterale: barra in alto, contenuto che scorre, barra delle azioni fissa in basso. */
+/* Side panel: top bar, scrolling content, action bar fixed at the bottom. */
 html,
 body,
 #root {
@@ -50,8 +50,8 @@ body {
   gap: 4px;
 }
 
-/* Anteprima per sito durante il calcolo: in sola lettura, righe un po' attenuate. Solo le righe: attenuato,
-   il badge di provenienza scenderebbe sotto 4.5:1. */
+/* Per-site preview during computing: read-only, rows a bit dimmed. Only the rows: dimmed,
+   the provenance badge would drop below 4.5:1. */
 .group.preview .tabs {
   opacity: 0.8;
 }
@@ -117,7 +117,7 @@ body {
   flex: 1;
 }
 
-/* Anteprima dei doppioni: una riga per tab, con la casella per tenerla. */
+/* Duplicates preview: one row per tab, with the checkbox to keep it. */
 .duplicates-list {
   list-style: none;
   margin: 0;
@@ -211,7 +211,7 @@ body {
   margin: 0;
 }
 
-/* Gruppi: schede con contorno, una per gruppo proposto. */
+/* Groups: outlined cards, one per proposed group. */
 .groups {
   list-style: none;
   margin: 0;
@@ -234,10 +234,10 @@ body {
   gap: 8px;
 }
 
-/* Fine dell'intestazione: azioni secondarie e ✕ (o "Chiudi N tab"). Come nelle righe delle tab: fuori dal
-   flusso, sopra la fine del nome, con una sfumatura dello sfondo della scheda; compaiono al passaggio o
-   con il focus nell'intestazione, così a riposo il nome ha tutto lo spazio. Non mentre si scrive il nome
-   (coprirebbero il testo), sempre mentre "Chiudi N tab" aspetta la conferma. */
+/* End of the header: secondary actions and ✕ (or "Close N tabs"). As in the tab rows: out of the
+   flow, over the end of the name, with a fade of the card background; they appear on hover or with
+   focus in the header, so at rest the name has all the space. Not while the name is being typed
+   (they would cover the text), always while "Close N tabs" awaits confirmation. */
 .group-header {
   position: relative;
 }
@@ -267,7 +267,7 @@ body {
   opacity: 1;
 }
 
-/* Prendono il clic solo i controlli: tra un'icona e l'altra e sulla sfumatura il clic arriva al nome e apre il gruppo. */
+/* Only the controls take the click: between one icon and the other and on the fade the click reaches the name and opens the group. */
 .group-header:is(:hover, :focus-within):not(:has(input.group-name:focus)) .group-end :is(button, label, .in-categories),
 .group-end.armed :is(button, label, .in-categories) {
   pointer-events: auto;
@@ -285,7 +285,7 @@ body {
   background: transparent;
 }
 
-/* Linea sotto sempre visibile, così si capisce che il nome è un campo da modificare. */
+/* Line below always visible, so it is clear the name is a field to edit. */
 input.group-name:not(:read-only) {
   border-bottom-color: var(--md-sys-color-outline);
 }
@@ -304,7 +304,7 @@ input.group-name:not(:read-only) {
   border-color: transparent;
 }
 
-/* Provenienza e numero di tab nella riga del titolo: non si restringono, il nome sì. */
+/* Provenance and tab count in the title row: they do not shrink, the name does. */
 .group-meta {
   flex: none;
   display: flex;
@@ -354,7 +354,7 @@ input.group-name:not(:read-only) {
 }
 
 .tab {
-  /* Lo sfondo della riga, pieno: lo riprende la sfumatura delle azioni che compaiono sopra il titolo. */
+  /* The row background, solid: the fade of the actions that appear over the title picks it up. */
   --row-bg: var(--md-sys-color-surface);
   position: relative;
   display: flex;
@@ -395,9 +395,9 @@ input.group-name:not(:read-only) {
   white-space: nowrap;
 }
 
-/* "Sposta in…", −, vai e ✕: fuori dal flusso, sopra la fine del titolo, con una sfumatura dello sfondo
-   della riga. Compaiono al passaggio o con il focus nella riga; nascosti non occupano spazio, così nel
-   pannello stretto il titolo si legge. */
+/* "Move to…", −, go and ✕: out of the flow, over the end of the title, with a fade of the row background.
+   They appear on hover or with focus in the row; hidden they take no space, so in the narrow panel the
+   title reads well. */
 .tab-actions {
   position: absolute;
   inset-block: 0;
@@ -411,7 +411,7 @@ input.group-name:not(:read-only) {
   transition: opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
 }
 
-/* Visibili, prendono il clic solo i controlli: tra un'icona e l'altra e sulla sfumatura il clic passa sotto. */
+/* Visible, only the controls take the click: between one icon and the other and on the fade the click passes under. */
 .tab:is(:hover, :focus-within) .tab-actions {
   opacity: 1;
 }
@@ -420,7 +420,7 @@ input.group-name:not(:read-only) {
   pointer-events: auto;
 }
 
-/* "Sposta in…": icona cliccabile con il menu nativo sopra, trasparente. */
+/* "Move to…": clickable icon with the native menu over it, transparent. */
 .move {
   position: relative;
   display: inline-flex;
@@ -436,7 +436,7 @@ input.group-name:not(:read-only) {
   background: color-mix(in srgb, var(--md-sys-color-on-surface) var(--md-sys-state-hover), transparent);
 }
 
-/* Il menu è trasparente, quindi il suo contorno di focus non si vedrebbe: lo disegna l'icona. */
+/* The menu is transparent, so its focus outline would not be seen: the icon draws it. */
 .move:has(select:focus-visible) {
   outline: 3px solid var(--md-sys-color-secondary);
   outline-offset: 2px;
@@ -451,7 +451,7 @@ input.group-name:not(:read-only) {
   padding: 0;
 }
 
-/* Messaggio temporaneo sopra la barra delle azioni (stile in base.css). */
+/* Temporary message above the action bar (style in base.css). */
 .snackbar {
   margin: 0 12px 8px;
   padding: 6px 8px 6px 16px;
@@ -477,7 +477,7 @@ input.group-name:not(:read-only) {
   flex: 1;
 }
 
-/* Selettore della modalità: pulsante segmentato Material 3. */
+/* Mode selector: Material 3 segmented button. */
 .mode-picker {
   padding: 0 16px 12px;
 }
@@ -522,7 +522,7 @@ input.group-name:not(:read-only) {
   color: var(--md-sys-color-on-surface-variant);
 }
 
-/* Sezioni dell'elenco: titolo con il conteggio. */
+/* List sections: title with the count. */
 .section {
   margin: 0 0 16px;
 }
@@ -537,7 +537,7 @@ input.group-name:not(:read-only) {
   color: var(--md-sys-color-on-surface-variant);
 }
 
-/* Titolo della sezione con le sue azioni a destra (es. "Gruppi A-Z"). */
+/* Section title with its actions on the right (e.g. "Groups A-Z"). */
 .section-header {
   display: flex;
   align-items: center;
@@ -558,7 +558,7 @@ input.group-name:not(:read-only) {
   display: none;
 }
 
-/* Freccia di apertura, come per i gruppi aperti (.group-toggle): punta in giù quando l'elenco è aperto. */
+/* Opening arrow, as for the open groups (.group-toggle): points down when the list is open. */
 .section>summary>.md-icon,
 .group-toggle>.md-icon {
   transition: transform var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
@@ -594,7 +594,7 @@ input.group-name:not(:read-only) {
   padding-left: 12px;
 }
 
-/* Gruppi già aperti: intestazione cliccabile, nome e colore di Chrome non modificabili. */
+/* Groups already open: clickable header, Chrome's name and color not editable. */
 .group.existing {
   padding: 4px 4px 4px 12px;
 }
@@ -603,7 +603,7 @@ input.group-name:not(:read-only) {
   border-color: var(--md-sys-color-primary);
 }
 
-/* Intestazione che apre e chiude l'elenco: un pulsante senza l'aspetto di pulsante, largo quanto il nome. */
+/* Header that opens and closes the list: a button without the look of a button, as wide as the name. */
 .group.existing .group-toggle {
   --btn-bg: transparent;
   --btn-fg: var(--md-sys-color-on-surface-variant);
@@ -648,7 +648,7 @@ input.group-name:not(:read-only) {
   font-weight: 600;
 }
 
-/* Tab aggiunte dalla proposta ed etichette delle tab. */
+/* Tabs added by the proposal and tab labels. */
 .tab.added {
   --row-bg: color-mix(in srgb, var(--md-sys-color-surface), var(--md-sys-color-primary) 8%);
   background: var(--row-bg);
@@ -672,7 +672,7 @@ input.group-name:not(:read-only) {
   color: var(--md-sys-color-on-surface-variant);
 }
 
-/* La tab che si sta guardando: elemento di lista selezionato di Material 3 (secondary container). */
+/* The tab being looked at: selected list item of Material 3 (secondary container). */
 .tab.current {
   --row-bg: var(--md-sys-color-secondary-container);
   background: var(--row-bg);
@@ -683,28 +683,28 @@ input.group-name:not(:read-only) {
   --row-bg: color-mix(in srgb, var(--md-sys-color-secondary-container), var(--md-sys-color-on-secondary-container) var(--md-sys-state-hover));
 }
 
-/* Sulla tab attiva "Sposta in…" prende il colore del testo della riga. */
+/* On the active tab "Move to…" takes the row's text color. */
 .tab.current .move {
   color: var(--md-sys-color-on-secondary-container);
 }
 
-/* Audio: pulsante icona a due stati di Material 3, sempre visibile finché la tab suona o è muta. */
+/* Audio: Material 3 two-state icon button, always visible while the tab plays or is muted. */
 .tab>.icon.audio.muted {
   --btn-fg: var(--md-sys-color-primary);
 }
 
-/* "Chiudi N tab": pulsante di testo con il colore di errore, conferma la chiusura del gruppo. */
+/* "Close N tabs": text button with the error color, confirms the closing of the group. */
 button.text.close-group {
   --btn-fg: var(--md-sys-color-error);
   white-space: nowrap;
 }
 
-/* Il pallino dentro l'intestazione cliccabile dei gruppi aperti segue il cursore del pulsante. */
+/* The dot inside the clickable header of the open groups follows the button's cursor. */
 .group-toggle .swatch.static {
   cursor: inherit;
 }
 
-/* Drag and drop (drag.ts): la linea dove andrà, il gruppo o la sezione che accoglie, l'elemento trascinato. */
+/* Drag and drop (drag.ts): the line where it will go, the group or section that receives it, the dragged element. */
 .tab[draggable='true'],
 .group-header[draggable='true'] {
   cursor: grab;
@@ -736,7 +736,7 @@ button.text.close-group {
   background: color-mix(in srgb, var(--md-sys-color-surface), var(--md-sys-color-primary) var(--md-sys-state-hover));
 }
 
-/* "Già tra le categorie": stessa misura dei pulsanti icona piccoli, ma è solo un segno. */
+/* "Already among the categories": same size as the small icon buttons, but it is only a mark. */
 .in-categories {
   display: inline-flex;
   align-items: center;
@@ -747,8 +747,8 @@ button.text.close-group {
   color: var(--md-sys-color-primary);
 }
 
-/* La zona "Nuovo gruppo", solo durante il trascinamento di una tab. Resta in fondo all'area visibile
-   anche con un elenco lungo, sopra le righe ma senza spostarle (vedi App.tsx). */
+/* The "New group" zone, only while dragging a tab. It stays at the bottom of the visible area
+   even with a long list, above the rows but without moving them (see App.tsx). */
 .new-group-drop {
   position: sticky;
   bottom: 0;
@@ -763,7 +763,7 @@ button.text.close-group {
   color: var(--md-sys-color-on-surface-variant);
 }
 
-/* Trascinando una tab la sezione "Senza gruppo" compare anche vuota, con lo spazio per lasciarla. */
+/* While dragging a tab the "Ungrouped" section appears even when empty, with the space to drop it. */
 .card-list:empty {
   min-height: 40px;
 }

@@ -1,7 +1,7 @@
 /**
- * Esc nasconde i tooltip visibili (`data-tooltip`, vedi base.css) senza spostare mouse o focus, come chiede
- * WCAG 1.4.13: un tooltip aperto dal focus copre la riga sotto. Tornano spostando il focus o il puntatore
- * su un altro elemento. Esc arriva comunque anche al resto della pagina (es. chiude la tavolozza).
+ * Esc hides the visible tooltips (`data-tooltip`, see base.css) without moving mouse or focus, as WCAG 1.4.13 asks:
+ * a tooltip opened by focus covers the row below. They come back by moving focus or the pointer
+ * to another element. Esc still reaches the rest of the page too (e.g. it closes the palette).
  */
 export function dismissTooltipsOnEscape() {
   const hidden = new Set<Element>();

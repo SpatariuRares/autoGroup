@@ -11,13 +11,13 @@ interface TabsSectionProps {
   onExcludedDomains: (value: string[]) => unknown;
 }
 
-/** "Tab da organizzare": quante tab servono per un gruppo nuovo e quali domini non toccare mai. */
+/** "Tabs to organize": how many tabs are needed for a new group and which domains never to touch. */
 export function TabsSection({ minTabs, onMinTabs, excludedDomains, onExcludedDomains }: TabsSectionProps) {
   const [value, setValue] = useState(String(minTabs));
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const valid = value.trim() !== '' && isValidMinTabs(Number(value));
-  // Segue il valore salvato quando cambia da fuori (import, "Annulla", altra pagina), non mentre si scrive.
+  // Follows the saved value when it changes from outside (import, "Undo", another page), not while typing.
   useEffect(() => {
     if (Number(value) !== minTabs) setValue(String(minTabs));
   }, [minTabs]);
@@ -52,7 +52,7 @@ export function TabsSection({ minTabs, onMinTabs, excludedDomains, onExcludedDom
               if (e.target.value.trim() !== '' && isValidMinTabs(next) && next !== minTabs) onMinTabs(next);
             }}
           />
-          {/* Sempre presente e live: passando da suggerimento a errore il nuovo testo viene letto. */}
+          {/* Always present and live: switching from hint to error reads the new text out. */}
           <p id="min-tabs-hint" className={valid ? 'hint' : 'hint error'} aria-live="polite">
             {valid ? t('optionsMinTabsHint') : t('optionsMinTabsInvalid')}
           </p>

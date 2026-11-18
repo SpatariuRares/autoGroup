@@ -1,30 +1,30 @@
 import { useLayoutEffect, useRef } from 'react';
 
-/** Dopo quanto un ricordo non serve più: l'azione non ha tolto l'elemento, o l'ha tolto molto più tardi. */
+/** After how long a memory is no longer useful: the action did not remove the element, or removed it much later. */
 const EXPIRY_MS = 10_000;
 
 const FOCUSABLE = 'button:not(:disabled), select:not(:disabled), input:not(:disabled), textarea:not(:disabled), a[href], summary';
 
-/** I controlli visibili dentro un elemento, nell'ordine in cui li raggiunge Tab. */
+/** The visible controls inside an element, in the order Tab reaches them. */
 const controls = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((c) => c.checkVisibility());
 
 interface Pending {
   from: HTMLElement;
-  /** Le voci accanto a quella di partenza: prima le successive, poi le precedenti dalla più vicina. */
+  /** The items next to the starting one: first the following ones, then the preceding ones starting from the closest. */
   neighbours: HTMLElement[];
-  /** Posizione del controllo di partenza nella sua voce, per arrivare sullo stesso (es. da ✕ a ✕). */
+  /** Position of the starting control within its item, to land on the same one (e.g. from ✕ to ✕). */
   position: number;
-  /** I contenitori della voce, dal più vicino: l'ultima risorsa se non resta nessuna voce. */
+  /** The containers of the item, closest first: the last resort if no item is left. */
   ancestors: HTMLElement[];
   at: number;
 }
 
 /**
- * Se un clic o una scelta tolgono dalla pagina il controllo che ha il focus (chiudi una tab, togli un sito,
- * elimina una categoria…), il focus andrebbe al body e chi usa tastiera o screen reader ripartirebbe da capo.
- * Questo hook lo porta sullo stesso controllo della voce accanto (`items` è il selettore delle voci), o sul
- * primo controllo del contenitore più vicino rimasto. Restituisce il gestore da mettere su onClickCapture e
- * onChangeCapture della radice; il ripristino avviene dopo ogni render del componente che lo usa.
+ * If a click or a choice removes from the page the control that has focus (close a tab, remove a site,
+ * delete a category…), focus would go to the body and keyboard or screen reader users would start over.
+ * This hook moves it to the same control of the adjacent item (`items` is the selector of the items), or to the
+ * first control of the closest remaining container. It returns the handler to put on onClickCapture and
+ * onChangeCapture of the root; the restore happens after every render of the component that uses it.
  */
 export function useFocusRecovery(items: string) {
   const pending = useRef<Pending | null>(null);
@@ -37,7 +37,7 @@ export function useFocusRecovery(items: string) {
       return;
     }
     pending.current = null;
-    // Qualcun altro ha già spostato il focus (es. un pannello che si apre): lo si lascia lì.
+    // Someone else has already moved focus (e.g. a panel that opens): leave it there.
     if (document.activeElement && document.activeElement !== document.body) return;
     for (const item of p.neighbours) {
       if (!item.isConnected || !item.checkVisibility()) continue;

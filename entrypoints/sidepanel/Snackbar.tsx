@@ -6,12 +6,12 @@ import { openSettings } from './open-settings';
 type Notice = NonNullable<OrganizerState['notice']>;
 
 /**
- * La snackbar del pannello: una sola alla volta, la prima che c'è in quest'ordine.
- * 1. L'offerta "Metti sempre qui" dopo "Sposta in…" verso una categoria (`offer`), solo con una proposta.
- * 2. "Aggiungi alle categorie" in corso (`savingName`).
- * 3. Il suo esito (`saved`), con il collegamento alle categorie se manca la descrizione.
- * 4. L'ultimo avviso dell'Organizzatore, solo con una proposta (`notice`); senza, l'avviso è un banner.
- * La regione live è sempre presente: la snackbar che ci compare dentro viene letta.
+ * The panel's snackbar: only one at a time, the first one present in this order.
+ * 1. The offer "Always put here" after "Move to…" towards a category (`offer`), only with a proposal.
+ * 2. "Add to categories" in progress (`savingName`).
+ * 3. Its outcome (`saved`), with the link to the categories if the description is missing.
+ * 4. The Organizer's latest notice, only with a proposal (`notice`); without one, the notice is a banner.
+ * The live region is always present: the snackbar that appears inside it is read out.
  */
 export function Snackbar({
   withProposal,

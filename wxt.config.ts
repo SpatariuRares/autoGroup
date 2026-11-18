@@ -4,23 +4,23 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   manifest: {
     name: '__MSG_extName__',
-    // Il nome intero porta le parole cercate nello store; dove lo spazio è poco Chrome mostra questo.
+    // The full name carries the words searched for in the store; where space is short Chrome shows this.
     short_name: 'autoGroup',
     description: '__MSG_extDescription__',
     default_locale: 'it',
     permissions: ['tabs', 'tabGroups', 'storage', 'scripting'],
-    // Chiesti solo quando servono: l'host del provider configurato (al salvataggio) e <all_urls>
-    // per la descrizione delle pagine (all'accensione dell'opzione).
+    // Requested only when needed: the configured provider's host (on save) and <all_urls>
+    // for page descriptions (when the option is turned on).
     optional_host_permissions: ['http://*/*', 'https://*/*', '<all_urls>'],
-    // Solo per scripts/smoke.mjs: in headless la richiesta dei permessi non si può accettare,
-    // quindi la build di prova li concede in anticipo (provider locali e descrizioni delle pagine).
+    // Only for scripts/smoke.mjs: in headless the permission request cannot be accepted,
+    // so the test build grants them in advance (local providers and page descriptions).
     ...(process.env.AUTOGROUP_SMOKE ? { host_permissions: ['<all_urls>'] } : {}),
     action: {
       default_title: '__MSG_actionTitle__',
     },
-    // Apre il pannello laterale. È solo suggerita: l'utente può cambiarla da chrome://extensions/shortcuts,
-    // e Chrome non la assegna se un'altra estensione la usa già. Senza descrizione: per
-    // _execute_action Chrome la ignora e mostra il titolo dell'azione.
+    // Opens the side panel. It is only suggested: the user can change it at chrome://extensions/shortcuts,
+    // and Chrome does not assign it if another extension already uses it. Without a description: for
+    // _execute_action Chrome ignores it and shows the action's title.
     commands: {
       _execute_action: {
         suggested_key: { default: 'Alt+Shift+G' },

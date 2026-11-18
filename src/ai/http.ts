@@ -1,9 +1,9 @@
 import { ProviderError } from './types';
 
 /**
- * Tempi dei provider AI, in un unico punto. I test li accorciano per non aspettare davvero.
- * - `classifier` / `generator`: timeout per richiesta (PRD: 5 s e 30 s);
- * - `retryDelay`: attesa prima dell'unico nuovo tentativo.
+ * AI provider timeouts, in one place. Tests shorten them so they don't actually wait.
+ * - `classifier` / `generator`: timeout per request (PRD: 5 s and 30 s);
+ * - `retryDelay`: wait before the single retry.
  */
 export const TIMINGS = {
   classifier: 5_000,
@@ -12,17 +12,17 @@ export const TIMINGS = {
 };
 
 /**
- * Segnale che scade dopo `ms`, unito a quello di "Interrompi". Usa un `setTimeout` esplicito invece
- * di `AbortSignal.timeout`: un segnale combinato con `AbortSignal.any` è tenuto solo con riferimenti
- * deboli, e se la richiesta resta appesa il timeout può essere raccolto dal garbage collector senza
- * mai scattare. `done()` va chiamato alla fine per liberare il timer.
+ * Signal that expires after `ms`, combined with the one from "Stop". Uses an explicit `setTimeout`
+ * instead of `AbortSignal.timeout`: a signal combined with `AbortSignal.any` is held only by weak
+ * references, and if the request stays pending the timeout can be garbage-collected without
+ * ever firing. `done()` must be called at the end to free the timer.
  */
 export function deadline(ms: number, signal?: AbortSignal) {
   const timeout = new AbortController();
   const timer = setTimeout(() => timeout.abort(new DOMException('timeout', 'TimeoutError')), ms);
   return {
     signal: signal ? AbortSignal.any([signal, timeout.signal]) : timeout.signal,
-    /** Vero se è scaduto il tempo (e non è stato premuto "Interrompi"). */
+    /** True if the time has run out (and "Stop" was not pressed). */
     get expired() {
       return timeout.signal.aborted && !signal?.aborted;
     },
@@ -30,7 +30,7 @@ export function deadline(ms: number, signal?: AbortSignal) {
   };
 }
 
-/** Classifica una risposta HTTP non riuscita nella causa dell'avviso. */
+/** Classifies a failed HTTP response into the cause of the warning. */
 function errorForStatus(status: number): ProviderError {
   if (status === 401 || status === 403) return new ProviderError('invalid-key', `HTTP ${status}`, status);
   if (status === 429 || status === 529) return new ProviderError('rate-limit', `HTTP ${status}`, status);
@@ -38,7 +38,7 @@ function errorForStatus(status: number): ProviderError {
   return new ProviderError('unreachable', `HTTP ${status}`, status);
 }
 
-/** Solo gli errori temporanei meritano un nuovo tentativo: 429, 529 e 5xx. */
+/** Only transient errors deserve a new attempt: 429, 529 and 5xx. */
 function isRetryable(err: unknown): boolean {
   if (!(err instanceof ProviderError) || err.status === undefined) return false;
   return err.status === 429 || err.status === 529 || err.status >= 500;
@@ -50,7 +50,7 @@ interface PostJsonOptions {
   signal?: AbortSignal;
 }
 
-/** Attende `ms`, ma si interrompe subito se arriva "Interrompi". */
+/** Waits `ms`, but stops immediately if "Stop" arrives. */
 function wait(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(resolve, ms);
@@ -86,7 +86,7 @@ async function postOnce(url: string, body: unknown, options: PostJsonOptions): P
     } catch (err) {
       if (options.signal?.aborted) throw err;
       if (time.expired) throw new ProviderError('timeout', 'timeout');
-      throw new ProviderError('invalid-response', 'risposta non JSON');
+      throw new ProviderError('invalid-response', 'non-JSON response');
     }
   } finally {
     time.done();
@@ -94,10 +94,10 @@ async function postOnce(url: string, body: unknown, options: PostJsonOptions): P
 }
 
 /**
- * POST JSON verso un provider AI, comune a tutti gli adattatori: chiave come `Bearer` (se c'è),
- * timeout per richiesta, **un solo nuovo tentativo** dopo una breve attesa per 429, 529 e 5xx,
- * e ogni errore trasformato in `ProviderError` con la sua causa. 401, 403, 422, errori di rete e
- * timeout non vengono ritentati. Un'interruzione voluta (`signal`) viene rilanciata così com'è.
+ * POST JSON to an AI provider, shared by all adapters: key as `Bearer` (if any),
+ * per-request timeout, **a single new attempt** after a short wait for 429, 529 and 5xx,
+ * and every error turned into a `ProviderError` with its cause. 401, 403, 422, network errors and
+ * timeouts are not retried. A deliberate interruption (`signal`) is rethrown as is.
  */
 export async function postJson(url: string, body: unknown, options: PostJsonOptions): Promise<unknown> {
   try {

@@ -175,7 +175,7 @@ With local providers the AI proposal arrives in 10–30 s, and after a timeout t
 
 ### Computation times (`stopwatch.ts`)
 
-Each `propose` that actually computes measures its phases with a stopwatch: `inputs` (`collectInputs`), `preview` (preview and first save of the state), `descriptions`, `classifier`, `generator`, `domain` (fallback or by-site mode) and `total`. A phase that does not start does not appear. The times, in whole milliseconds, go to the service worker log (`autoGroup: tempi del calcolo (ms)`) and to `proposal.timings`, so the smoke test and the measurement scripts read them from `storage.session`. They are diagnostics only: they are not part of the signature and the panel does not show them.
+Each `propose` that actually computes measures its phases with a stopwatch: `inputs` (`collectInputs`), `preview` (preview and first save of the state), `descriptions`, `classifier`, `generator`, `domain` (fallback or by-site mode) and `total`. A phase that does not start does not appear. The times, in whole milliseconds, go to the service worker log (`autoGroup: computation timings (ms)`) and to `proposal.timings`, so the smoke test and the measurement scripts read them from `storage.session`. They are diagnostics only: they are not part of the signature and the panel does not show them.
 
 ### Proposal signature
 
@@ -437,7 +437,7 @@ The Generator is "configured" with a preset other than "None" and URL and model 
 interface Category { id: string; name: string; description: string; color: GroupColor }
 ```
 
-- **Defaults** (`defaultCategories`): Work, Dev, AI, Social, News, Video, Shopping, Travel, Finance, Study, with name and description taken from `chrome.i18n` (`category_<chiave>_name`, `category_<chiave>_description`), so in the browser's language (Italian, English, Spanish, French or German). Fixed colors; since there are 10 categories and 9 colors, Work and Study share blue.
+- **Defaults** (`defaultCategories`): Work, Dev, AI, Social, News, Video, Shopping, Travel, Finance, Study, with name and description taken from `chrome.i18n` (`category_<key>_name`, `category_<key>_description`), so in the browser's language (Italian, English, Spanish, French or German). Fixed colors; since there are 10 categories and 9 colors, Work and Study share blue.
 - **Validation** (`validateCategories`): name not empty, at most 40 characters, unique ignoring case and surrounding spaces (`categoryKey`); description at most 300 characters; color among Chrome's 9. The limits keep the list well under the 8 KB per item of `storage.sync`. An empty list is allowed.
 - **Restore defaults** (`resetCategories`): deletes the key, so it goes back to the defaults in the current browser language.
 - The categories are in `ProposalInputs.settings.categories`: this is where Generator and Classifier will read them (AG-06, AG-08). They are part of the proposal's signature, so editing them makes a saved proposal no longer current.
@@ -478,7 +478,7 @@ The Generator comes before the Classifier, the opposite of the pipeline: it is e
 
 ### Notices in the panel
 
-The proposal's notices appear at the top of the preview ("Less accurate proposal: OpenRouter (openrouter.ai) is not reachable.") with a link that opens the settings at the provider's section. The text comes from the key `warning_<causa>` (with `-` replaced by `_` through `warningKey`, because Chrome does not accept `-` in keys). `existing` groups cannot be renamed or recolored in the panel, because "Apply" does not change their name and color.
+The proposal's notices appear at the top of the preview ("Less accurate proposal: OpenRouter (openrouter.ai) is not reachable.") with a link that opens the settings at the provider's section. The text comes from the key `warning_<cause>` (with `-` replaced by `_` through `warningKey`, because Chrome does not accept `-` in keys). `existing` groups cannot be renamed or recolored in the panel, because "Apply" does not change their name and color.
 
 ## Panel ↔ service worker messages
 
@@ -559,7 +559,7 @@ The panel contains no grouping logic.
 
 All texts go through `t(key)` (`src/shared/i18n.ts`), which uses `chrome.i18n.getMessage`. The name, description and action title in the manifest are also `__MSG_…__`. Default language: Italian; English, Spanish, French and German complete, with the same keys and placeholders (checked by `tests/locales.test.ts`). Only texts the user does not see stay outside `chrome.i18n`: the prompts for the AI (in English, with the language of the names passed separately), the instructions to the Classifier and the internal error messages written to the console.
 
-Some keys are composed at runtime: `warning_<causa>` (via `warningKey`, which replaces `-` with `_`), `color_<colore>`, `provenance_<provenienza>`, `nanoStatus_<stato>`, `category_<chiave>_name|description`. `tests/locales.test.ts` checks both these and every key written in the code.
+Some keys are composed at runtime: `warning_<cause>` (via `warningKey`, which replaces `-` with `_`), `color_<color>`, `provenance_<provenance>`, `nanoStatus_<state>`, `category_<key>_name|description`. `tests/locales.test.ts` checks both these and every key written in the code.
 
 ## Keyboard shortcut
 

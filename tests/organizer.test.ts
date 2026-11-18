@@ -16,14 +16,14 @@ beforeEach(() => {
   organizer = createOrganizer();
 });
 
-/** Nomi dei gruppi proposti con i titoli delle loro tab. */
+/** Names of the proposed groups with the titles of their tabs. */
 async function proposedGroups(windowId = W) {
   const state = await organizer.propose(windowId);
   return state.proposal!.groups.map((g) => ({ name: g.name, tabs: g.tabs.map((t) => t.title) }));
 }
 
-describe('proposta per dominio', () => {
-  it('raggruppa le tab dello stesso dominio, con nome senza "www." e provenienza dominio', async () => {
+describe('proposal by domain', () => {
+  it('groups the tabs of the same domain, with a name without "www." and domain provenance', async () => {
     strip.addTab({ url: 'https://www.github.com/a', title: 'GH A' });
     strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN' });
     strip.addTab({ url: 'https://github.com/b?x=1#y', title: 'GH B' });
@@ -36,14 +36,14 @@ describe('proposta per dominio', () => {
     ]);
   });
 
-  it('non crea gruppi di una sola tab', async () => {
+  it('does not create groups of a single tab', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://b.com/1', title: 'B1' });
 
     expect(await proposedGroups()).toEqual([]);
   });
 
-  it('considera solo le tab libere e reali della finestra corrente', async () => {
+  it('considers only the free, real tabs of the current window', async () => {
     strip.addTab({ url: 'https://site.com/pinned', title: 'Fissata', pinned: true });
     strip.addTab({ url: 'https://site.com/other-window', title: 'Altra finestra', windowId: 2 });
     const inGroup = strip.addTab({ url: 'https://site.com/grouped', title: 'Già raggruppata' });
@@ -58,7 +58,7 @@ describe('proposta per dominio', () => {
     expect(await proposedGroups()).toEqual([{ name: 'site.com', tabs: ['Uno', 'Due'] }]);
   });
 
-  it('aggiunge le tab di un sito al gruppo aperto con lo stesso nome, anche una sola', async () => {
+  it('adds the tabs of a site to the open group with the same name, even a single one', async () => {
     const mine = strip.addTab({ url: 'https://github.com/old', title: 'Vecchia' });
     const chromeGroup = await strip.addGroup('GitHub.com', 'green', [mine]);
     strip.addTab({ url: 'https://github.com/new', title: 'Nuova' });
@@ -73,7 +73,7 @@ describe('proposta per dominio', () => {
     expect(strip.groupsIn().map((g) => [g.title, g.tabs])).toEqual([['GitHub.com', ['Vecchia', 'Nuova']]]);
   });
 
-  it('assegna ai gruppi nuovi i colori non ancora usati nella finestra, a rotazione', async () => {
+  it('assigns the new groups the colors not yet used in the window, in rotation', async () => {
     const mine = strip.addTab({ url: 'https://mine.com/', title: 'Mia' });
     await strip.addGroup('Mio', 'grey', [mine]);
     for (const site of ['a.com', 'b.com', 'c.com']) {
@@ -86,7 +86,7 @@ describe('proposta per dominio', () => {
     expect(proposal!.groups.map((g) => g.color)).toEqual(['blue', 'red', 'yellow']);
   });
 
-  it('non sposta né raggruppa nessuna tab prima di "Applica"', async () => {
+  it('does not move or group any tab before "Apply"', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://b.com/1', title: 'B1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
@@ -98,12 +98,12 @@ describe('proposta per dominio', () => {
     expect(strip.groupsIn()).toEqual([]);
   });
 
-  it('conserva la proposta nello stato di sessione, così il pannello la ritrova', async () => {
+  it('keeps the proposal in the session state, so the panel finds it again', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
 
     const first = await organizer.propose(W);
-    // Un nuovo Organizzatore simula il service worker riavviato o il pannello riaperto.
+    // A new Organizer simulates the service worker restarting or the panel being reopened.
     const reopened = createOrganizer();
     const state = await reopened.state();
 
@@ -112,7 +112,7 @@ describe('proposta per dominio', () => {
     expect(await reopened.propose(W)).toEqual(first);
   });
 
-  it('riconosce un calcolo in corso: due richieste insieme producono una sola proposta', async () => {
+  it('recognizes a computation in progress: two requests together produce a single proposal', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
 
@@ -122,8 +122,8 @@ describe('proposta per dominio', () => {
   });
 });
 
-describe('applica', () => {
-  it('crea in Chrome esattamente i gruppi della proposta, con nome e colore', async () => {
+describe('apply', () => {
+  it('creates in Chrome exactly the groups of the proposal, with name and color', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://b.com/1', title: 'B1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
@@ -141,7 +141,7 @@ describe('applica', () => {
     expect(strip.layout()).toContain('C1');
   });
 
-  it('non tocca i gruppi già aperti', async () => {
+  it('does not touch the groups already open', async () => {
     const mine = strip.addTab({ url: 'https://a.com/mine', title: 'Mia' });
     await strip.addGroup('Mio', 'red', [mine]);
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
@@ -156,7 +156,7 @@ describe('applica', () => {
     ]);
   });
 
-  it('salta le tab chiuse tra la proposta e "Applica"', async () => {
+  it('skips the tabs closed between the proposal and "Apply"', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     const closed = strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     strip.addTab({ url: 'https://a.com/3', title: 'A3' });
@@ -168,7 +168,7 @@ describe('applica', () => {
     expect(strip.groupsIn().map((g) => g.tabs)).toEqual([['A1', 'A3']]);
   });
 
-  it('dopo "Applica" la proposta non c\'è più e una nuova apertura ricalcola', async () => {
+  it('after "Apply" the proposal is no longer there and a new opening recomputes', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
 
@@ -180,8 +180,8 @@ describe('applica', () => {
   });
 });
 
-describe('annulla', () => {
-  /** Barra mista: tab fissata, gruppo dell'utente, tab libere di due domini e una tab singola. */
+describe('undo', () => {
+  /** Mixed strip: pinned tab, the user's group, free tabs of two domains and a single tab. */
   async function mixedStrip() {
     strip.addTab({ url: 'https://pinned.com/', title: 'Fissata', pinned: true });
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
@@ -194,14 +194,14 @@ describe('annulla', () => {
     strip.addTab({ url: 'https://a.com/3', title: 'A3' });
   }
 
-  it('non è disponibile prima di "Applica", lo è dopo', async () => {
+  it('is not available before "Apply", it is after', async () => {
     await mixedStrip();
 
     expect((await organizer.propose(W)).undo).toBeUndefined();
     expect((await organizer.apply()).undo).toBeDefined();
   });
 
-  it('riporta ogni tab nella posizione e nel gruppo originali e scioglie i gruppi creati', async () => {
+  it('restores every tab to its original position and group and dissolves the groups created', async () => {
     await mixedStrip();
     const before = strip.layout();
 
@@ -215,7 +215,7 @@ describe('annulla', () => {
     expect(state.undo).toBeUndefined();
   });
 
-  it('ignora le tab chiuse nel frattempo', async () => {
+  it('ignores the tabs closed in the meantime', async () => {
     await mixedStrip();
     const before = strip.layout();
     await organizer.propose(W);
@@ -230,7 +230,7 @@ describe('annulla', () => {
     expect(strip.groupsIn().map((g) => g.title)).toEqual(['Mio']);
   });
 
-  it('non tocca le tab aperte dopo', async () => {
+  it('does not touch the tabs opened afterwards', async () => {
     await mixedStrip();
     const before = strip.layout();
     await organizer.propose(W);
@@ -242,7 +242,7 @@ describe('annulla', () => {
     expect(strip.layout()).toEqual([...before, 'Nuova']);
   });
 
-  it('non rinomina all\'indietro i gruppi rinominati dall\'utente', async () => {
+  it('does not rename back the groups renamed by the user', async () => {
     await mixedStrip();
     await organizer.propose(W);
     await organizer.apply();
@@ -254,7 +254,7 @@ describe('annulla', () => {
     expect(strip.groupsIn().map((g) => g.title)).toEqual(['Rinominato']);
   });
 
-  it('resta disponibile dopo una nuova proposta e vale solo per l\'ultima operazione', async () => {
+  it('stays available after a new proposal and applies only to the last operation', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://b.com/1', title: 'B1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
@@ -262,7 +262,7 @@ describe('annulla', () => {
     await organizer.apply();
     const afterFirst = strip.layout();
 
-    // Riaprendo il pannello si calcola una nuova proposta: l'annulla resta.
+    // Reopening the panel computes a new proposal: the undo stays.
     strip.addTab({ url: 'https://b.com/2', title: 'B2' });
     const reopened = await organizer.propose(W);
     expect(reopened.undo).toBeDefined();
@@ -270,15 +270,15 @@ describe('annulla', () => {
     await organizer.apply();
     await organizer.undo();
 
-    // Si torna allo stato dopo la prima organizzazione, non a quello iniziale.
+    // Back to the state after the first organization, not to the initial one.
     expect(strip.layout()).toEqual([...afterFirst, 'B1', 'B2'].filter((t, i, all) => all.indexOf(t) === i));
     expect(strip.groupsIn().map((g) => g.title)).toEqual(['a.com']);
     expect((await organizer.state()).undo).toBeUndefined();
   });
 });
 
-describe('anteprima modificabile', () => {
-  /** Tre domini con due tab ciascuno: a.com, b.com, c.com. */
+describe('editable preview', () => {
+  /** Three domains with two tabs each: a.com, b.com, c.com. */
   async function threeDomains() {
     for (const site of ['a.com', 'b.com', 'c.com']) {
       strip.addTab({ url: `https://${site}/1`, title: `${site} 1` });
@@ -292,7 +292,7 @@ describe('anteprima modificabile', () => {
 
   const appliedGroups = () => strip.groupsIn().map(({ title, color, tabs }) => ({ title, color, tabs }));
 
-  it('"Applica" crea esattamente i gruppi della proposta modificata', async () => {
+  it('"Apply" creates exactly the groups of the edited proposal', async () => {
     const { id, tab } = await threeDomains();
 
     await organizer.edit({ kind: 'rename', groupId: id('a.com'), name: '  Lavoro  ' });
@@ -306,7 +306,7 @@ describe('anteprima modificabile', () => {
     expect(strip.layout().filter((t) => !t.includes('['))).toEqual(['b.com 2', 'c.com 1', 'c.com 2']);
   });
 
-  it('un gruppo rimasto senza tab sparisce dalla proposta', async () => {
+  it('a group left without tabs disappears from the proposal', async () => {
     const { id, tab } = await threeDomains();
 
     await organizer.edit({ kind: 'move-tab', tabId: tab('b.com 1'), toGroupId: id('a.com') });
@@ -318,7 +318,7 @@ describe('anteprima modificabile', () => {
     ]);
   });
 
-  it('le modifiche restano nello stato, così sopravvivono alla chiusura del pannello', async () => {
+  it('the edits stay in the state, so they survive closing the panel', async () => {
     const { id } = await threeDomains();
 
     const edited = await organizer.edit({ kind: 'rename', groupId: id('b.com'), name: 'Video' });
@@ -328,7 +328,7 @@ describe('anteprima modificabile', () => {
     expect(reopened.proposal!.groups.map((g) => g.name)).toEqual(['a.com', 'Video', 'c.com']);
   });
 
-  it('ignora le modifiche a gruppi o tab che non esistono', async () => {
+  it('ignores edits to groups or tabs that do not exist', async () => {
     const { id } = await threeDomains();
     const before = (await organizer.state()).proposal;
 
@@ -339,7 +339,7 @@ describe('anteprima modificabile', () => {
     expect((await organizer.state()).proposal).toEqual(before);
   });
 
-  it('ogni gruppo indica la provenienza e le sue tab', async () => {
+  it('every group shows its provenance and its tabs', async () => {
     await threeDomains();
     const { proposal } = await organizer.state();
 
@@ -350,8 +350,8 @@ describe('anteprima modificabile', () => {
   });
 });
 
-describe('impostazioni: comportamento e domini esclusi', () => {
-  it('di default il minimo è 2 e non ci sono domini esclusi, salvati in storage.sync', async () => {
+describe('settings: behavior and excluded domains', () => {
+  it('by default the minimum is 2 and there are no excluded domains, saved in storage.sync', async () => {
     expect(await loadSettings()).toMatchObject(DEFAULT_SETTINGS);
     await saveSettings({ minTabs: 4, excludedDomains: ['bank.com'] });
     expect(await fakeBrowser.storage.sync.get(['minTabs', 'excludedDomains'])).toEqual({
@@ -360,7 +360,7 @@ describe('impostazioni: comportamento e domini esclusi', () => {
     });
   });
 
-  it('con un minimo di 3 tab un dominio con 2 tab non forma un gruppo', async () => {
+  it('with a minimum of 3 tabs a domain with 2 tabs does not form a group', async () => {
     await saveSettings({ minTabs: 3 });
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
@@ -371,7 +371,7 @@ describe('impostazioni: comportamento e domini esclusi', () => {
     expect(await proposedGroups()).toEqual([{ name: 'b.com', tabs: ['B1', 'B2', 'B3'] }]);
   });
 
-  it('con un minimo di 1 anche una tab sola forma un gruppo', async () => {
+  it('with a minimum of 1 even a single tab forms a group', async () => {
     await saveSettings({ minTabs: 1 });
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://b.com/1', title: 'B1' });
@@ -382,7 +382,7 @@ describe('impostazioni: comportamento e domini esclusi', () => {
     ]);
   });
 
-  it('il minimo modificato vale per le proposte successive', async () => {
+  it('the changed minimum applies to the following proposals', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     expect(await proposedGroups()).toHaveLength(1);
@@ -393,13 +393,13 @@ describe('impostazioni: comportamento e domini esclusi', () => {
     expect(proposal!.groups).toEqual([]);
   });
 
-  it('rifiuta un minimo che non è un intero maggiore o uguale a 1', async () => {
+  it('rejects a minimum that is not an integer greater than or equal to 1', async () => {
     await expect(saveSettings({ minTabs: 0 })).rejects.toThrow();
     await expect(saveSettings({ minTabs: 1.5 })).rejects.toThrow();
     expect((await loadSettings()).minTabs).toBe(2);
   });
 
-  it('le tab dei domini esclusi e dei loro sottodomini restano fuori dalla proposta', async () => {
+  it('the tabs of excluded domains and their subdomains stay out of the proposal', async () => {
     await saveSettings({ excludedDomains: ['google.com'] });
     strip.addTab({ url: 'https://mail.google.com/1', title: 'Posta 1' });
     strip.addTab({ url: 'https://mail.google.com/2', title: 'Posta 2' });
@@ -411,7 +411,7 @@ describe('impostazioni: comportamento e domini esclusi', () => {
     expect(await proposedGroups()).toEqual([{ name: 'notgoogle.com', tabs: ['Altro 1', 'Altro 2'] }]);
   });
 
-  it('le tab dei domini esclusi restano libere dopo "Applica"', async () => {
+  it('the tabs of excluded domains stay free after "Apply"', async () => {
     await saveSettings({ excludedDomains: ['bank.com'] });
     strip.addTab({ url: 'https://bank.com/1', title: 'Banca 1' });
     strip.addTab({ url: 'https://bank.com/2', title: 'Banca 2' });
@@ -424,7 +424,7 @@ describe('impostazioni: comportamento e domini esclusi', () => {
     expect(strip.layout()).toEqual(['Banca 1', 'Banca 2', 'A1 [a.com]', 'A2 [a.com]']);
   });
 
-  it('normalizza i domini scritti dall\'utente', () => {
+  it('normalizes the domains written by the user', () => {
     expect(normalizeDomain('  https://www.Google.com/path?q=1 ')).toBe('google.com');
     expect(normalizeDomain('mail.google.com')).toBe('mail.google.com');
     expect(normalizeDomain('localhost:8080')).toBe('localhost');
@@ -433,8 +433,8 @@ describe('impostazioni: comportamento e domini esclusi', () => {
   });
 });
 
-describe('robustezza (review AG-R1)', () => {
-  it('una proposta chiesta mentre si applica non cancella la foto per "Annulla"', async () => {
+describe('robustness (review AG-R1)', () => {
+  it('a proposal requested while applying does not erase the snapshot for "Undo"', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://b.com/1', title: 'B1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
@@ -449,7 +449,7 @@ describe('robustezza (review AG-R1)', () => {
     expect(strip.layout()).toEqual(before);
   });
 
-  it('riaprendo il pannello ricalcola se le tab libere sono cambiate', async () => {
+  it('reopening the panel recomputes if the free tabs have changed', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     await organizer.propose(W);
@@ -463,7 +463,7 @@ describe('robustezza (review AG-R1)', () => {
     ]);
   });
 
-  it('riaprendo il pannello tiene la proposta modificata se le tab libere non sono cambiate', async () => {
+  it('reopening the panel keeps the edited proposal if the free tabs have not changed', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     const { proposal } = await organizer.propose(W);
@@ -472,7 +472,7 @@ describe('robustezza (review AG-R1)', () => {
     expect((await proposedGroups())[0]!.name).toBe('Mio nome');
   });
 
-  it('lo stato indica sempre la finestra a cui si riferisce', async () => {
+  it('the state always shows the window it refers to', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
 
@@ -482,10 +482,10 @@ describe('robustezza (review AG-R1)', () => {
   });
 });
 
-describe('catalogo categorie', () => {
+describe('category catalog', () => {
   const names = async () => (await loadSettings()).categories.map((c) => c.name);
 
-  it('al primo avvio ci sono le 10 categorie predefinite in italiano, con descrizione e colore', async () => {
+  it('on first launch there are the 10 predefined categories in Italian, with description and color', async () => {
     const { categories } = await loadSettings();
 
     expect(categories.map((c) => c.name)).toEqual([
@@ -497,7 +497,7 @@ describe('catalogo categorie', () => {
     }
   });
 
-  it('con il browser in inglese le categorie predefinite sono in inglese', async () => {
+  it('with the browser in English the predefined categories are in English', async () => {
     installFakeI18n('en');
 
     expect(await names()).toEqual([
@@ -505,7 +505,7 @@ describe('catalogo categorie', () => {
     ]);
   });
 
-  it('si possono aggiungere, modificare, eliminare e riordinare, e la lista va in storage.sync', async () => {
+  it('categories can be added, edited, deleted and reordered, and the list goes to storage.sync', async () => {
     const { categories } = await loadSettings();
     const [work, dev, ...rest] = categories;
     const edited = [
@@ -525,7 +525,7 @@ describe('catalogo categorie', () => {
     expect((stored.categories as { name: string }[]).map((c) => c.name)).toEqual(await names());
   });
 
-  it('rifiuta i nomi duplicati senza distinguere maiuscole e minuscole, e i nomi vuoti', async () => {
+  it('rejects duplicate names regardless of case, and empty names', async () => {
     const { categories } = await loadSettings();
 
     await expect(
@@ -537,7 +537,7 @@ describe('catalogo categorie', () => {
     expect(await fakeBrowser.storage.sync.get('categories')).toEqual({});
   });
 
-  it('"Ripristina default" riporta la lista iniziale', async () => {
+  it('"Restore defaults" brings back the initial list', async () => {
     await saveSettings({ categories: [{ id: 'mine', name: 'Cucina', description: '', color: 'orange' }] });
     expect(await names()).toEqual(['Cucina']);
 
@@ -547,13 +547,13 @@ describe('catalogo categorie', () => {
     expect(await names()).toHaveLength(10);
   });
 
-  it('una lista vuota è ammessa', async () => {
+  it('an empty list is allowed', async () => {
     await saveSettings({ categories: [] });
 
     expect(await names()).toEqual([]);
   });
 
-  it('le categorie modificate rendono non più attuale una proposta salvata', async () => {
+  it('edited categories make a saved proposal no longer current', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     const first = await organizer.propose(W);

@@ -6,7 +6,7 @@ import { useLiveTabs } from './live-tabs';
 import type { Reorder, Target } from './move-targets';
 import { openTab, setMuted } from './tab-actions';
 
-/** "1 tab" / "3 tab": chrome.i18n non ha i plurali, quindi il singolare ha una chiave sua. */
+/** "1 tab" / "3 tabs": chrome.i18n has no plurals, so the singular has its own key. */
 export const tabCount = (n: number) => (n === 1 ? t('popupTabCountOne') : t('popupTabCount', String(n)));
 export const addedCount = (n: number) => (n === 1 ? t('panelAddedCountOne') : t('panelAddedCount', String(n)));
 
@@ -18,12 +18,12 @@ const REASON_KEY: Record<HeldReason, string> = {
 };
 
 /**
- * Una riga di tab, sempre con il pulsante per andarci (anche Invio sulla riga o doppio clic). Con
- * `targets` mostra il menu per spostarla (vedi `moveTargets`); con `onRemove` la −; con `onClose` la ✕; con `reason` il
- * motivo per cui è ferma. Dai dati dal vivo: la tab attiva è evidenziata, una tab che suona o muta ha
- * il suo pulsante audio, una tab inattiva mostra da quanti giorni. Con `drag` la riga si trascina
- * (tab di un gruppo aperto o senza gruppo, vedi `useTabDrag`); `reorder` mette Su e Giù nello stesso
- * menu, per chi non trascina.
+ * A tab row, always with the button to go there (also Enter on the row or double click). With
+ * `targets` it shows the menu to move it (see `moveTargets`); with `onRemove` the −; with `onClose` the ✕; with `reason` the
+ * reason it is held. From the live data: the active tab is highlighted, a tab that plays sound or is muted has
+ * its audio button, an inactive tab shows for how many days. With `drag` the row can be dragged
+ * (tab of an open group or ungrouped, see `useTabDrag`); `reorder` puts Up and Down in the same
+ * menu, for those who do not drag.
  */
 export function TabRow({
   tab,
@@ -48,13 +48,13 @@ export function TabRow({
   const { className: dragClass, ...dragProps } = useTabDrag(tab.tabId, drag);
   const muted = chrome?.muted ?? false;
   const idleDays = chrome?.idleDays;
-  // Il nome accessibile dei controlli dice anche quale tab: tra tante "Chiudi la tab" si sente quale si chiude.
+  // The accessible name of the controls also says which tab: among many "Close tab" you hear which one is closed.
   const named = (key: string) => `${t(key)}: ${tab.title}`;
   const moves = targets.length > 0;
   const positions = reorder && (reorder.up || reorder.down) ? reorder : undefined;
   const moveLabel = positions ? 'panelMoveTabAnywhere' : 'popupMoveTab';
   return (
-    // tabIndex -1: la riga riceve il focus dalle frecce (row-navigation.ts) anche se non ha controlli.
+    // tabIndex -1: the row receives focus from the arrows (row-navigation.ts) even if it has no controls.
     <li
       className={`tab${added ? ' added' : ''}${reason ? ' held' : ''}${chrome?.active ? ' current' : ''}${dragClass}`}
       aria-current={chrome?.active ? 'true' : undefined}
@@ -70,7 +70,7 @@ export function TabRow({
         <button
           className={`icon small audio${muted ? ' muted' : ''}`}
           data-tooltip={t(muted ? 'panelUnmute' : 'panelMute')}
-          // Niente aria-pressed: con un'etichetta che cambia ("Disattiva" / "Riattiva") direbbe il contrario.
+          // No aria-pressed: with a label that changes ("Mute" / "Unmute") it would say the opposite.
           aria-label={named(muted ? 'panelUnmute' : 'panelMute')}
           onClick={() => setMuted(tab.tabId, !muted)}
         >
@@ -89,7 +89,7 @@ export function TabRow({
         </span>
       )}
       {reason && <span className="tab-chip muted">{t(REASON_KEY[reason])}</span>}
-      {/* Fuori dal flusso: "Sposta in…", −, vai e ✕ compaiono sopra la fine del titolo, così nel pannello stretto il titolo ha tutto lo spazio. */}
+      {/* Out of the flow: "Move to…", −, go and ✕ appear over the end of the title, so in the narrow panel the title has all the space. */}
       <span className="tab-actions">
         {(moves || positions) && (
           <label className="move" data-tooltip={t(moveLabel)}>

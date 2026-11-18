@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-/** Scheda di una sezione: titolo, sottotitolo facoltativo e contenuto. */
+/** Card of a section: title, optional subtitle and content. */
 export function Card({ id, title, hint, aside, children }: { id: string; title: string; hint?: string; aside?: ReactNode; children: ReactNode }) {
   return (
     <section id={id} className="card">

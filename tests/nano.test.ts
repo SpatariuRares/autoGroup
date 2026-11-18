@@ -33,8 +33,8 @@ function openPairs() {
   strip.addTab({ url: 'https://b.com/2', title: 'B2' });
 }
 
-describe('Gemini Nano come Generatore integrato', () => {
-  it('se nessun Generatore è configurato e Nano è disponibile, lo usa con lo schema JSON e senza rete', async () => {
+describe('Gemini Nano as built-in Generator', () => {
+  it('if no Generator is configured and Nano is available, it uses it with the JSON schema and without network', async () => {
     openPairs();
     const { calls } = installFakeNano({
       availability: 'available',
@@ -57,14 +57,14 @@ describe('Gemini Nano come Generatore integrato', () => {
       { id: 't3', title: 'B1', url: 'b.com/1' },
       { id: 't4', title: 'B2', url: 'b.com/2' },
     ]);
-    // Nano non risponde in italiano: lingua dichiarata e nomi chiesti in inglese, come vuole la Prompt API.
+    // Nano does not answer in Italian: declared language and names requested in English, as the Prompt API requires.
     expect(calls[0]!.system).toContain('in English');
     const declared = { expectedInputs: [{ type: 'text', languages: ['en'] }], expectedOutputs: [{ type: 'text', languages: ['en'] }] };
     expect(LanguageModel.availability).toHaveBeenCalledWith(declared);
     expect(LanguageModel.create).toHaveBeenCalledWith(expect.objectContaining(declared));
   });
 
-  it('il Generatore configurato ha la precedenza su Nano', async () => {
+  it('the configured Generator takes precedence over Nano', async () => {
     installFakePermissions(['https://openrouter.ai/*']);
     await saveSettings({ generator: { preset: 'openrouter', baseUrl: 'https://openrouter.ai/api/v1', model: 'm' } });
     openPairs();
@@ -78,7 +78,7 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(summary(state)).toEqual([['Tutto', 'ai', ['A1', 'A2', 'B1', 'B2']]]);
   });
 
-  it('un Generatore configurato senza permesso non viene sostituito da Nano: dominio, con un avviso', async () => {
+  it('a configured Generator without permission is not replaced by Nano: domain, with a warning', async () => {
     await saveSettings({ generator: { preset: 'openrouter', baseUrl: 'https://openrouter.ai/api/v1', model: 'm' } });
     openPairs();
     const nano = installFakeNano({ availability: 'available' });
@@ -90,7 +90,7 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(state.proposal!.warnings.map((w) => w.cause)).toEqual(['no-permission']);
   });
 
-  it('con il Generatore su "Nessuno" Nano non viene usato né interrogato', async () => {
+  it('with the Generator set to "None", Nano is neither used nor queried', async () => {
     await saveSettings({ generator: { preset: 'none', baseUrl: '', model: '' } });
     openPairs();
     const nano = installFakeNano({ availability: 'available' });
@@ -99,7 +99,7 @@ describe('Gemini Nano come Generatore integrato', () => {
 
     expect(nano.created.count).toBe(0);
     expect(LanguageModel.availability).not.toHaveBeenCalled();
-    // Senza nessun provider valgono solo le regole sui siti: qui nessuna.
+    // Without any provider only the site rules apply: here there are none.
     expect(summary(state)).toEqual([]);
     expect(state.proposal!.warnings).toEqual([]);
   });
@@ -108,7 +108,7 @@ describe('Gemini Nano come Generatore integrato', () => {
     ['downloadable', [{ level: 'generator', provider: 'Gemini Nano', cause: 'needs-download' }]],
     ['downloading', [{ level: 'generator', provider: 'Gemini Nano', cause: 'downloading' }]],
     ['unavailable', [{ level: 'generator', provider: 'Gemini Nano', cause: 'not-supported' }]],
-  ] as const)('con Nano "%s" la proposta è per dominio, senza usarlo', async (availability, warnings) => {
+  ] as const)('with Nano "%s" the proposal is per domain, without using it', async (availability, warnings) => {
     openPairs();
     const nano = installFakeNano({ availability });
 
@@ -119,7 +119,7 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(state.proposal!.warnings).toEqual(warnings);
   });
 
-  it('senza la Prompt API nel browser la proposta è per dominio, con l\'avviso che Nano non è supportato', async () => {
+  it('without the Prompt API in the browser the proposal is per domain, with the warning that Nano is not supported', async () => {
     openPairs();
 
     const state = await organizer.propose(W);
@@ -128,7 +128,7 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'Gemini Nano', cause: 'not-supported' }]);
   });
 
-  it('nella modalità per sito Nano non supportato non dà avvisi', async () => {
+  it('in per-site mode unsupported Nano gives no warnings', async () => {
     await saveSettings({ mode: 'domain' });
     openPairs();
 
@@ -137,13 +137,13 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(state.proposal!.warnings).toEqual([]);
   });
 
-  it('se le tab superano il contesto le invia a blocchi, passando i nomi inventati ai blocchi successivi', async () => {
+  it('if the tabs exceed the context they are sent in chunks, passing the invented names to the following chunks', async () => {
     for (let i = 1; i <= 12; i++) strip.addTab({ url: `https://site${i}.com/pagina-con-un-percorso-lungo`, title: `Pagina numero ${i} con un titolo abbastanza lungo` });
     await saveSettings({ categories: [] });
     const { calls } = installFakeNano({
       availability: 'available',
       contextWindow: 420,
-      // Ogni blocco mette tutte le sue tab nello stesso gruppo inventato.
+      // Each chunk puts all its tabs in the same invented group.
       respond: (call) => ({ groups: [{ name: 'Lettura', tabs: call.tabs.map((t) => t.id) }] }),
     });
 
@@ -153,11 +153,11 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(calls.flatMap((c) => c.tabs.map((t) => t.id))).toEqual(Array.from({ length: 12 }, (_, i) => `t${i + 1}`));
     expect(calls[0]!.options).toEqual([]);
     expect(calls[1]!.options).toEqual([{ name: 'Lettura', description: '' }]);
-    // I gruppi con lo stesso nome nei vari blocchi diventano uno solo.
+    // Groups with the same name across the chunks become one.
     expect(summary(state).map(([name, , tabs]) => [name, (tabs as string[]).length])).toEqual([['Lettura', 12]]);
   });
 
-  it('se Nano va in errore la proposta è per dominio, con un avviso', async () => {
+  it('if Nano fails the proposal is per domain, with a warning', async () => {
     openPairs();
     installFakeNano({ availability: 'available', respond: () => new Error('QuotaExceededError') });
 
@@ -167,7 +167,7 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'Gemini Nano', cause: 'invalid-request' }]);
   });
 
-  it('un errore inatteso della sessione (es. clone) diventa "richiesta rifiutata", non un errore generico', async () => {
+  it('an unexpected session error (e.g. clone) becomes "request rejected", not a generic error', async () => {
     openPairs();
     installFakeNano({ availability: 'available', cloneError: new Error('InvalidStateError') });
 
@@ -176,8 +176,8 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'Gemini Nano', cause: 'invalid-request' }]);
   });
 
-  it('il tempo massimo vale per ogni blocco, non per tutti i blocchi insieme', async () => {
-    // Nei test il tempo massimo del Generatore è 200 ms: due blocchi da 120 ms lo superano insieme, non uno per uno.
+  it('the time limit applies to each chunk, not to all the chunks together', async () => {
+    // In tests the Generator's time limit is 200 ms: two chunks of 120 ms exceed it together, not one by one.
     for (let i = 1; i <= 12; i++) strip.addTab({ url: `https://site${i}.com/pagina-con-un-percorso-lungo`, title: `Pagina numero ${i} con un titolo abbastanza lungo` });
     await saveSettings({ categories: [] });
     const { calls } = installFakeNano({
@@ -194,7 +194,7 @@ describe('Gemini Nano come Generatore integrato', () => {
     expect(summary(state)).toHaveLength(1);
   });
 
-  it('valida la risposta di Nano come quella degli altri Generatori', async () => {
+  it('validates the response of Nano like that of the other Generators', async () => {
     openPairs();
     installFakeNano({
       availability: 'available',

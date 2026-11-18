@@ -2,7 +2,7 @@ import { browser } from 'wxt/browser';
 import type { UndoSnapshot } from '../shared/types';
 import { TAB_GROUP_ID_NONE } from './tab-selection';
 
-/** Foto delle tab coinvolte: per ognuna finestra, posizione e gruppo (o nessuno). */
+/** Snapshot of the tabs involved: for each one, window, position and group (or none). */
 export async function takeSnapshot(windowId: number, tabIds: number[]): Promise<UndoSnapshot> {
   const wanted = new Set(tabIds);
   const tabs = await browser.tabs.query({ windowId });
@@ -16,9 +16,9 @@ export async function takeSnapshot(windowId: number, tabIds: number[]): Promise<
 }
 
 /**
- * Riporta ogni tab ancora aperta nel suo gruppo originale (o fuori da ogni gruppo) e nella sua posizione.
- * Le tab chiuse vengono ignorate, quelle aperte dopo non vengono toccate e i gruppi non vengono rinominati.
- * I gruppi creati dall'operazione spariscono da soli quando restano senza tab.
+ * Puts every tab still open back in its original group (or out of any group) and in its position.
+ * Closed tabs are ignored, tabs opened since are not touched, and the groups are not renamed.
+ * The groups created by the operation disappear on their own when they are left without tabs.
  */
 export async function restoreSnapshot(snapshot: UndoSnapshot): Promise<void> {
   const current = new Map<number, { groupId: number }>();
@@ -29,14 +29,14 @@ export async function restoreSnapshot(snapshot: UndoSnapshot): Promise<void> {
   const entries = snapshot.tabs.filter((t) => current.has(t.tabId)).sort((a, b) => a.index - b.index);
   if (entries.length === 0) return;
 
-  // 1. Fuori dai gruppi in cui l'operazione le ha messe.
+  // 1. Out of the groups the operation put them in.
   const toUngroup = entries.filter((t) => current.get(t.tabId)!.groupId !== t.groupId).map((t) => t.tabId);
   if (toUngroup.length > 0) await browser.tabs.ungroup(toUngroup as [number, ...number[]]);
 
-  // 2. Prima tutte in fondo, nell'ordine originale; poi nelle posizioni originali, da sinistra a destra. Così
-  //    a sinistra di ogni destinazione ci sono solo tab già sistemate o non toccate, e ogni indice si riferisce
-  //    alla barra già ricostruita. Senza il primo giro una tab ancora da sistemare (es. la prima di un gruppo,
-  //    che Chrome lascia prima del gruppo quando esce) sposterebbe di uno le altre.
+  // 2. First all at the end, in the original order; then in the original positions, from left to right. This way
+  //    to the left of every destination there are only tabs already placed or untouched, and every index refers to
+  //    the tab strip already rebuilt. Without the first pass, a tab still to be placed (e.g. the first one of a
+  //    group, which Chrome leaves before the group when it exits) would shift the others by one.
   for (const entry of entries) await browser.tabs.move(entry.tabId, { windowId: entry.windowId, index: -1 });
   for (const entry of entries) {
     const windowTabs = await browser.tabs.query({ windowId: entry.windowId });
@@ -44,7 +44,7 @@ export async function restoreSnapshot(snapshot: UndoSnapshot): Promise<void> {
     await browser.tabs.move(entry.tabId, { windowId: entry.windowId, index });
   }
 
-  // 3. Di nuovo nei gruppi originali, se esistono ancora.
+  // 3. Back into the original groups, if they still exist.
   const byGroup = new Map<number, number[]>();
   for (const entry of entries) {
     if (entry.groupId === TAB_GROUP_ID_NONE || !openGroups.has(entry.groupId)) continue;
@@ -54,7 +54,7 @@ export async function restoreSnapshot(snapshot: UndoSnapshot): Promise<void> {
     await browser.tabs.group({ groupId, tabIds: tabIds as [number, ...number[]] });
   }
 
-  // 4. Una tab spostata nel mezzo di un gruppo altrui ci entra (comportamento di Chrome): la si toglie.
+  // 4. A tab moved into the middle of someone else's group joins it (Chrome's behavior): it is removed from it.
   const after = await browser.tabs.query({});
   const intruders = after
     .filter((t) => entries.some((e) => e.tabId === t.id && e.groupId === TAB_GROUP_ID_NONE))

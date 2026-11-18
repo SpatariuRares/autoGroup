@@ -32,8 +32,8 @@ afterEach(() => {
 const AI_GROUP = openAiReply({ groups: [{ name: 'Lettura', tabs: ['t1', 't2'] }] });
 const provenances = (state: Awaited<ReturnType<Organizer['propose']>>) => state.proposal!.groups.map((g) => g.provenance);
 
-describe('nuovo tentativo', () => {
-  it.each([429, 529, 500, 503])('ritenta una volta dopo un %i e usa la seconda risposta', async (status) => {
+describe('retry', () => {
+  it.each([429, 529, 500, 503])('retries once after a %i and uses the second response', async (status) => {
     const { requests } = installFakeFetch(httpError(status), AI_GROUP);
 
     const state = await organizer.propose(W);
@@ -47,7 +47,7 @@ describe('nuovo tentativo', () => {
     [429, 'rate-limit'],
     [529, 'rate-limit'],
     [502, 'unreachable'],
-  ] as const)('ritenta una sola volta: due %i di fila portano al livello successivo con l\'avviso "%s"', async (status, cause) => {
+  ] as const)('retries only once: two %i in a row lead to the next level with the warning "%s"', async (status, cause) => {
     const { requests } = installFakeFetch(httpError(status));
 
     const state = await organizer.propose(W);
@@ -61,7 +61,7 @@ describe('nuovo tentativo', () => {
     [401, 'invalid-key'],
     [403, 'invalid-key'],
     [422, 'invalid-request'],
-  ] as const)('non ritenta dopo un %i: avviso "%s"', async (status, cause) => {
+  ] as const)('does not retry after a %i: warning "%s"', async (status, cause) => {
     const { requests } = installFakeFetch(httpError(status), AI_GROUP);
 
     const state = await organizer.propose(W);
@@ -70,7 +70,7 @@ describe('nuovo tentativo', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: GEN, cause }]);
   });
 
-  it('non ritenta dopo un errore di rete: avviso "non raggiungibile" con nome e URL del provider', async () => {
+  it('does not retry after a network error: "unreachable" warning with the provider name and URL', async () => {
     const { requests } = installFakeFetch(new TypeError('Failed to fetch'), AI_GROUP);
 
     const state = await organizer.propose(W);
@@ -79,19 +79,19 @@ describe('nuovo tentativo', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: GEN, cause: 'unreachable' }]);
   });
 
-  it('vale anche per il Classificatore', async () => {
+  it('also applies to the Classifier', async () => {
     await saveSettings({ classifier: KEV, generator: { preset: 'none', baseUrl: '', model: '' } });
     const { requests } = installFakeFetch(httpError(503), systemOneReply({ group: { choice: 'Lavoro', confidence: 0.9 } }));
 
     const state = await organizer.propose(W);
 
-    expect(requests).toHaveLength(3); // una tab: 503 + nuovo tentativo; l'altra tab: subito ok
+    expect(requests).toHaveLength(3); // one tab: 503 + retry; the other tab: immediately ok
     expect(provenances(state)).toEqual(['list']);
   });
 });
 
 describe('timeout', () => {
-  it('il Generatore che non risponde in tempo porta al dominio con l\'avviso "timeout"', async () => {
+  it('the Generator that does not respond in time falls back to the domain with the "timeout" warning', async () => {
     installFakeFetch(HANG);
 
     const state = await organizer.propose(W);
@@ -100,7 +100,7 @@ describe('timeout', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: GEN, cause: 'timeout' }]);
   });
 
-  it('il Classificatore che non risponde in tempo porta al Generatore con l\'avviso "timeout"', async () => {
+  it('the Classifier that does not respond in time falls back to the Generator with the "timeout" warning', async () => {
     await saveSettings({ classifier: KEV });
     installFakeFetch((request: RecordedRequest) => (request.url.endsWith('/v1/systemone') ? HANG() : AI_GROUP));
 
@@ -110,7 +110,7 @@ describe('timeout', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'classifier', provider: CLS, cause: 'timeout' }]);
   });
 
-  it('un timeout non viene ritentato', async () => {
+  it('a timeout is not retried', async () => {
     const { requests } = installFakeFetch(HANG);
 
     await organizer.propose(W);
@@ -119,12 +119,12 @@ describe('timeout', () => {
   });
 });
 
-describe('risposte non valide', () => {
+describe('invalid responses', () => {
   it.each([
-    ['non JSON', () => new Response('<html>', { status: 200 })],
-    ['senza choices', () => new Response('{"oops":1}', { status: 200 })],
-    ['fuori schema', () => openAiReply({ gruppi: [] })],
-  ])('una risposta %s porta al livello successivo con l\'avviso "risposta non valida"', async (_, reply) => {
+    ['not JSON', () => new Response('<html>', { status: 200 })],
+    ['without choices', () => new Response('{"oops":1}', { status: 200 })],
+    ['off schema', () => openAiReply({ gruppi: [] })],
+  ])('a %s response falls back to the next level with the "invalid response" warning', async (_, reply) => {
     installFakeFetch(reply());
 
     const state = await organizer.propose(W);
@@ -133,7 +133,7 @@ describe('risposte non valide', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: GEN, cause: 'invalid-response' }]);
   });
 
-  it('una risposta System One senza answers porta al livello successivo', async () => {
+  it('a System One response without answers falls back to the next level', async () => {
     await saveSettings({ classifier: KEV });
     installFakeFetch((request: RecordedRequest) =>
       request.url.endsWith('/v1/systemone') ? new Response('{"model":"x"}', { status: 200 }) : AI_GROUP,
@@ -145,8 +145,8 @@ describe('risposte non valide', () => {
   });
 });
 
-describe('Interrompi', () => {
-  it('annulla le richieste in corso e non produce nessuna proposta', async () => {
+describe('Stop', () => {
+  it('cancels the requests in progress and produces no proposal', async () => {
     const { requests } = installFakeFetch(HANG);
 
     const running = organizer.propose(W);
@@ -161,7 +161,7 @@ describe('Interrompi', () => {
     expect((await organizer.state()).proposal).toBeUndefined();
   });
 
-  it('interrompe anche l\'attesa prima del nuovo tentativo', async () => {
+  it('also stops the wait before the retry', async () => {
     const { requests } = installFakeFetch(httpError(503), AI_GROUP);
     const { TIMINGS } = await import('../src/ai/http');
     TIMINGS.retryDelay = 10_000;
@@ -175,7 +175,7 @@ describe('Interrompi', () => {
     expect(state.proposal).toBeUndefined();
   });
 
-  it('dopo "Interrompi" si può chiedere una nuova proposta; "Annulla" resta disponibile', async () => {
+  it('after "Stop" a new proposal can be requested; "Undo" stays available', async () => {
     installFakeFetch(AI_GROUP);
     await organizer.propose(W);
     await organizer.apply();
@@ -193,7 +193,7 @@ describe('Interrompi', () => {
     expect(state.proposal!.groups.map((g) => g.name)).toEqual(['Altro']);
   });
 
-  it('interrompe anche un calcolo ancora in coda, che non parte', async () => {
+  it('also stops a computation still queued, which does not start', async () => {
     strip.addTab({ url: 'https://c.com/1', title: 'C1', windowId: 2 });
     strip.addTab({ url: 'https://c.com/2', title: 'C2', windowId: 2 });
     const { requests } = installFakeFetch(HANG);
@@ -211,7 +211,7 @@ describe('Interrompi', () => {
     expect(requests).toHaveLength(1);
   });
 
-  it('"Interrompi" senza un calcolo in corso non cambia nulla', async () => {
+  it('"Stop" with no computation in progress changes nothing', async () => {
     installFakeFetch(AI_GROUP);
     const before = await organizer.propose(W);
 
@@ -219,8 +219,8 @@ describe('Interrompi', () => {
   });
 });
 
-describe('calcoli contemporanei', () => {
-  it('due richieste per la stessa finestra condividono il calcolo', async () => {
+describe('simultaneous computations', () => {
+  it('two requests for the same window share the computation', async () => {
     const { requests } = installFakeFetch(AI_GROUP);
 
     const [a, b] = await Promise.all([organizer.propose(W), organizer.propose(W)]);
@@ -229,7 +229,7 @@ describe('calcoli contemporanei', () => {
     expect(b).toEqual(a);
   });
 
-  it('una richiesta per un\'altra finestra non riceve la proposta della prima', async () => {
+  it('a request for another window does not receive the proposal of the first', async () => {
     strip.addTab({ url: 'https://c.com/1', title: 'C1', windowId: 2 });
     strip.addTab({ url: 'https://c.com/2', title: 'C2', windowId: 2 });
     installFakeFetch(AI_GROUP);
@@ -241,7 +241,7 @@ describe('calcoli contemporanei', () => {
     expect(b.proposal!.groups[0]!.tabs.map((t) => t.title)).toEqual(['C1', 'C2']);
   });
 
-  it('"Ricalcola" durante un calcolo ne avvia uno nuovo invece di riusare quello in corso', async () => {
+  it('"Recompute" during a computation starts a new one instead of reusing the one in progress', async () => {
     const { requests } = installFakeFetch(AI_GROUP);
 
     const [, forced] = await Promise.all([organizer.propose(W), organizer.propose(W, { force: true })]);
@@ -251,8 +251,8 @@ describe('calcoli contemporanei', () => {
   });
 });
 
-describe('sempre una proposta', () => {
-  it('con Classificatore e Generatore entrambi in errore la proposta è per dominio, con due avvisi', async () => {
+describe('always a proposal', () => {
+  it('with Classifier and Generator both in error the proposal is per domain, with two warnings', async () => {
     await saveSettings({ classifier: KEV });
     installFakeFetch(httpError(401));
 

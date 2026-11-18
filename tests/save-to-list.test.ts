@@ -33,7 +33,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** Generatore finto: propone "Cucina" (nuovo) e "Lavoro" (lista); "descrivi" risponde `description`. */
+/** Fake Generator: proposes "Cucina" (new) and "Lavoro" (list); "describe" replies with `description`. */
 function generator(description: string | Response = 'Ricette, cucina e siti di cibo.') {
   return installFakeFetch((request: RecordedRequest) => {
     const isDescribe = request.body.messages[0].content.includes('description of a category');
@@ -44,8 +44,8 @@ function generator(description: string | Response = 'Ricette, cucina e siti di c
 
 const groupId = async (name: string) => (await organizer.state()).proposal!.groups.find((g) => g.name === name)!.id;
 
-describe('Salva nella lista', () => {
-  it('aggiunge la categoria con nome e colore attuali del gruppo e la descrizione generata', async () => {
+describe('Save to list', () => {
+  it('adds the category with the group\'s current name and color and the generated description', async () => {
     const { requests } = generator('  «Ricette, cucina e siti di cibo.»  ');
     await organizer.propose(W);
     const id = await groupId('Cucina');
@@ -60,7 +60,7 @@ describe('Salva nella lista', () => {
     ]);
     expect(state.notice).toEqual({ key: 'saveToListSaved', arg: 'Ricette', snackbar: true });
     expect(state.proposal!.groups.find((g) => g.id === id)!.provenance).toBe('list');
-    // Alla descrizione arrivano nome ed esempi ripuliti.
+    // The description request receives the cleaned name and examples.
     const describe = JSON.parse(requests.at(-1)!.body.messages[1].content);
     expect(describe).toEqual({
       category: 'Ricette',
@@ -71,7 +71,7 @@ describe('Salva nella lista', () => {
     });
   });
 
-  it('la proposta resta valida dopo il salvataggio: riaprendo il pannello non viene ricalcolata', async () => {
+  it('the proposal stays valid after saving: reopening the panel does not recompute it', async () => {
     generator();
     await organizer.propose(W);
     const id = await groupId('Cucina');
@@ -81,7 +81,7 @@ describe('Salva nella lista', () => {
     expect((await createOrganizer().propose(W)).proposal).toEqual(saved.proposal);
   });
 
-  it('una tab aperta mentre si genera la descrizione rende la proposta scaduta: riaprendo il pannello si ricalcola', async () => {
+  it('a tab opened while the description is being generated makes the proposal stale: reopening the panel recomputes it', async () => {
     installFakeFetch((request: RecordedRequest) => {
       if (!request.body.messages[0].content.includes('description of a category')) {
         return openAiReply({ groups: [{ name: 'Cucina', tabs: ['t1', 't2'] }, { name: 'Lavoro', tabs: ['t3', 't4'] }] });
@@ -97,7 +97,7 @@ describe('Salva nella lista', () => {
     expect(reopened.proposal!.signature).not.toBe(saved.proposal!.signature);
   });
 
-  it('se il Generatore non risponde salva la categoria con la descrizione vuota e un avviso', async () => {
+  it('if the Generator does not respond, saves the category with an empty description and a warning', async () => {
     generator(httpError(503));
     await organizer.propose(W);
 
@@ -107,8 +107,8 @@ describe('Salva nella lista', () => {
     expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'Cucina', snackbar: true });
   });
 
-  it('una descrizione tagliata dal limite di token non viene salvata: categoria senza descrizione e avviso', async () => {
-    // Come un modello con il "ragionamento" che esaurisce i token prima di finire la frase.
+  it('a description cut off by the token limit is not saved: category without description and a warning', async () => {
+    // Like a model with "reasoning" that exhausts its tokens before finishing the sentence.
     const truncated = new Response(
       JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'Pasta, tiramisù, and' }, finish_reason: 'length' }] }),
       { headers: { 'content-type': 'application/json' } },
@@ -123,7 +123,7 @@ describe('Salva nella lista', () => {
     expect(state.notice).toEqual({ key: 'saveToListNoDescription', arg: 'Cucina', snackbar: true });
   });
 
-  it('non duplica una categoria con lo stesso nome, senza distinguere maiuscole e minuscole', async () => {
+  it('does not duplicate a category with the same name, ignoring case', async () => {
     generator();
     await organizer.propose(W);
     const id = await groupId('Cucina');
@@ -135,7 +135,7 @@ describe('Salva nella lista', () => {
     expect(state.notice).toEqual({ key: 'saveToListDuplicate', arg: 'LAVORO', snackbar: true });
   });
 
-  it("l'esito è solo per la snackbar, a differenza dell'avviso di un nome rifiutato", async () => {
+  it("the outcome is only for the snackbar, unlike the warning for a rejected name", async () => {
     generator();
     await organizer.propose(W);
     const [, , mail] = (await browser.tabs.query({ windowId: W })).map((t) => t.id!);
@@ -150,7 +150,7 @@ describe('Salva nella lista', () => {
     expect(rejected.notice).toEqual({ key: 'categoryNameDuplicate' });
   });
 
-  it('non vale per i gruppi che sono già una categoria', async () => {
+  it('does not apply to groups that are already a category', async () => {
     generator();
     await organizer.propose(W);
 
@@ -159,7 +159,7 @@ describe('Salva nella lista', () => {
     expect((await loadSettings()).categories.map((c) => c.name)).toEqual(['Lavoro']);
   });
 
-  it('alla successiva organizzazione la categoria salvata è tra le opzioni', async () => {
+  it('on the next organization the saved category is among the options', async () => {
     const { requests } = generator();
     await organizer.propose(W);
     await organizer.saveToList(await groupId('Cucina'));
@@ -170,7 +170,7 @@ describe('Salva nella lista', () => {
     expect(options).toContainEqual({ name: 'Cucina', description: 'Ricette, cucina e siti di cibo.' });
   });
 
-  it('una modifica successiva toglie l\'avviso', async () => {
+  it('a later edit removes the warning', async () => {
     generator();
     await organizer.propose(W);
     await organizer.saveToList(await groupId('Cucina'));
@@ -180,7 +180,7 @@ describe('Salva nella lista', () => {
     expect(state.notice).toBeUndefined();
   });
 
-  it("anche chiudere una tab o ordinare la barra toglie l'avviso, pure riaprendo il pannello", async () => {
+  it("closing a tab or sorting the bar also removes the warning, even after reopening the panel", async () => {
     generator();
     await organizer.propose(W);
     await organizer.saveToList(await groupId('Cucina'));
@@ -195,7 +195,7 @@ describe('Salva nella lista', () => {
     expect((await organizer.state()).notice).toBeUndefined();
   });
 
-  it("gli altri pannelli aperti sanno che l'avviso è sparito", async () => {
+  it("the other open panels know the warning is gone", async () => {
     const announced: OrganizerState[] = [];
     organizer = createOrganizer({ onStateChange: (state) => announced.push(state) });
     generator();
@@ -209,8 +209,8 @@ describe('Salva nella lista', () => {
   });
 });
 
-describe('Aggiungi alle categorie: la categoria c\'è subito, la descrizione arriva dopo', () => {
-  /** Generatore finto che, mentre "scrive" la descrizione, esegue `during` (es. guarda le impostazioni). */
+describe('Add to categories: the category is there right away, the description arrives later', () => {
+  /** Fake Generator that, while "writing" the description, runs `during` (e.g. reads the settings). */
   function slowGenerator(during: () => Promise<void>, description = 'Ricette e cucina.') {
     return installFakeFetch(async (request: RecordedRequest) => {
       if (!request.body.messages[0].content.includes('description of a category')) {
@@ -221,7 +221,7 @@ describe('Aggiungi alle categorie: la categoria c\'è subito, la descrizione arr
     });
   }
 
-  it('mentre l\'AI scrive, la categoria è già salvata senza descrizione e segnata "in descrizione"', async () => {
+  it('while the AI writes, the category is already saved without a description and marked "describing"', async () => {
     let meanwhile: { description?: string; describing: string[] } | undefined;
     slowGenerator(async () => {
       const cucina = (await loadSettings()).categories.find((c) => c.name === 'Cucina');
@@ -238,7 +238,7 @@ describe('Aggiungi alle categorie: la categoria c\'è subito, la descrizione arr
     expect((await createOrganizer().propose(W)).proposal).toEqual(state.proposal);
   });
 
-  it('una descrizione scritta a mano nel frattempo resta', async () => {
+  it('a description written by hand in the meantime is kept', async () => {
     slowGenerator(async () => {
       const { categories } = await loadSettings();
       await saveSettings({ categories: categories.map((c) => (c.name === 'Cucina' ? { ...c, description: 'La mia descrizione' } : c)) });
@@ -251,7 +251,7 @@ describe('Aggiungi alle categorie: la categoria c\'è subito, la descrizione arr
     expect(await loadDescribing()).toEqual([]);
   });
 
-  it('se il Generatore fallisce la categoria non resta "in descrizione"', async () => {
+  it('if the Generator fails, the category is not left "describing"', async () => {
     generator(httpError(503));
     await organizer.propose(W);
 
@@ -261,8 +261,8 @@ describe('Aggiungi alle categorie: la categoria c\'è subito, la descrizione arr
   });
 });
 
-describe('Aggiungi alle categorie: gruppi per sito e gruppi aperti', () => {
-  it('un gruppo per sito si aggiunge senza descrizione e senza chiedere nulla all\'AI', async () => {
+describe('Add to categories: site groups and open groups', () => {
+  it('a site group is added without a description and without asking the AI anything', async () => {
     const { requests } = generator();
     await saveSettings({ mode: 'domain' });
     await organizer.propose(W);
@@ -276,7 +276,7 @@ describe('Aggiungi alle categorie: gruppi per sito e gruppi aperti', () => {
     expect(requests).toEqual([]);
   });
 
-  it('un gruppo aperto in Chrome si aggiunge con il suo nome, il suo colore e la descrizione dalle sue tab', async () => {
+  it('an open Chrome group is added with its name, its color and the description from its tabs', async () => {
     const { requests } = generator('Ricette e cucina.');
     const [pasta, pizza] = (await browser.tabs.query({ windowId: W })).map((t) => t.id!);
     const chromeGroup = await strip.addGroup('Cucina', 'orange', [pasta!, pizza!]);
@@ -294,7 +294,7 @@ describe('Aggiungi alle categorie: gruppi per sito e gruppi aperti', () => {
     expect((await organizer.view(W)).existing[0]!.isCategory).toBe(true);
   });
 
-  it('un gruppo aperto che è già una categoria (o senza nome) non si aggiunge', async () => {
+  it('an open group that is already a category (or unnamed) is not added', async () => {
     generator();
     const [pasta, pizza] = (await browser.tabs.query({ windowId: W })).map((t) => t.id!);
     const lavoro = await strip.addGroup('lavoro', 'blue', [pasta!]);
@@ -307,8 +307,8 @@ describe('Aggiungi alle categorie: gruppi per sito e gruppi aperti', () => {
   });
 });
 
-describe('Rinomina un gruppo aperto', () => {
-  it('cambia il nome in Chrome e nella proposta che lo estende; una proposta attuale resta attuale', async () => {
+describe('Rename an open group', () => {
+  it('changes the name in Chrome and in the proposal that extends it; a current proposal stays current', async () => {
     generator();
     const [pasta] = (await browser.tabs.query({ windowId: W })).map((t) => t.id!);
     const cucina = await strip.addGroup('Cucina', 'orange', [pasta!]);
@@ -321,7 +321,7 @@ describe('Rinomina un gruppo aperto', () => {
     expect(state.proposal!.groups.filter((g) => g.existingGroupId === cucina).map((g) => g.name)).toEqual(['Ricette']);
   });
 
-  it('un gruppo aperto che è una categoria rinomina anche la categoria (descrizione, colore e siti restano)', async () => {
+  it('an open group that is a category also renames the category (description, color and sites are kept)', async () => {
     await saveSettings({ categorySites: { w: ['docs.com'] } });
     const [, , mail] = (await browser.tabs.query({ windowId: W })).map((t) => t.id!);
     const lavoro = await strip.addGroup('LAVORO', 'blue', [mail!]);
@@ -335,7 +335,7 @@ describe('Rinomina un gruppo aperto', () => {
     expect((await organizer.view(W)).existing[0]!.isCategory).toBe(true);
   });
 
-  it('un gruppo della proposta che è una categoria rinomina anche la categoria e resta "lista"', async () => {
+  it('a proposal group that is a category also renames the category and stays "list"', async () => {
     generator();
     await organizer.propose(W);
 
@@ -346,7 +346,7 @@ describe('Rinomina un gruppo aperto', () => {
     expect((await createOrganizer().propose(W)).proposal).toEqual(state.proposal);
   });
 
-  it('non rinomina una categoria con il nome di un\'altra (né vuoto): nulla cambia e lo dice', async () => {
+  it('does not rename a category to the name of another (nor to an empty one): nothing changes and it says so', async () => {
     await saveSettings({ categories: [{ id: 'w', name: 'Lavoro', description: 'Lavoro', color: 'blue' }, { id: 's', name: 'Studio', description: '', color: 'red' }] });
     const [, , mail] = (await browser.tabs.query({ windowId: W })).map((t) => t.id!);
     const lavoro = await strip.addGroup('Lavoro', 'blue', [mail!]);
@@ -359,15 +359,15 @@ describe('Rinomina un gruppo aperto', () => {
     expect((await loadSettings()).categories.map((c) => c.name)).toEqual(['Lavoro', 'Studio']);
   });
 
-  it('un gruppo che non esiste più non cambia nulla', async () => {
+  it('a group that no longer exists changes nothing', async () => {
     const before = await organizer.state();
 
     expect(await organizer.renameGroup(9999, 'Nuovo')).toEqual(before);
   });
 });
 
-describe('Esempi per la descrizione', () => {
-  it('non manda mai all\'AI pagine del browser o di domini esclusi di un gruppo aperto', async () => {
+describe('Examples for the description', () => {
+  it('never sends the AI browser pages or excluded-domain pages of an open group', async () => {
     const { requests } = generator();
     await saveSettings({ excludedDomains: ['mail.com'] });
     const [pasta, , mail] = (await browser.tabs.query({ windowId: W })).map((t) => t.id!);

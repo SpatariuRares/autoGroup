@@ -1,5 +1,5 @@
-// Loader per Node: @material/material-color-utilities importa i propri file senza ".js", che Node
-// in ESM non risolve. Se un import relativo fallisce, riprova aggiungendo l'estensione.
+// Loader for Node: @material/material-color-utilities imports its own files without ".js", which Node
+// does not resolve in ESM. If a relative import fails, it retries adding the extension.
 export async function resolve(specifier, context, next) {
   try {
     return await next(specifier, context);

@@ -1,11 +1,11 @@
-// Immagini per la scheda del Chrome Web Store, in italiano e in inglese: 4 screenshot 1280×800 e la
-// tile promozionale piccola 440×280, in docs/store/<lingua>/; più l'icona dello store (128×128 con il
-// disegno in 96×96 e 16 px di margine trasparente, come chiedono le linee guida) in docs/store/icon-128.png.
-// Le tab sono pagine servite in locale con titoli realistici: --host-resolver-rules manda ogni host
-// (github.com, bbc.com, …) a questo server, quindi indirizzi e favicon sembrano quelli veri senza
-// uscire dal computer. Il server è HTTPS con un certificato temporaneo (molti domini sono nella lista
-// HSTS di Chrome, che forza HTTPS), accettato solo da questo Chrome di prova. Il Generatore è finto e risponde sempre allo stesso modo, così le immagini sono
-// riproducibili. Serve la build di prova, che concede in anticipo i permessi host:
+// Images for the Chrome Web Store listing, in Italian and in English: 4 screenshots 1280×800 and the
+// small promo tile 440×280, in docs/store/<language>/; plus the store icon (128×128 with the drawing
+// at 96×96 and 16 px of transparent margin, as the guidelines ask) in docs/store/icon-128.png.
+// The tabs are pages served locally with realistic titles: --host-resolver-rules sends every host
+// (github.com, bbc.com, …) to this server, so addresses and favicons look real without
+// leaving the computer. The server is HTTPS with a temporary certificate (many domains are in Chrome's
+// HSTS list, which forces HTTPS), accepted only by this test Chrome. The Generator is fake and always answers the same way, so the images are
+// reproducible. It needs the test build, which grants the host permissions in advance:
 //   npm run store-assets
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -17,7 +17,7 @@ import puppeteer from 'puppeteer';
 const extPath = path.resolve('.output/chrome-mv3');
 const AI_HOST = 'ai.autogroup.test';
 
-/** Tab della finestra di esempio: host, percorso, titolo, colore e lettera della favicon. */
+/** Tabs of the example window: host, path, title, color and favicon letter. */
 const TABS = [
   ['github.com', '/acme/web/pull/42', { it: 'Correzione del redirect dopo il login · Pull Request #42 · acme/web', en: 'Fix redirect after login · Pull Request #42 · acme/web' }, '#24292f', 'G'],
   ['stackoverflow.com', '/questions/42', { it: 'Come fare il debounce di un input in React? - Stack Overflow', en: 'How to debounce an input in React? - Stack Overflow' }, '#f48024', 'S'],
@@ -33,16 +33,16 @@ const TABS = [
   ['acme.atlassian.net', '/browse/PROJ-128', { it: 'PROJ-128 Login lento su mobile – Jira', en: 'PROJ-128 Slow login on mobile – Jira' }, '#0052cc', 'J'],
   ['www.amazon.it', '/cuffie', { it: 'Cuffie wireless con cancellazione del rumore', en: 'Noise-cancelling wireless headphones' }, '#ff9900', 'A'],
 ];
-/** Tab già in un gruppo aperto ("Progetto X"), che la proposta estende con la tab di Jira. */
+/** Tab already in an existing group ("Progetto X"), which the proposal extends with the Jira tab. */
 const GROUPED = ['acme.atlassian.net', '/jira/board', { it: 'Sprint 14 – Jira', en: 'Sprint 14 – Jira' }, '#0052cc', 'J'];
 
-/** Gruppi del Generatore finto per host: nomi delle categorie predefinite nella lingua, più un gruppo nuovo. */
+/** Groups of the fake Generator per host: names of the default categories in the language, plus one new group. */
 const GROUPS = {
   it: { Sviluppo: ['github.com', 'stackoverflow.com', 'developer.mozilla.org'], Notizie: ['www.bbc.com', 'www.theguardian.com'], Viaggi: ['www.booking.com', 'www.skyscanner.it'], Video: ['www.youtube.com', 'open.spotify.com'], Ricette: ['www.giallozafferano.it'], 'Progetto X': ['acme.atlassian.net'] },
   en: { Dev: ['github.com', 'stackoverflow.com', 'developer.mozilla.org'], News: ['www.bbc.com', 'www.theguardian.com'], Travel: ['www.booking.com', 'www.skyscanner.it'], Video: ['www.youtube.com', 'open.spotify.com'], Recipes: ['www.giallozafferano.it'], 'Project X': ['acme.atlassian.net'] },
 };
 
-/** Testi delle immagini: titolo e sottotitolo di ogni screenshot, tile promozionale. */
+/** Image texts: title and subtitle of each screenshot, promo tile. */
 const COPY = {
   it: {
     shots: [
@@ -104,7 +104,7 @@ const port = server.address().port;
 const icon = `data:image/png;base64,${readFileSync('public/icon/128.png').toString('base64')}`;
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** Schermata 1280×800: titolo e sottotitolo a sinistra, l'immagine dell'interfaccia a destra. */
+/** Screen 1280×800: title and subtitle on the left, the interface image on the right. */
 function frame(png, [title, subtitle], wide) {
   const image = `data:image/png;base64,${png.toString('base64')}`;
   return `<!doctype html><meta charset="utf-8"><style>
@@ -119,7 +119,7 @@ function frame(png, [title, subtitle], wide) {
   </style><div class="copy"><div class="brand"><img src="${icon}">autoGroup</div><h1>${title}</h1><p>${subtitle}</p></div><img class="shot" src="${image}">`;
 }
 
-/** Tile promozionale piccola 440×280. */
+/** Small promo tile 440×280. */
 function tile(tagline) {
   return `<!doctype html><meta charset="utf-8"><style>
     body { margin: 0; width: 440px; height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
@@ -138,7 +138,7 @@ async function render(browser, html, width, height, file, transparent = false) {
   await page.close();
 }
 
-/** Icona dello store: l'icona dell'estensione ridotta a 96×96, al centro di 128×128 trasparenti. */
+/** Store icon: the extension icon scaled down to 96×96, centered on a transparent 128×128. */
 const storeIcon = `<!doctype html><style>html, body { margin: 0; background: transparent; } img { display: block; width: 96px; height: 96px; margin: 16px; }</style><img src="${icon}">`;
 
 for (const locale of ['it', 'en']) {
@@ -151,7 +151,7 @@ for (const locale of ['it', 'en']) {
     headless: true,
     pipe: true,
     enableExtensions: [extPath],
-    // -AppleLanguages sceglie la lingua dell'interfaccia di Chrome su macOS; --lang negli altri sistemi.
+    // -AppleLanguages picks Chrome's interface language on macOS; --lang on the other systems.
     args: [`--lang=${locale}`, '-AppleLanguages', `(${locale})`, `--host-resolver-rules=MAP * 127.0.0.1:${port}`, '--ignore-certificate-errors'],
   });
   try {
@@ -160,13 +160,13 @@ for (const locale of ['it', 'en']) {
     const extId = new URL(swTarget.url()).host;
     const light = (page) => page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }]);
 
-    // Su macOS Chrome apre come pagina anche l'argomento "(it)" di -AppleLanguages: si chiude.
+    // On macOS Chrome also opens the "(it)" argument of -AppleLanguages as a page: it gets closed.
     await sw.evaluate(async () => {
       const stray = (await chrome.tabs.query({})).filter((t) => t.url && !t.url.startsWith('chrome'));
       if (stray.length > 0) await chrome.tabs.remove(stray.map((t) => t.id));
     });
 
-    // 3. Le tre strade per il Generatore, nella guida che si apre da sola, con Gemini Nano già scelto.
+    // 3. The three ways to get the Generator, in the guide that opens by itself, with Gemini Nano already chosen.
     const guide = await (await browser.waitForTarget((t) => t.url().endsWith('/onboarding.html'))).asPage();
     await light(guide);
     await guide.setViewport({ width: 900, height: 1000, deviceScaleFactor: 2 });
@@ -183,14 +183,14 @@ for (const locale of ['it', 'en']) {
       await page.goto(`https://${host}${p}`);
     }
     await pause(500);
-    // Un gruppo già aperto, che la proposta estenderà con l'altra tab di Jira.
+    // An existing group, which the proposal will extend with the other Jira tab.
     await sw.evaluate(async (url, name) => {
       const [tab] = await chrome.tabs.query({ url });
       const groupId = await chrome.tabs.group({ tabIds: [tab.id] });
       await chrome.tabGroups.update(groupId, { title: name, color: 'blue' });
     }, `https://${GROUPED[0]}${GROUPED[1]}`, copy.group);
 
-    // 1. Proposta con l'AI nel pannello.
+    // 1. Proposal with the AI in the side panel.
     const panel = await browser.newPage();
     await light(panel);
     await panel.setViewport({ width: 400, height: 800, deviceScaleFactor: 2 });
@@ -201,7 +201,7 @@ for (const locale of ['it', 'en']) {
     await pause(800);
     const proposal = await panel.screenshot();
 
-    // 2. Anteprima per sito mentre il Generatore non risponde.
+    // 2. By-site preview while the Generator does not answer.
     ai.hang = true;
     await (await panel.$$('footer button.recompute'))[0].click();
     await panel.mouse.move(0, 0);
@@ -213,11 +213,11 @@ for (const locale of ['it', 'en']) {
     for (const res of pending) res.destroy();
     pending.clear();
 
-    // 4. Categorie nelle impostazioni.
+    // 4. Categories in the settings.
     const options = await browser.newPage();
     await light(options);
     await options.setViewport({ width: 1100, height: 900, deviceScaleFactor: 2 });
-    // Qualche sito nelle categorie predefinite: nelle righe compatte si vedono come chip.
+    // Some sites in the default categories: in the compact rows they show up as chips.
     await sw.evaluate(() => chrome.storage.sync.set({ categorySites: { 'default-work': ['acme.atlassian.net', 'docs.google.com'], 'default-dev': ['github.com', 'stackoverflow.com', 'developer.mozilla.org'], 'default-shopping': ['amazon.it'] } }));
     await options.goto(`chrome-extension://${extId}/options.html#categories`);
     await options.waitForSelector('#categories .category');

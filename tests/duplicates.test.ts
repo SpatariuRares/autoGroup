@@ -18,18 +18,18 @@ beforeEach(async () => {
   await saveSettings({ mode: 'domain', excludedDomains: ['banca.it'] });
 });
 
-/** Le tab duplicate come le mostra il pannello, per titolo. */
+/** The duplicate tabs as the panel shows them, by title. */
 async function duplicatesInView() {
   return (await organizer.view(W)).duplicates.map((t) => t.title);
 }
 
-/** Le tab che il pannello mostra come doppioni, tutte scelte: come premere "Chiudi" senza togliere spunte. */
+/** The tabs the panel shows as duplicates, all chosen: like pressing "Close" without unticking any. */
 async function duplicateIds() {
   return (await organizer.view(W)).duplicates.map((t) => t.tabId);
 }
 
-describe('tab duplicate', () => {
-  it('chiude le copie libere della stessa pagina e tiene la prima; il frammento non conta, i parametri sì', async () => {
+describe('duplicate tabs', () => {
+  it('closes the free copies of the same page and keeps the first; the fragment does not count, the parameters do', async () => {
     strip.addTab({ url: 'https://a.com/doc', title: 'Doc' });
     strip.addTab({ url: 'https://b.com/', title: 'B' });
     strip.addTab({ url: 'https://a.com/doc#sezione', title: 'Doc copia' });
@@ -42,7 +42,7 @@ describe('tab duplicate', () => {
     expect(strip.layout()).toEqual(['Doc', 'B', 'Doc v2']);
   });
 
-  it('tiene la copia fissata o in un gruppo e non chiude mai tab fissate o raggruppate', async () => {
+  it('keeps the pinned or grouped copy and never closes pinned or grouped tabs', async () => {
     strip.addTab({ url: 'https://a.com/', title: 'A libera' });
     strip.addTab({ url: 'https://a.com/', title: 'A fissata', pinned: true });
     const grouped = strip.addTab({ url: 'https://b.com/', title: 'B nel gruppo' });
@@ -57,7 +57,7 @@ describe('tab duplicate', () => {
     expect(titles).toEqual(['A fissata', 'B in un altro gruppo', 'B nel gruppo']);
   });
 
-  it('non tocca domini esclusi, pagine del browser e altre finestre', async () => {
+  it('does not touch excluded domains, browser pages and other windows', async () => {
     strip.addTab({ url: 'https://banca.it/conto', title: 'Banca' });
     strip.addTab({ url: 'https://banca.it/conto', title: 'Banca copia' });
     strip.addTab({ url: 'chrome://settings/', title: 'Impostazioni' });
@@ -72,7 +72,7 @@ describe('tab duplicate', () => {
     expect(strip.layout(2)).toEqual(['A altra finestra']);
   });
 
-  it('la proposta resta attuale, senza le tab chiuse', async () => {
+  it('the proposal stays current, without the closed tabs', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     strip.addTab({ url: 'https://a.com/1', title: 'A1 copia' });
@@ -82,11 +82,11 @@ describe('tab duplicate', () => {
     const after = await organizer.closeDuplicates(W, await duplicateIds());
 
     expect(after.proposal!.groups[0]!.tabs.map((t) => t.title)).toEqual(['A1', 'A2']);
-    // Riaprire il pannello riusa la proposta (stessa data), senza un nuovo calcolo.
+    // Reopening the panel reuses the proposal (same date), without a new computation.
     expect((await organizer.propose(W)).proposal!.createdAt).toBe(after.proposal!.createdAt);
   });
 
-  it('chiude solo i doppioni scelti nell\'anteprima e ignora le tab che non sono doppioni', async () => {
+  it('closes only the duplicates chosen in the preview and ignores the tabs that are not duplicates', async () => {
     const original = strip.addTab({ url: 'https://a.com/', title: 'A' });
     const keep = strip.addTab({ url: 'https://a.com/', title: 'A copia tenuta' });
     const close = strip.addTab({ url: 'https://a.com/', title: 'A copia chiusa' });

@@ -37,7 +37,7 @@ const summary = (state: Awaited<ReturnType<Organizer['propose']>>) =>
 const recompute = () => organizer.propose(W, { force: true });
 const systemOne = (requests: RecordedRequest[]) => requests.filter((r) => r.url.endsWith('/v1/systemone'));
 
-/** System One finto: la scelta dipende dal titolo della tab; "Illeggibile" riceve una risposta senza confidenza. */
+/** Fake System One: the choice depends on the tab title; "Illeggibile" gets a reply without confidence. */
 function classifierServer(verdicts: Record<string, [string, number]>) {
   return installFakeFetch((request: RecordedRequest) => {
     if (!request.url.endsWith('/v1/systemone')) return new Error('Generatore inatteso');
@@ -47,7 +47,7 @@ function classifierServer(verdicts: Record<string, [string, number]>) {
   });
 }
 
-describe('cache dei risultati del Classificatore', () => {
+describe('Classifier result cache', () => {
   const VERDICTS: Record<string, [string, number]> = {
     Posta: ['Lavoro', 0.95],
     Documento: ['Lavoro', 0.9],
@@ -61,7 +61,7 @@ describe('cache dei risultati del Classificatore', () => {
     for (const title of ['Posta', 'Documento', 'Giornale', 'Quotidiano']) strip.addTab({ url: `https://${title.toLowerCase()}.com/`, title });
   });
 
-  it('aprendo una tab si classifica solo quella, con lo stesso risultato di un calcolo da zero', async () => {
+  it('opening a tab classifies only that one, with the same result as a computation from scratch', async () => {
     const { requests } = classifierServer(VERDICTS);
     await organizer.propose(W);
     expect(systemOne(requests)).toHaveLength(4);
@@ -74,7 +74,7 @@ describe('cache dei risultati del Classificatore', () => {
     expect(summary(state)).toEqual([['Lavoro', 'list', ['Posta', 'Documento', 'Agenda']]]);
   });
 
-  it('"Ricalcola" e il cambio di soglia non rifanno nessuna richiesta', async () => {
+  it('"Recompute" and changing the threshold make no request again', async () => {
     const { requests } = classifierServer(VERDICTS);
     await organizer.propose(W);
 
@@ -83,14 +83,14 @@ describe('cache dei risultati del Classificatore', () => {
     const state = await organizer.propose(W);
 
     expect(systemOne(requests)).toHaveLength(4);
-    // Con la soglia a 0,5 anche "Quotidiano" (0,6) entra in Notizie.
+    // With the threshold at 0.5 also "Quotidiano" (0.6) enters Notizie.
     expect(summary(state)).toEqual([
       ['Lavoro', 'list', ['Posta', 'Documento']],
       ['Notizie', 'list', ['Giornale', 'Quotidiano']],
     ]);
   });
 
-  it('cambiare la descrizione di una categoria o il modello riclassifica tutte le tab', async () => {
+  it('changing the description of a category or the model reclassifies all the tabs', async () => {
     const { requests } = classifierServer(VERDICTS);
     await organizer.propose(W);
 
@@ -103,7 +103,7 @@ describe('cache dei risultati del Classificatore', () => {
     expect(systemOne(requests)).toHaveLength(12);
   });
 
-  it('una risposta illeggibile non viene ricordata: al calcolo dopo si richiede', async () => {
+  it('an unreadable response is not remembered: the next computation asks again', async () => {
     strip.addTab({ url: 'https://strano.com/', title: 'Illeggibile' });
     const { requests } = classifierServer(VERDICTS);
     await organizer.propose(W);
@@ -113,7 +113,7 @@ describe('cache dei risultati del Classificatore', () => {
     expect(systemOne(requests).map((r) => r.body.state.title).slice(5)).toEqual(['Illeggibile']);
   });
 
-  it('se il Classificatore fallisce non si ricorda nulla e si scende al livello dopo', async () => {
+  it('if the Classifier fails nothing is remembered and it falls to the next level', async () => {
     const { requests } = installFakeFetch(httpError(401));
     const state = await organizer.propose(W);
     expect(state.proposal!.warnings).toMatchObject([{ level: 'classifier', cause: 'invalid-key' }]);
@@ -126,7 +126,7 @@ describe('cache dei risultati del Classificatore', () => {
   });
 });
 
-describe('cache delle descrizioni', () => {
+describe('description cache', () => {
   let pages: Map<number, FakePage>;
 
   beforeEach(async () => {
@@ -142,7 +142,7 @@ describe('cache delle descrizioni', () => {
 
   const sentTabs = (requests: RecordedRequest[]) => JSON.parse(requests.at(-1)!.body.messages[1].content).tabs;
 
-  it('un nuovo calcolo legge solo le pagine nuove, e le descrizioni lette arrivano ancora all\'AI', async () => {
+  it('a new computation reads only the new pages, and the descriptions read still reach the AI', async () => {
     open('A', 'https://a.com/');
     open('B', 'https://b.com/', { description: null });
     const { read } = installFakeScripting(pages);
@@ -161,7 +161,7 @@ describe('cache delle descrizioni', () => {
     ]);
   });
 
-  it('una pagina che non ha risposto in tempo si riprova al calcolo dopo', async () => {
+  it('a page that did not respond in time is retried in the next computation', async () => {
     const slow = open('Lenta', 'https://lenta.com/', { description: 'Tardi', delay: Infinity });
     const { read } = installFakeScripting(pages);
     installFakeFetch(openAiReply({ groups: [] }));
@@ -172,7 +172,7 @@ describe('cache delle descrizioni', () => {
     expect(read).toEqual([slow, slow]);
   });
 
-  it('una pagina non accessibile si riprova al calcolo dopo', async () => {
+  it('an inaccessible page is retried in the next computation', async () => {
     const denied = strip.addTab({ url: 'https://negata.com/', title: 'Negata' });
     const { read } = installFakeScripting(pages);
     installFakeFetch(openAiReply({ groups: [] }));
@@ -183,7 +183,7 @@ describe('cache delle descrizioni', () => {
     expect(read).toEqual([denied, denied]);
   });
 
-  it('una tab sospesa ritrova la descrizione già letta per lo stesso URL, senza essere letta', async () => {
+  it('a suspended tab finds again the description already read for the same URL, without being read', async () => {
     open('Attiva', 'https://x.com/pagina');
     const { read } = installFakeScripting(pages);
     const { requests } = installFakeFetch(openAiReply({ groups: [] }));
@@ -198,7 +198,7 @@ describe('cache delle descrizioni', () => {
 });
 
 describe('cache in storage.session', () => {
-  it('oltre il limite escono le voci più vecchie; una voce riscritta torna la più recente', async () => {
+  it('beyond the limit the oldest entries are evicted; a rewritten entry becomes the most recent', async () => {
     const cache = createSessionCache<number>('test', 2);
     await cache.setMany(new Map([['a', 1], ['b', 2]]));
     await cache.setMany(new Map([['a', 10]]));
@@ -208,14 +208,14 @@ describe('cache in storage.session', () => {
   });
 });
 
-describe('Generatore compatibile OpenAI: tempi limitati e richieste leggere', () => {
+describe('OpenAI-compatible Generator: limited time and light requests', () => {
   beforeEach(async () => {
     await saveSettings({ generator: OPENROUTER, categories: CATEGORIES });
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
   });
 
-  it('chiede al massimo GENERATE_MAX_TOKENS token', async () => {
+  it('asks for at most GENERATE_MAX_TOKENS tokens', async () => {
     const { requests } = installFakeFetch(openAiReply({ groups: [] }));
 
     await organizer.propose(W);
@@ -223,7 +223,7 @@ describe('Generatore compatibile OpenAI: tempi limitati e richieste leggere', ()
     expect(requests[0]!.body.max_tokens).toBe(GENERATE_MAX_TOKENS);
   });
 
-  it('una risposta tagliata dal tetto diventa "risposta non valida" e si scende al dominio', async () => {
+  it('a response cut off by the cap becomes "invalid response" and falls back to the domain', async () => {
     const truncated = new Response(JSON.stringify({ choices: [{ message: { content: '{"groups":[{"name":"Let' }, finish_reason: 'length' }] }), { status: 200 });
     installFakeFetch(truncated);
 
@@ -233,7 +233,7 @@ describe('Generatore compatibile OpenAI: tempi limitati e richieste leggere', ()
     expect(summary(state)).toEqual([['a.com', 'domain', ['A1', 'A2']]]);
   });
 
-  it('dopo un 400 ritenta una volta con la richiesta minima, senza schema né tetto', async () => {
+  it('after a 400 it retries once with the minimal request, without schema or cap', async () => {
     const { requests } = installFakeFetch(httpError(400), openAiReply({ groups: [{ name: 'Lavoro', tabs: ['t1', 't2'] }] }));
 
     const state = await organizer.propose(W);
@@ -244,7 +244,7 @@ describe('Generatore compatibile OpenAI: tempi limitati e richieste leggere', ()
     expect(summary(state)).toEqual([['Lavoro', 'list', ['A1', 'A2']]]);
   });
 
-  it('in modalità "solo nuovi" le opzioni arrivano solo per nome; in "completo" con la descrizione', async () => {
+  it('in "new only" mode the options arrive by name only; in "full" with the description', async () => {
     await saveSettings({ classifier: KEV });
     const { requests } = installFakeFetch((request: RecordedRequest) =>
       request.url.endsWith('/v1/systemone') ? systemOneReply({ group: { choice: 'none_of_the_above', confidence: 0.9 } }) : openAiReply({ groups: [] }),
@@ -263,7 +263,7 @@ describe('Generatore compatibile OpenAI: tempi limitati e richieste leggere', ()
   });
 });
 
-describe('Gemini Nano: sessione pronta prima e riusata', () => {
+describe('Gemini Nano: session ready early and reused', () => {
   beforeEach(() => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
@@ -271,7 +271,7 @@ describe('Gemini Nano: sessione pronta prima e riusata', () => {
 
   const twoTabs = () => ({ groups: [{ name: 'Lettura', tabs: ['t1', 't2'] }] });
 
-  it('la sessione con il prompt di sistema viene creata una volta e riusata dai calcoli successivi', async () => {
+  it('the session with the system prompt is created once and reused by the following computations', async () => {
     const nano = installFakeNano({ availability: 'available', respond: twoTabs });
 
     await organizer.propose(W);
@@ -282,7 +282,7 @@ describe('Gemini Nano: sessione pronta prima e riusata', () => {
     expect(summary(again)).toEqual([['Lettura', 'ai', ['A1', 'A2']]]);
   });
 
-  it('con il Classificatore, Nano crea la sessione mentre il Classificatore lavora', async () => {
+  it('with the Classifier, Nano creates the session while the Classifier works', async () => {
     await saveSettings({ classifier: KEV, categories: CATEGORIES });
     const nano = installFakeNano({ availability: 'available', respond: twoTabs });
     const createdDuringClassification: number[] = [];
@@ -297,7 +297,7 @@ describe('Gemini Nano: sessione pronta prima e riusata', () => {
     expect(summary(state)).toEqual([['Lettura', 'ai', ['A1', 'A2']]]);
   });
 
-  it('una creazione fallita non viene riusata: il calcolo dopo ne crea una nuova', async () => {
+  it('a failed creation is not reused: the next computation creates a new one', async () => {
     installFakeNano({ availability: 'available', respond: twoTabs });
     (LanguageModel.create as unknown as Mock).mockRejectedValueOnce(new Error('GPU occupata'));
 
@@ -309,12 +309,12 @@ describe('Gemini Nano: sessione pronta prima e riusata', () => {
     expect(summary(retry)).toEqual([['Lettura', 'ai', ['A1', 'A2']]]);
   });
 
-  it('se la creazione avviata in anticipo fallisce, il Generatore ne crea una nuova invece di riusarla', async () => {
+  it('if the creation started early fails, the Generator creates a new one instead of reusing it', async () => {
     await saveSettings({ classifier: KEV, categories: CATEGORIES });
     installFakeNano({ availability: 'available', respond: twoTabs });
     (LanguageModel.create as unknown as Mock).mockRejectedValueOnce(new Error('GPU occupata'));
     installFakeFetch(async () => {
-      // Il Classificatore risponde dopo che la creazione anticipata è già fallita.
+      // The Classifier responds after the early creation has already failed.
       await new Promise((r) => setTimeout(r, 5));
       return systemOneReply({ group: { choice: 'none_of_the_above', confidence: 0.9 } });
     });
@@ -325,7 +325,7 @@ describe('Gemini Nano: sessione pronta prima e riusata', () => {
     expect(summary(state)).toEqual([['Lettura', 'ai', ['A1', 'A2']]]);
   });
 
-  it('una sessione che smette di funzionare (es. distrutta da Chrome) viene ricreata al calcolo dopo', async () => {
+  it('a session that stops working (e.g. destroyed by Chrome) is recreated in the next computation', async () => {
     const nano = installFakeNano({ availability: 'available', respond: twoTabs, cloneError: new Error('session destroyed') });
 
     const failed = await organizer.propose(W);

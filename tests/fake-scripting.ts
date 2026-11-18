@@ -1,13 +1,13 @@
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 
 export interface FakePage {
-  /** Meta description della pagina (null = assente). */
+  /** Meta description of the page (null = absent). */
   description: string | null;
-  /** Ritardo della risposta in ms; `Infinity` = la pagina non risponde mai. */
+  /** Response delay in ms; `Infinity` = the page never responds. */
   delay?: number;
 }
 
-/** Sostituisce chrome.scripting.executeScript: ogni tab risponde con la descrizione indicata. */
+/** Replaces chrome.scripting.executeScript: every tab responds with the given description. */
 export function installFakeScripting(pages: Map<number, FakePage>) {
   const read: number[] = [];
   Object.assign(fakeBrowser.scripting, {

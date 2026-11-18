@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { loadDescribing, onDescribingChange } from '../shared/describing';
 
-/** Le categorie di cui l'AI sta scrivendo la descrizione, dal vivo (vedi `src/shared/describing.ts`). */
+/** The categories the AI is currently writing the description of, live (see `src/shared/describing.ts`). */
 export function useDescribing(): Set<string> {
   const [ids, setIds] = useState<Set<string>>(new Set());
   useEffect(() => {

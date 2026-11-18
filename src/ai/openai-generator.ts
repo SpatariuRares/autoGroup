@@ -3,10 +3,10 @@ import { cleanDescription, describePrompt, GROUPS_SCHEMA, parseGroups, systemPro
 import { ProviderError, type DescribeRequest, type GenerateRequest, type Generator, type RawGroup } from './types';
 
 /**
- * Tetto ai token della risposta di `generate`, ragionamento compreso. La risposta utile è piccola
- * (nomi e ID brevi); il tetto serve con i modelli che ragionano: dopo un timeout un server locale
- * può continuare a generare per minuti (misurato: oltre 13 con 30 tab) e tenere occupata la GPU
- * per il calcolo successivo. Con il tetto si ferma da solo.
+ * Token cap for the response of `generate`, reasoning included. The useful response is small
+ * (names and short IDs); the cap matters with reasoning models: after a timeout a local server
+ * can keep generating for minutes (measured: over 13 with 30 tabs) and keep the GPU busy
+ * for the next computation. With the cap, it stops by itself.
  */
 export const GENERATE_MAX_TOKENS = 4096;
 
@@ -15,14 +15,14 @@ export interface OpenAiGeneratorConfig {
   baseUrl: string;
   model: string;
   apiKey?: string;
-  /** Tempo massimo per richiesta, in ms. */
+  /** Maximum time per request, in ms. */
   timeoutMs?: number;
 }
 
 /**
- * Generatore su protocollo compatibile OpenAI (`POST {baseUrl}/chat/completions`): OpenRouter,
- * Ollama, LM Studio o qualunque server compatibile. Chiede la risposta vincolata dallo schema JSON;
- * se il server rifiuta `response_format` ritenta senza, affidandosi alle istruzioni e alla validazione.
+ * Generator on the OpenAI-compatible protocol (`POST {baseUrl}/chat/completions`): OpenRouter,
+ * Ollama, LM Studio or any compatible server. Asks for the response constrained by the JSON schema;
+ * if the server rejects `response_format` it retries without it, relying on the instructions and validation.
  */
 export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator {
   async function chat(body: Record<string, unknown>, signal?: AbortSignal): Promise<{ content: string; truncated: boolean }> {
@@ -33,7 +33,7 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
     )) as { choices?: { message?: { content?: unknown }; finish_reason?: unknown }[] };
     const choice = json?.choices?.[0];
     const content = choice?.message?.content;
-    if (typeof content !== 'string') throw new ProviderError('invalid-response', 'risposta senza contenuto');
+    if (typeof content !== 'string') throw new ProviderError('invalid-response', 'response without content');
     return { content, truncated: choice?.finish_reason === 'length' };
   }
 
@@ -53,33 +53,33 @@ export function createOpenAiGenerator(config: OpenAiGeneratorConfig): Generator 
       try {
         ({ content } = await chat({ messages, temperature: 0, max_tokens: GENERATE_MAX_TOKENS, response_format: structured }, signal));
       } catch (err) {
-        // Alcuni server non supportano lo structured output, e alcuni modelli (es. i modelli di
-        // ragionamento di OpenAI) rifiutano `max_tokens`: si ritenta una volta con la richiesta minima.
+        // Some servers don't support structured output, and some models (e.g. OpenAI's reasoning
+        // models) reject `max_tokens`: it retries once with the minimal request.
         if (!(err instanceof ProviderError) || err.status !== 400) throw err;
         ({ content } = await chat({ messages, temperature: 0 }, signal));
       }
-      // Una risposta tagliata dal tetto non è JSON completo: la lettura la scarta come non valida.
+      // A response cut off by the cap is not complete JSON: reading it discards it as invalid.
       const groups = parseGroups(content);
-      if (!groups) throw new ProviderError('invalid-response', 'JSON fuori schema');
+      if (!groups) throw new ProviderError('invalid-response', 'JSON outside the schema');
       return groups as RawGroup[];
     },
 
     async describe(request: DescribeRequest, signal?: AbortSignal): Promise<string> {
       const { system, user } = describePrompt(request);
-      // Il limite comprende anche il "ragionamento" dei modelli che lo usano (es. Unsloth Studio):
-      // con 120 token la frase arrivava tagliata a metà. Gli altri modelli si fermano da soli dopo la frase.
+      // The limit also covers the "reasoning" of the models that use it (e.g. Unsloth Studio):
+      // with 120 tokens the sentence came back cut in half. Other models stop by themselves after the sentence.
       const { content, truncated } = await chat(
         { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0.2, max_tokens: 1000 },
         signal,
       );
-      // Una frase tagliata non va salvata come descrizione: meglio vuota, da completare nelle impostazioni.
-      if (truncated) throw new ProviderError('invalid-response', 'descrizione troncata');
+      // A cut-off sentence must not be saved as a description: better empty, to be completed in the settings.
+      if (truncated) throw new ProviderError('invalid-response', 'truncated description');
       return cleanDescription(content);
     },
   };
 }
 
-/** "Prova connessione": una richiesta minima che verifica URL, chiave e modello. */
+/** "Test connection": a minimal request that checks the URL, key and model. */
 export async function testOpenAiConnection(config: OpenAiGeneratorConfig): Promise<void> {
   await postJson(
     `${config.baseUrl}/chat/completions`,

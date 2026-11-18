@@ -22,8 +22,8 @@ beforeEach(async () => {
 
 afterEach(() => stop());
 
-describe("l'Organizzatore chiamato dal pannello", () => {
-  it('ogni metodo arriva al service worker e ne restituisce il risultato', async () => {
+describe('the Organizer called from the panel', () => {
+  it('every method reaches the service worker and returns its result', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
 
@@ -37,7 +37,7 @@ describe("l'Organizzatore chiamato dal pannello", () => {
     expect(strip.layout()).toEqual(['A1 [a.com]', 'A2 [a.com]']);
   });
 
-  it("un errore nel service worker diventa un'eccezione nel pannello", async () => {
+  it("an error in the service worker becomes an exception in the panel", async () => {
     stop();
     const failing = createOrganizer();
     stop = serveOrganizer({ ...failing, state: () => Promise.reject(new Error('rotto')) });
@@ -45,7 +45,7 @@ describe("l'Organizzatore chiamato dal pannello", () => {
     await expect(remoteOrganizer.state()).rejects.toThrow('rotto');
   });
 
-  it('i metodi riservati al service worker non rispondono', async () => {
+  it('the methods reserved for the service worker do not respond', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
 
     const response = await browser.runtime.sendMessage({ type: 'organizer/call', method: 'checkStale', args: [] });
@@ -53,7 +53,7 @@ describe("l'Organizzatore chiamato dal pannello", () => {
     expect(response).toBeUndefined();
   });
 
-  it('i cambi di stato annunciati arrivano a chi ascolta', async () => {
+  it('announced state changes reach the listeners', async () => {
     const received: OrganizerState[] = [];
     const unsubscribe = onOrganizerState((state) => received.push(state));
 

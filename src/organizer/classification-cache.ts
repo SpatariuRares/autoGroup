@@ -1,20 +1,20 @@
 import type { AiTab, Classification, Classifier } from '../ai/types';
 import { createSessionCache, digest } from './session-cache';
 
-/** Risposte ricordate: abbastanza per molte finestre piene di tab. */
+/** Remembered answers: enough for many windows full of tabs. */
 const MAX_ENTRIES = 1000;
 
 const cache = createSessionCache<Classification>('classifierCache', MAX_ENTRIES);
 
 /**
- * Classificatore con cache per tab: chiede al server solo le tab che non ha mai visto con le stesse
- * opzioni, così aprire una tab costa una richiesta sola invece di riclassificare tutta la finestra.
+ * Classifier with a cache per tab: it asks the server only for the tabs it has never seen with the same
+ * options, so opening a tab costs a single request instead of reclassifying the whole window.
  *
- * La chiave è l'impronta di server, modello, opzioni (nomi e descrizioni), titolo, URL ripulito e
- * descrizione della tab: cambiare una categoria, il modello o la pagina non riusa le vecchie risposte.
- * La soglia resta fuori perché si applica dopo, quindi cambiarla non costa nessuna richiesta.
- * Le risposte illeggibili (confidenza 0) non vengono ricordate, così al calcolo dopo si riprova.
- * Il Classificatore risponde sempre allo stesso modo, quindi la cache vale anche per "Ricalcola".
+ * The key is the digest of server, model, options (names and descriptions), title, cleaned URL and
+ * description of the tab: changing a category, the model or the page does not reuse the old answers.
+ * The threshold stays out because it is applied afterwards, so changing it costs no request.
+ * Unreadable answers (confidence 0) are not remembered, so the next computation retries them.
+ * The Classifier always answers the same way, so the cache also applies to "Recompute".
  */
 export function withClassificationCache(classifier: Classifier, provider: { baseUrl: string; model: string }): Classifier {
   return {
@@ -35,7 +35,7 @@ export function withClassificationCache(classifier: Classifier, provider: { base
         result.set(tab.id, answer);
         if (answer.confidence > 0) remember.set(keys[i]!, answer);
       });
-      // Riscrive anche le risposte già note: restano le più recenti e non escono per prime.
+      // Also rewrites the answers already known: they stay the most recent and are not evicted first.
       if (missing.length > 0) await cache.setMany(remember);
       return result;
     },

@@ -16,10 +16,10 @@ function heldReason(tab: Browser.tabs.Tab, excludedDomains: string[]): HeldReaso
 }
 
 /**
- * Unisce le tab e i gruppi della finestra (letti dal vivo) con la proposta: i gruppi aperti con le
- * loro tab e quelle aggiunte, i gruppi nuovi, le tab libere rimaste fuori e quelle mai toccate.
- * I gruppi aperti seguono l'ordine della barra; le tab l'ordine della finestra. `categoryNames` dice
- * quali gruppi aperti sono già una categoria.
+ * Merges the tabs and groups of the window (read live) with the proposal: the open groups with their
+ * tabs and the added ones, the new groups, the free tabs left out and the held ones.
+ * The open groups follow the tab-strip order; the tabs follow the window order. `categoryNames` says
+ * which open groups are already a category.
  */
 export function buildWindowView(
   tabs: Browser.tabs.Tab[],

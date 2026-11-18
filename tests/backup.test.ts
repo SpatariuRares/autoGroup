@@ -26,8 +26,8 @@ beforeEach(async () => {
   await saveApiKey('generator', 'sk-segreta');
 });
 
-describe('esporta e importa le impostazioni', () => {
-  it('esporta preferenze, categorie e siti, mai provider né chiavi API', async () => {
+describe('export and import the settings', () => {
+  it('exports preferences, categories and sites, never providers or API keys', async () => {
     const text = exportSettings(await loadSettings());
 
     expect(JSON.parse(text)).toMatchObject({
@@ -39,7 +39,7 @@ describe('esporta e importa le impostazioni', () => {
     expect(text).not.toContain('openrouter');
   });
 
-  it('importare un file esportato rimette le stesse impostazioni, lasciando provider e chiavi', async () => {
+  it('importing an exported file restores the same settings, leaving providers and keys', async () => {
     const text = exportSettings(await loadSettings());
     await saveSettings({ mode: 'ai', minTabs: 2, excludedDomains: [], categories: [], autoGroupSites: true });
 
@@ -51,24 +51,24 @@ describe('esporta e importa le impostazioni', () => {
     expect(await browser.storage.local.get('generatorApiKey')).toEqual({ generatorApiKey: 'sk-segreta' });
   });
 
-  it('i domini esclusi scritti a mano vengono normalizzati, quelli non validi scartati', async () => {
+  it('excluded domains written by hand are normalized, invalid ones discarded', async () => {
     await importSettings(JSON.stringify({ app: 'autoGroup', version: 1, settings: { excludedDomains: ['https://www.Esempio.com/x', 'non valido!', 'esempio.com'] } }));
 
     expect((await loadSettings()).excludedDomains).toEqual(['esempio.com']);
   });
 
-  it('un interruttore non booleano rende il file non valido', async () => {
+  it('a non-boolean switch makes the file invalid', async () => {
     await expect(importSettings(JSON.stringify({ app: 'autoGroup', version: 1, settings: { autoGroupSites: 'sì' } }))).rejects.toMatchObject({ messageKey: 'optionsImportInvalid' });
   });
 
   it.each([
-    ['un testo che non è JSON', 'ciao'],
-    ['un JSON di un\'altra app', JSON.stringify({ app: 'altro', settings: {} })],
-    ['categorie non valide', JSON.stringify({ app: 'autoGroup', version: 1, settings: { categories: [{ id: 'x', name: '', description: '', color: 'grey' }] } })],
-    ['un numero minimo non valido', JSON.stringify({ app: 'autoGroup', version: 1, settings: { minTabs: 0 } })],
-    ['domini esclusi che non sono una lista', JSON.stringify({ app: 'autoGroup', version: 1, settings: { excludedDomains: 'banca.it' } })],
-    ['un raggruppamento automatico non booleano', JSON.stringify({ app: 'autoGroup', version: 1, settings: { autoGroupSites: 'sì' } })],
-  ])('rifiuta %s senza cambiare nulla', async (_, text) => {
+    ['a text that is not JSON', 'ciao'],
+    ['JSON from another app', JSON.stringify({ app: 'altro', settings: {} })],
+    ['invalid categories', JSON.stringify({ app: 'autoGroup', version: 1, settings: { categories: [{ id: 'x', name: '', description: '', color: 'grey' }] } })],
+    ['an invalid minimum number', JSON.stringify({ app: 'autoGroup', version: 1, settings: { minTabs: 0 } })],
+    ['excluded domains that are not a list', JSON.stringify({ app: 'autoGroup', version: 1, settings: { excludedDomains: 'banca.it' } })],
+    ['a non-boolean automatic grouping', JSON.stringify({ app: 'autoGroup', version: 1, settings: { autoGroupSites: 'sì' } })],
+  ])('rejects %s without changing anything', async (_, text) => {
     const before = await loadSettings();
 
     await expect(importSettings(text)).rejects.toBeInstanceOf(SettingsError);

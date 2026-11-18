@@ -17,7 +17,7 @@ beforeEach(async () => {
   await saveSettings({ mode: 'domain', excludedDomains: ['banca.it'] });
 });
 
-/** La vista che il pannello mostra: tab e gruppi dal vivo più la proposta corrente. */
+/** The view the panel shows: live tabs and groups plus the current proposal. */
 async function view() {
   const v = await organizer.view(W);
   return {
@@ -28,8 +28,8 @@ async function view() {
   };
 }
 
-describe('vista della finestra nel pannello', () => {
-  it('mostra gruppi aperti con le loro tab, gruppi nuovi, tab libere e tab mai toccate', async () => {
+describe('window view in the panel', () => {
+  it('shows open groups with their tabs, new groups, free tabs and untouched tabs', async () => {
     const mine = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     await strip.addGroup('Lavoro', 'blue', [mine]);
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
@@ -49,7 +49,7 @@ describe('vista della finestra nel pannello', () => {
     });
   });
 
-  it('senza proposta mostra comunque tutta la finestra', async () => {
+  it('without a proposal it still shows the whole window', async () => {
     const mine = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     await strip.addGroup('Lavoro', 'blue', [mine]);
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
@@ -58,8 +58,8 @@ describe('vista della finestra nel pannello', () => {
   });
 });
 
-describe('"add-tab": mettere una tab libera in un gruppo', () => {
-  it('in un gruppo nuovo della proposta, togliendola dagli altri', async () => {
+describe('"add-tab": putting a free tab into a group', () => {
+  it('into a new group of the proposal, removing it from the others', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
@@ -69,11 +69,11 @@ describe('"add-tab": mettere una tab libera in un gruppo', () => {
     const state = await organizer.edit({ kind: 'add-tab', tab: { tabId: solo, title: 'falso', url: 'https://x' }, to: { groupId } });
 
     expect((await view()).created).toEqual([{ name: 'a.com', tabs: ['A1', 'A2', 'Solo'] }]);
-    // I dati della tab vengono dal browser, non dal messaggio.
+    // The tab data comes from the browser, not from the message.
     expect(state.proposal!.groups[0]!.tabs.at(-1)).toMatchObject({ title: 'Solo', url: 'https://solo.com/' });
   });
 
-  it('in un gruppo già aperto che la proposta non toccava: diventa un gruppo "esistente" della proposta', async () => {
+  it('into an already open group that the proposal did not touch: it becomes an "existing" group of the proposal', async () => {
     const mine = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     const chromeGroup = await strip.addGroup('Lavoro', 'blue', [mine]);
     const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
@@ -91,7 +91,7 @@ describe('"add-tab": mettere una tab libera in un gruppo', () => {
     expect(strip.groupsIn().map((g) => [g.title, g.tabs])).toEqual([['Lavoro', ['Doc 1', 'Solo']]]);
   });
 
-  it('rifiuta tab fissate, già in un gruppo, di domini esclusi o di altre finestre', async () => {
+  it('rejects tabs that are pinned, already in a group, from excluded domains or from other windows', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     const pinned = strip.addTab({ url: 'https://p.com/', title: 'P', pinned: true });
@@ -108,7 +108,7 @@ describe('"add-tab": mettere una tab libera in un gruppo', () => {
     }
   });
 
-  it('rifiuta un gruppo "esistente" di un\'altra finestra', async () => {
+  it('rejects an "existing" group from another window', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
     const elsewhere = strip.addTab({ url: 'https://o.com/', title: 'O', windowId: 2 });
@@ -125,8 +125,8 @@ describe('"add-tab": mettere una tab libera in un gruppo', () => {
   });
 });
 
-describe('"Nuovo gruppo" da "Sposta in…"', () => {
-  it('con la proposta crea un gruppo nuovo col nome del sito e un colore non ancora usato', async () => {
+describe('"New group" from "Move to…"', () => {
+  it('with the proposal it creates a new group named after the site and a color not yet used', async () => {
     const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     await strip.addGroup('Lavoro', 'grey', [d1]);
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
@@ -144,7 +144,7 @@ describe('"Nuovo gruppo" da "Sposta in…"', () => {
     expect(strip.groupsIn().map((g) => [g.title, g.tabs])).toContainEqual(['solo.com', ['Solo']]);
   });
 
-  it('sposta in un gruppo nuovo anche una tab già nella proposta; due gruppi nuovi restano distinti', async () => {
+  it('also moves into a new group a tab already in the proposal; two new groups stay distinct', async () => {
     const a1 = strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     const a2 = strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     strip.addTab({ url: 'https://a.com/3', title: 'A3' });
@@ -157,7 +157,7 @@ describe('"Nuovo gruppo" da "Sposta in…"', () => {
     expect(new Set(state.proposal!.groups.map((g) => g.id)).size).toBe(3);
   });
 
-  it('senza proposta crea subito in Chrome un gruppo col nome del sito, senza toccare lo stato', async () => {
+  it('without a proposal creates a group named after the site in Chrome right away, without touching the state', async () => {
     const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     await strip.addGroup('Lavoro', 'grey', [d1]);
     const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
@@ -170,7 +170,7 @@ describe('"Nuovo gruppo" da "Sposta in…"', () => {
     expect(state).toEqual(before);
   });
 
-  it('senza proposta non tocca tab fissate o escluse senza gruppo', async () => {
+  it('without a proposal does not touch pinned tabs or excluded tabs without a group', async () => {
     const pinned = strip.addTab({ url: 'https://p.com/', title: 'Fissata', pinned: true });
     const excluded = strip.addTab({ url: 'https://banca.it/', title: 'Banca' });
 
@@ -179,7 +179,7 @@ describe('"Nuovo gruppo" da "Sposta in…"', () => {
     expect(strip.layout()).toEqual(['Fissata', 'Banca']);
   });
 
-  it('trascinata fuori da un gruppo aperto, la tab finisce in un gruppo nuovo subito dopo', async () => {
+  it('dragged out of an open group, the tab ends up in a new group right after', async () => {
     const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     const d2 = strip.addTab({ url: 'https://docs.com/2', title: 'Doc 2' });
     const d3 = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
@@ -192,8 +192,8 @@ describe('"Nuovo gruppo" da "Sposta in…"', () => {
   });
 });
 
-describe('"Chiudi tab" dal pannello', () => {
-  it('chiude una tab della proposta e la toglie; la proposta resta valida senza ricalcolo', async () => {
+describe('"Close tab" from the panel', () => {
+  it('closes a tab of the proposal and removes it; the proposal stays valid without recomputing', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     const a3 = strip.addTab({ url: 'https://a.com/3', title: 'A3' });
@@ -203,11 +203,11 @@ describe('"Chiudi tab" dal pannello', () => {
 
     expect(strip.layout()).toEqual(['A1', 'A2']);
     expect(state.proposal!.groups.map((g) => g.tabs.map((t) => t.title))).toEqual([['A1', 'A2']]);
-    // Riaprendo il pannello la proposta (con la modifica) viene riusata: nessun nuovo calcolo.
+    // Reopening the panel reuses the proposal (with the change): no new computation.
     expect((await createOrganizer().propose(W)).proposal).toEqual(state.proposal);
   });
 
-  it('chiude anche tab libere, fissate o dentro un gruppo aperto, senza toccare la proposta', async () => {
+  it('also closes free, pinned or open-group tabs, without touching the proposal', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
@@ -224,7 +224,7 @@ describe('"Chiudi tab" dal pannello', () => {
     expect((await organizer.state()).proposal!.groups).toEqual(proposed.proposal!.groups);
   });
 
-  it("se chiude l'ultima tab di un gruppo aperto che la proposta estende, scarta l'estensione e resta attuale", async () => {
+  it("if it closes the last tab of an open group that the proposal extends, it discards the extension and stays current", async () => {
     const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     const chromeGroup = await strip.addGroup('docs.com', 'blue', [d1]);
     strip.addTab({ url: 'https://docs.com/2', title: 'Doc 2' });
@@ -238,7 +238,7 @@ describe('"Chiudi tab" dal pannello', () => {
     expect((await createOrganizer().propose(W)).proposal).toEqual(state.proposal);
   });
 
-  it('una tab già chiusa non cambia nulla', async () => {
+  it('a tab already closed changes nothing', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     const gone = strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     const proposed = await organizer.propose(W);
@@ -248,8 +248,8 @@ describe('"Chiudi tab" dal pannello', () => {
   });
 });
 
-describe('"Sposta in…" senza proposta', () => {
-  it('mette subito una tab libera in un gruppo aperto, senza toccare lo stato', async () => {
+describe('"Move to…" without a proposal', () => {
+  it('immediately puts a free tab into an open group, without touching the state', async () => {
     const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     const lavoro = await strip.addGroup('Lavoro', 'blue', [d1]);
     const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
@@ -261,7 +261,7 @@ describe('"Sposta in…" senza proposta', () => {
     expect(state).toEqual(before);
   });
 
-  it('non tocca tab fissate, già in un gruppo o gruppi di altre finestre', async () => {
+  it('does not touch pinned tabs, tabs already in a group or groups from other windows', async () => {
     const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     const lavoro = await strip.addGroup('Lavoro', 'blue', [d1]);
     const pinned = strip.addTab({ url: 'https://p.com/', title: 'Fissata', pinned: true });

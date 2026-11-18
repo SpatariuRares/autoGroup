@@ -9,26 +9,26 @@ export interface RulesContext {
   options: OptionTarget[];
   byShortId: Map<string, CandidateTab>;
   minTabs: number;
-  /** Colori dei gruppi già aperti nella finestra. */
+  /** Colors of the groups already open in the window. */
   usedColors: string[];
-  /** ID brevi delle tab prese da una regola sui siti → sito della regola. */
+  /** Short IDs of the tabs taken by a site rule → site of the rule. */
   siteOf?: Map<string, string>;
 }
 
 export interface RulesResult {
   groups: ProposedGroup[];
-  /** ID brevi delle tab rimaste libere (gruppo nuovo o categoria sotto il minimo). */
+  /** Short IDs of the tabs left free (new group or category below the minimum). */
   leftover: string[];
 }
 
 const toProposedTab = ({ tabId, title, url, favIconUrl }: CandidateTab): ProposedTab => ({ tabId, title, url, favIconUrl });
 
 /**
- * Regole sui gruppi e colori, uguali per ogni livello (AI e dominio).
- * - Un gruppo esistente accoglie anche una sola tab; nome e colore restano i suoi.
- * - Una categoria della lista o un gruppo nuovo richiedono almeno `minTabs` tab.
- * - Le categorie usano il loro colore fisso; i gruppi nuovi ruotano tra i colori liberi nella finestra.
- * I gruppi che non corrispondono a nessuna opzione nota hanno la provenienza `newProvenance`.
+ * Rules on groups and colors, the same at every level (AI and domain).
+ * - An existing group accepts even a single tab; its name and color stay its own.
+ * - A category of the list or a new group requires at least `minTabs` tabs.
+ * - Categories use their fixed color; new groups rotate among the colors free in the window.
+ * Groups that match no known option have the provenance `newProvenance`.
  */
 export function applyGroupRules(valid: ValidGroup[], ctx: RulesContext, newProvenance: 'ai' | 'domain' = 'ai'): RulesResult {
   const optionByKey = new Map(ctx.options.map((o) => [categoryKey(o.name), o]));

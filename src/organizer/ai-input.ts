@@ -4,7 +4,7 @@ import { categoryKey } from '../settings';
 import type { Category, GroupColor } from '../shared/types';
 import type { CandidateTab } from './tab-selection';
 
-/** URL ripulito per l'AI: host e percorso, senza schema, credenziali, query né frammento. */
+/** URL cleaned up for the AI: host and path, without scheme, credentials, query or fragment. */
 export function cleanUrl(url: string): string {
   try {
     const u = new URL(url);
@@ -15,8 +15,8 @@ export function cleanUrl(url: string): string {
 }
 
 /**
- * Dati delle tab per l'AI, con ID brevi (t1, t2, …), e la tabella per tornare alle tab di Chrome.
- * La descrizione della pagina c'è solo se il Lettore descrizioni l'ha letta.
+ * Tab data for the AI, with short IDs (t1, t2, …), and the table to go back to Chrome's tabs.
+ * The page description is there only if the description reader has read it.
  */
 export function prepareTabs(
   candidates: CandidateTab[],
@@ -32,19 +32,19 @@ export function prepareTabs(
   return { tabs, byShortId };
 }
 
-/** Un'opzione nota con quello che serve per costruire il gruppo proposto. */
+/** A known option with what is needed to build the proposed group. */
 export interface OptionTarget extends AiOption {
   kind: 'list' | 'existing';
   color: GroupColor;
-  /** Solo per i gruppi già aperti. */
+  /** Only for groups already open. */
   existingGroupId?: number;
 }
 
 /**
- * Opzioni per l'AI: categorie della lista più gruppi già aperti nella finestra.
- * Un gruppo aperto con lo stesso nome di una categoria (senza distinguere maiuscole e minuscole)
- * prende il posto della categoria, con la sua descrizione; le tab vi verranno aggiunte.
- * Gli altri gruppi aperti hanno la descrizione `userGroupDescription(nome)`. I gruppi senza nome sono esclusi.
+ * Options for the AI: the categories of the list plus the groups already open in the window.
+ * An open group with the same name as a category (case-insensitive)
+ * takes the place of the category, with its description; the tabs will be added to it.
+ * The other open groups have the description `userGroupDescription(name)`. Groups without a name are excluded.
  */
 export function buildOptions(
   categories: Category[],

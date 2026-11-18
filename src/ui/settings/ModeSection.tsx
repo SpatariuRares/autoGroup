@@ -8,7 +8,7 @@ const MODES: { id: GroupingMode; icon: IconName; title: string; hint: string }[]
   { id: 'ai', icon: 'category', title: 'optionsModeAi', hint: 'optionsModeAiHint' },
 ];
 
-/** Scelta della modalità: per sito o con l'AI. Usata dalle impostazioni e dall'onboarding. */
+/** Mode choice: by site or with the AI. Used by the settings and the onboarding. */
 export function ModeSection({ mode, onChange }: { mode: GroupingMode; onChange: (mode: GroupingMode) => unknown }) {
   return (
     <Card id="mode" title={t('optionsMode')}>

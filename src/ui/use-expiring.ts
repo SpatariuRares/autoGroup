@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Valore che torna a `null` da solo dopo `ms` millisecondi (es. un'offerta nella snackbar). Il terzo
- * elemento va sparso sull'elemento che lo mostra: finché c'è sopra il mouse o dentro il focus il valore
- * resta, e uscendo il conto riparte da capo, così c'è sempre il tempo di leggere e scegliere.
+ * Value that returns to `null` by itself after `ms` milliseconds (e.g. an offer in the snackbar). The third
+ * element is to be spread on the element that shows it: while the mouse is over it or focus is inside it the value
+ * stays, and when you leave the countdown starts over, so there is always time to read and choose.
  */
 export function useExpiring<T>(ms: number) {
   const [value, setValue] = useState<T | null>(null);

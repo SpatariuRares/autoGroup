@@ -25,7 +25,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** Apre le tab indicate (titolo → URL) e restituisce gli ID di Chrome. */
+/** Opens the given tabs (title → URL) and returns their Chrome IDs. */
 function open(tabs: Record<string, string>) {
   return Object.fromEntries(Object.entries(tabs).map(([title, url]) => [title, strip.addTab({ url, title })]));
 }
@@ -33,8 +33,8 @@ function open(tabs: Record<string, string>) {
 const summary = (state: Awaited<ReturnType<Organizer['propose']>>) =>
   state.proposal!.groups.map((g) => ({ name: g.name, provenance: g.provenance, color: g.color, tabs: g.tabs.map((t) => t.title) }));
 
-describe('Generatore compatibile OpenAI, modalità completo', () => {
-  it('assegna le tab a categorie, gruppi aperti e gruppi nuovi, con provenienza e colori', async () => {
+describe('OpenAI-compatible Generator, full mode', () => {
+  it('assigns tabs to categories, open groups and new groups, with provenance and colors', async () => {
     const mine = strip.addTab({ url: 'https://jira.example.com/1', title: 'Ticket' });
     await strip.addGroup('Progetto X', 'cyan', [mine]);
     open({
@@ -59,13 +59,13 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
     expect(state.proposal!.warnings).toEqual([]);
     expect(summary(state)).toEqual([
       { name: 'Sviluppo', provenance: 'list', color: 'grey', tabs: ['Repo', 'PR'] },
-      // Il primo colore libero: grigio è della categoria Sviluppo, ciano del gruppo aperto.
+      // The first free color: grey belongs to the category Sviluppo, cyan to the open group.
       { name: 'Cucina', provenance: 'ai', color: 'blue', tabs: ['Ricetta', 'Ricetta 2'] },
       { name: 'Progetto X', provenance: 'existing', color: 'cyan', tabs: ['Ticket 2'] },
     ]);
   });
 
-  it('all\'AI arrivano solo ID brevi, titoli e URL ripuliti, mai le tab dei domini esclusi', async () => {
+  it('only short IDs, titles and cleaned URLs reach the AI, never the tabs of excluded domains', async () => {
     await saveSettings({ excludedDomains: ['bank.com'] });
     const ids = open({
       'Cerca': 'https://www.google.com/search?q=segreto#risultati',
@@ -87,7 +87,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
     }
   });
 
-  it('le opzioni sono le categorie più i gruppi aperti, con corrispondenza per nome', async () => {
+  it('the options are the categories plus the open groups, matched by name', async () => {
     await saveSettings({
       categories: [
         { id: 'a', name: 'Lavoro', description: 'Cose di lavoro', color: 'blue' },
@@ -110,7 +110,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
     ]);
   });
 
-  it('usa /chat/completions con schema JSON, chiave Bearer, modello e lingua del browser', async () => {
+  it('uses /chat/completions with a JSON schema, Bearer key, model and browser language', async () => {
     open({ 'A': 'https://a.com/' });
     const { requests } = installFakeFetch(openAiReply({ groups: [] }));
 
@@ -125,7 +125,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
     expect(request!.body.messages[0].content).toContain('at most 2 words, in italiano');
   });
 
-  it('se il server rifiuta lo structured output ritenta una volta senza', async () => {
+  it('if the server rejects structured output it retries once without it', async () => {
     open({ 'A1': 'https://a.com/1', 'A2': 'https://a.com/2' });
     const { requests } = installFakeFetch(httpError(400), openAiReply('```json\n{"groups":[{"name":"Lettura","tabs":["t1","t2"]}]}\n```'));
 
@@ -136,7 +136,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
     expect(summary(state).map((g) => g.name)).toEqual(['Lettura']);
   });
 
-  it('scarta ID inesistenti, tab duplicate, nomi vuoti e nomi oltre le 2 parole', async () => {
+  it('discards nonexistent IDs, duplicate tabs, empty names and names over 2 words', async () => {
     open({ 'A': 'https://a.com/', 'B': 'https://b.com/', 'C': 'https://c.com/', 'D': 'https://d.com/', 'E': 'https://e.com/', 'F': 'https://f.com/' });
     installFakeFetch(
       openAiReply({
@@ -151,11 +151,11 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
 
     const state = await organizer.propose(W);
 
-    // t2 è in due gruppi: resta libera. "Uno" rimane con la sola t1 e non raggiunge il minimo.
+    // t2 is in two groups: it stays free. "Uno" keeps only t1 and does not reach the minimum.
     expect(summary(state).map((g) => [g.name, g.tabs])).toEqual([['Due', ['C', 'D']]]);
   });
 
-  it('applica il minimo ai gruppi nuovi e alle categorie, non ai gruppi esistenti', async () => {
+  it('applies the minimum to new groups and categories, not to existing groups', async () => {
     await saveSettings({ minTabs: 3 });
     const mine = strip.addTab({ url: 'https://x.com/', title: 'X' });
     await strip.addGroup('Mio', 'red', [mine]);
@@ -176,7 +176,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
     ]);
   });
 
-  it('"Applica" estende i gruppi esistenti senza cambiarne nome e colore; "Annulla" li riporta com\'erano', async () => {
+  it('"Apply" extends existing groups without changing their name and color; "Undo" restores them as they were', async () => {
     const mine = strip.addTab({ url: 'https://x.com/', title: 'X' });
     await strip.addGroup('Mio', 'red', [mine]);
     open({ 'A': 'https://a.com/', 'B': 'https://b.com/', 'C': 'https://c.com/' });
@@ -195,13 +195,13 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
   });
 
   it.each([
-    ['errore del server', () => httpError(500), 'unreachable'],
-    ['chiave non valida', () => httpError(401), 'invalid-key'],
-    ['limite di richieste', () => httpError(429), 'rate-limit'],
-    ['rete', () => new TypeError('Failed to fetch'), 'unreachable'],
-    ['JSON illeggibile', () => openAiReply('non è json'), 'invalid-response'],
-    ['JSON fuori schema', () => openAiReply({ gruppi: [] }), 'invalid-response'],
-  ] as const)('se il Generatore fallisce (%s) la proposta è per dominio, con un avviso', async (_, reply, cause) => {
+    ['server error', () => httpError(500), 'unreachable'],
+    ['invalid key', () => httpError(401), 'invalid-key'],
+    ['rate limit', () => httpError(429), 'rate-limit'],
+    ['network', () => new TypeError('Failed to fetch'), 'unreachable'],
+    ['unreadable JSON', () => openAiReply('non è json'), 'invalid-response'],
+    ['JSON outside the schema', () => openAiReply({ gruppi: [] }), 'invalid-response'],
+  ] as const)('if the Generator fails (%s) the proposal is by domain, with a warning', async (_, reply, cause) => {
     open({ 'A1': 'https://a.com/1', 'A2': 'https://a.com/2' });
     installFakeFetch(reply());
 
@@ -211,7 +211,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'OpenRouter (https://openrouter.ai/api/v1)', cause }]);
   });
 
-  it('senza il permesso host il Generatore non è disponibile: nessuna richiesta, proposta per dominio e avviso', async () => {
+  it('without host permission the Generator is not available: no request, proposal by domain and warning', async () => {
     installFakePermissions([]);
     open({ 'A1': 'https://a.com/1', 'A2': 'https://a.com/2' });
     const { fetchMock } = installFakeFetch(openAiReply({ groups: [] }));
@@ -223,7 +223,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'OpenRouter (https://openrouter.ai/api/v1)', cause: 'no-permission' }]);
   });
 
-  it('la chiave API sta in storage.local e non in storage.sync né nello stato', async () => {
+  it('the API key is in storage.local and not in storage.sync nor in the state', async () => {
     open({ 'A': 'https://a.com/' });
     installFakeFetch(openAiReply({ groups: [] }));
     await organizer.propose(W);
@@ -235,7 +235,7 @@ describe('Generatore compatibile OpenAI, modalità completo', () => {
 });
 
 describe('review AG-R2', () => {
-  it('accetta i nomi lunghi quando sono quelli di un gruppo aperto o di una categoria', async () => {
+  it('accepts long names when they are those of an open group or a category', async () => {
     await saveSettings({ categories: [{ id: 'c', name: 'Cose da leggere dopo', description: '', color: 'green' }] });
     const mine = strip.addTab({ url: 'https://x.com/', title: 'X' });
     await strip.addGroup('Progetto Cliente Alfa', 'red', [mine]);

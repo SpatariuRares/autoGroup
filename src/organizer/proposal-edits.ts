@@ -2,15 +2,15 @@ import type { Proposal, ProposalEdit, ProposedTab } from '../shared/types';
 import { createColorAssigner } from './colors';
 import { domainOf } from './tab-selection';
 
-/** Una tab spostata dall'utente non è più lì per una regola. */
+/** A tab moved by the user is no longer there because of a rule. */
 const moved = ({ rule: _rule, ...tab }: ProposedTab): ProposedTab => tab;
 
 /**
- * Applica una modifica dell'utente alla proposta e restituisce la nuova proposta.
- * Le tab tolte o i gruppi scartati lasciano le tab libere; un gruppo rimasto senza tab sparisce.
- * Le modifiche che si riferiscono a gruppi o tab inesistenti vengono ignorate.
- * Un gruppo nuovo prende il nome del sito della tab e un colore non ancora usato né dalla proposta né
- * da `usedColors` (i gruppi aperti nella finestra).
+ * Applies a user edit to the proposal and returns the new proposal.
+ * Removed tabs or discarded groups leave their tabs free; a group left without tabs disappears.
+ * Edits that refer to non-existent groups or tabs are ignored.
+ * A new group takes the name of the tab's site and a color not yet used either by the proposal or by
+ * `usedColors` (the groups open in the window).
  */
 export function editProposal(proposal: Proposal, edit: ProposalEdit, usedColors: Iterable<string> = []): Proposal {
   let groups = proposal.groups;

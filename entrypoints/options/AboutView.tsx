@@ -2,14 +2,14 @@ import { browser } from 'wxt/browser';
 import { t } from '../../src/shared/i18n';
 import { Card } from '../../src/ui/settings/Card';
 
-/** Pagina Buy Me a Coffee dell'autore. */
+/** The author's Buy Me a Coffee page. */
 const COFFEE_URL = 'https://www.buymeacoffee.com/SpatariuRares';
 const REPO_URL = 'https://github.com/SpatariuRares/autoGroup';
 const STORE_URL = 'https://chromewebstore.google.com/detail/gpfcmddgokgkjdeecjhgbbdcpjffcmke';
-/** Informativa completa: la stessa pubblicata per il Chrome Web Store. */
+/** Full privacy policy: the same one published for the Chrome Web Store. */
 const PRIVACY_URL = `${REPO_URL}/blob/main/docs/store/privacy.md`;
 
-/** Link esterno, in una nuova scheda. */
+/** External link, in a new tab. */
 function ExternalLink({ href, label }: { href: string; label: string }) {
   return (
     <a className="guide-link" href={href} target="_blank" rel="noopener noreferrer">
@@ -19,9 +19,9 @@ function ExternalLink({ href, label }: { href: string; label: string }) {
 }
 
 /**
- * Informazioni: cosa fa autoGroup, privacy in breve (fedele a docs/store/privacy.md, con il link
- * all'informativa completa) e "Offrimi un caffè". Il pulsante è locale, nello stile di Buy Me a
- * Coffee: l'immagine ufficiale verrebbe scaricata dal loro sito a ogni apertura della pagina.
+ * About: what autoGroup does, privacy in brief (faithful to docs/store/privacy.md, with the link to
+ * the full policy) and "Buy me a coffee". The button is local, in the style of Buy Me a Coffee: the
+ * official image would be downloaded from their site every time the page is opened.
  */
 export function AboutView() {
   return (

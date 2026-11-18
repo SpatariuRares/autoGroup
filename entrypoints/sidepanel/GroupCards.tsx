@@ -10,18 +10,18 @@ import { usePanelActions } from './panel-actions';
 import { setCollapsed } from './tab-actions';
 import { addedCount, tabCount, TabRow } from './TabRow';
 
-/** Quanto resta armato "Chiudi gruppo" dopo il primo clic. */
+/** How long "Close group" stays armed after the first click. */
 const CONFIRM_MS = 4000;
 
 /**
- * Un gruppo nuovo della proposta: nome e colore modificabili, tab spostabili (`targets`). Con
- * `readOnly` (anteprima per sito durante il calcolo) si guarda soltanto.
+ * A new group of the proposal: name and color editable, tabs movable (`targets`). With
+ * `readOnly` (per-site preview during computing) it is view-only.
  */
 export function GroupCard({ group, targets, readOnly = false }: { group: ProposedGroup; targets: Target[]; readOnly?: boolean }) {
   const { edit, closeTab, saveProposedGroup, adding } = usePanelActions();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const swatch = useRef<HTMLButtonElement>(null);
-  // Chiudendo la tavolozza il focus torna sul pallino: i suoi pulsanti spariscono e lo lascerebbero sul body.
+  // Closing the palette returns focus to the dot: its buttons disappear and would leave it on the body.
   const closePalette = () => {
     swatch.current?.focus();
     setPaletteOpen(false);
@@ -85,7 +85,7 @@ export function GroupCard({ group, targets, readOnly = false }: { group: Propose
               key={color}
               role="radio"
               aria-checked={color === group.color}
-              // Aprendo la tavolozza il focus va sul colore attuale; le frecce passano agli altri.
+              // Opening the palette focuses the current color; the arrows move to the others.
               autoFocus={color === group.color}
               tabIndex={color === group.color ? 0 : -1}
               className={`swatch color-${color}${color === group.color ? ' selected' : ''}`}
@@ -115,15 +115,15 @@ export function GroupCard({ group, targets, readOnly = false }: { group: Propose
 }
 
 /**
- * Il nome di un gruppo, da modificare. Invio o uscire dal campo salvano il nome se è cambiato; Esc
- * torna al nome di adesso. Con `onDone` (il campo compare solo mentre si modifica) Esc esce anche
- * dal campo, senza salvare, e `onDone` arriva all'uscita.
+ * The name of a group, to be edited. Enter or leaving the field saves the name if it changed; Esc
+ * goes back to the current name. With `onDone` (the field appears only while editing) Esc also leaves
+ * the field, without saving, and `onDone` is called on exit.
  */
 function GroupNameInput({ name, onRename, onDone }: { name: string; onRename: (name: string) => void; onDone?: () => void }) {
   const [value, setValue] = useState(name);
   const cancelled = useRef(false);
-  // Il gruppo nuovo segue il nome della proposta; il campo di un gruppo aperto, che c'è solo mentre si
-  // scrive, non perde quanto scritto se il nome cambia in Chrome.
+  // A new group follows the proposal's name; the field of an open group, which exists only while
+  // typing, does not lose what was typed if the name changes in Chrome.
   useEffect(() => {
     if (!onDone) setValue(name);
   }, [name]);
@@ -154,12 +154,12 @@ function GroupNameInput({ name, onRename, onDone }: { name: string; onRename: (n
 }
 
 /**
- * "Aggiungi alle categorie" (`canSave`: il gruppo ha un nome). Per un gruppo che è già una categoria,
- * o che lo sta diventando (`inCategories`), al posto del pulsante c'è solo il segno.
+ * "Add to categories" (`canSave`: the group has a name). For a group that is already a category,
+ * or that is becoming one (`inCategories`), only the mark is shown in place of the button.
  */
 function SaveToCategories({ inCategories, canSave, iconSize, onSave }: { inCategories: boolean; canSave: boolean; iconSize: number; onSave: () => void }) {
   const { busy } = usePanelActions();
-  // Se il pulsante aveva il focus, lo prende il segno che lo sostituisce.
+  // If the button had focus, the mark that replaces it takes it.
   const savedHere = useRef(false);
   if (inCategories) return <InCategories focus={savedHere.current} />;
   if (!canSave) return null;
@@ -180,9 +180,9 @@ function SaveToCategories({ inCategories, canSave, iconSize, onSave }: { inCateg
 }
 
 /**
- * Al posto di "Aggiungi alle categorie" per un gruppo che è già una categoria: solo un segno, nessuna
- * azione. Compare già al clic su "Aggiungi", mentre il salvataggio è in corso. Con `focus` (il pulsante
- * che sostituisce aveva il focus) lo prende lui: senza, il recupero del focus lo manderebbe nel gruppo accanto.
+ * In place of "Add to categories" for a group that is already a category: only a mark, no
+ * action. It appears already on click of "Add", while saving is in progress. With `focus` (the button
+ * being replaced had focus) it takes it: without it, focus recovery would send it to the neighboring group.
  */
 function InCategories({ focus = false }: { focus?: boolean }) {
   const mark = useRef<HTMLSpanElement>(null);
@@ -196,7 +196,7 @@ function InCategories({ focus = false }: { focus?: boolean }) {
   );
 }
 
-/** "Sposta il gruppo": Su e Giù di un posto nella barra, l'alternativa al trascinamento dell'intestazione. */
+/** "Move the group": Up and Down one place in the tab strip, the alternative to dragging the header. */
 function MoveGroup({ name, reorder }: { name: string; reorder: Reorder }) {
   return (
     <label className="move" data-tooltip={t('panelMoveGroup')}>
@@ -214,7 +214,7 @@ function MoveGroup({ name, reorder }: { name: string; reorder: Reorder }) {
   );
 }
 
-/** Provenienza e numero di tab, nella riga del titolo per tenere le schede basse. */
+/** Provenance and tab count, in the title row to keep the cards short. */
 function GroupMeta({ group }: { group: ProposedGroup }) {
   return (
     <span className="group-meta">
@@ -225,15 +225,15 @@ function GroupMeta({ group }: { group: ProposedGroup }) {
 }
 
 /**
- * Un gruppo già aperto in Chrome: il colore resta quello di Chrome, il nome si cambia dalla matita (per
- * una categoria cambia anche la categoria). Se non è una categoria si aggiunge alle categorie; se lo è,
- * al posto del pulsante mostra solo il segno. Le sue tab di adesso
- * sono solo da vedere; quelle che la proposta gli aggiunge sono segnate come nuove e si possono togliere.
- * Un gruppo senza aggiunte resta chiuso, per non allungare l'elenco. Dall'intestazione si comprime o
- * espande il gruppo in Chrome e si chiudono tutte le sue tab (al secondo clic, entro qualche secondo).
- * Dall'intestazione si trascina tutto il gruppo; le sue tab di adesso si trascinano una per una
- * (`nextGroupId`: il gruppo che lo segue nella barra, vedi `useGroupDrag`). Senza trascinare: "Sposta il
- * gruppo" (`reorder`), e per le sue tab "Sposta in…" (`liveTargets`) con Su e Giù.
+ * A group already open in Chrome: the color stays Chrome's, the name is changed with the pencil (for
+ * a category it also changes the category). If it is not a category it is added to the categories; if it is,
+ * only the mark is shown in place of the button. Its current tabs
+ * are view-only; those the proposal adds to it are marked as new and can be removed.
+ * A group with no additions stays closed, to keep the list short. From the header the group is collapsed or
+ * expanded in Chrome and all its tabs are closed (on the second click, within a few seconds).
+ * From the header the whole group is dragged; its current tabs are dragged one by one
+ * (`nextGroupId`: the group that follows it in the tab strip, see `useGroupDrag`). Without dragging: "Move the
+ * group" (`reorder`), and for its tabs "Move to…" (`liveTargets`) with Up and Down.
  */
 export function ExistingCard({
   existing,
@@ -245,11 +245,11 @@ export function ExistingCard({
 }: {
   existing: ExistingGroupView;
   nextGroupId: number | null;
-  /** Per le tab che la proposta gli aggiunge. */
+  /** For the tabs that the proposal adds to it. */
   targets: Target[];
-  /** Assente mentre il trascinamento non è possibile (calcolo in corso, anteprima). */
+  /** Absent while dragging is not possible (computing in progress, preview). */
   reorder?: Reorder;
-  /** Per le sue tab di adesso. */
+  /** For its current tabs. */
   liveTargets?: Target[];
   readOnly?: boolean;
 }) {
@@ -257,15 +257,15 @@ export function ExistingCard({
   const { edit, closeTab, closeGroup, renameGroup, moveTab, saveOpenGroup, adding } = usePanelActions();
   const { enabled: canDrag } = useContext(DragContext);
   const [armed, setArmed] = useExpiring<true>(CONFIRM_MS);
-  // Uscendo dal campo il nome si salva, Esc annulla (vedi `GroupNameInput`).
+  // Leaving the field saves the name, Esc cancels (see `GroupNameInput`).
   const [editing, setEditing] = useState(false);
   const pencil = useRef<HTMLButtonElement>(null);
   const stopEditing = () => {
     setEditing(false);
-    // Il campo sparisce: il focus torna sulla matita invece di finire sul body.
+    // The field disappears: focus returns to the pencil instead of ending up on the body.
     requestAnimationFrame(() => pencil.current?.focus());
   };
-  // Come faceva <details open>: aperta se la proposta gli aggiunge tab, chiusa se non più.
+  // As <details open> used to: open if the proposal adds tabs to it, closed if no longer.
   const [open, setOpen] = useState(added.length > 0);
   useEffect(() => setOpen(added.length > 0), [added.length > 0]);
   const listId = `existing-group-${group.id}`;
@@ -273,15 +273,15 @@ export function ExistingCard({
   const { className: dropClass, ...cardProps } = card;
   return (
     <li className={`group existing${added.length > 0 ? ' extended' : ''}${dropClass}`} {...cardProps}>
-      {/* I pulsanti stanno accanto all'intestazione, non dentro: un controllo dentro un altro (com'era nel
-          <summary>) non è valido, e molti screen reader non leggono o non raggiungono quello interno. */}
-      {/* Mentre si scrive il nome l'intestazione non si trascina: il trascinamento selezionerebbe il testo. */}
+      {/* The buttons sit next to the header, not inside it: a control inside another (as it was in the
+          <summary>) is not valid, and many screen readers do not read or reach the inner one. */}
+      {/* While the name is being typed the header is not dragged: dragging would select the text. */}
       <div className="group-header" {...(!editing ? header : {})}>
         {!editing ? (
           <button className="group-toggle" aria-expanded={open} aria-controls={listId} onClick={() => setOpen(!open)}>
-            {/* La freccia dice che il gruppo si apre: a riposo l'intestazione è solo pallino, nome e conteggio. */}
+            {/* The arrow says the group opens: at rest the header is only dot, name and count. */}
             <Icon name="chevronRight" size={18} />
-            {/* Un aria-label su uno <span> senza ruolo viene ignorato: il colore è testo nascosto. */}
+            {/* An aria-label on a <span> with no role is ignored: the color is hidden text. */}
             <span className={`swatch static color-${group.color}`} />
             <span className="visually-hidden">{t(`color_${group.color}`)}</span>
             <span className="group-name static">{group.name || t('popupUnnamed')}</span>

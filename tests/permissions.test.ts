@@ -8,8 +8,8 @@ const OLLAMA = { preset: 'ollama', baseUrl: 'http://localhost:11434/v1', model: 
 const KEV = { preset: 'kev', baseUrl: 'http://127.0.0.1:8009', model: '' };
 
 /**
- * Permessi come li gestisce Chrome nel caso peggiore: un host già coperto da `<all_urls>` viene
- * concesso senza essere registrato a parte. `accept` decide la risposta dell'utente alla finestra.
+ * Permissions as Chrome handles them in the worst case: a host already covered by `<all_urls>` is
+ * granted without being registered separately. `accept` decides the user's answer to the prompt.
  */
 function chromeLikePermissions(granted: string[], accept = true) {
   const origins = new Set(granted);
@@ -33,11 +33,11 @@ beforeEach(() => {
   installFakeI18n('it');
 });
 
-describe('spegnere le descrizioni senza togliere l\'accesso ai provider', () => {
-  it('un host concesso mentre <all_urls> era attivo viene richiesto di nuovo dopo averlo tolto', async () => {
+describe('turning off descriptions without removing provider access', () => {
+  it('a host granted while <all_urls> was active is requested again after it was removed', async () => {
     const permissions = chromeLikePermissions([ALL_URLS]);
     await saveSettings({ generator: OLLAMA, classifier: KEV });
-    // "Salva" del provider con <all_urls> attivo: Chrome risponde sì ma non registra l'host.
+    // Provider "Save" with <all_urls> active: Chrome answers yes but does not register the host.
     await fakeBrowser.permissions.request({ origins: ['http://localhost/*'] });
 
     expect(await removeDescriptionPermission()).toEqual([]);
@@ -46,7 +46,7 @@ describe('spegnere le descrizioni senza togliere l\'accesso ai provider', () => 
     expect(permissions.request).toHaveBeenLastCalledWith({ origins: ['http://127.0.0.1/*', 'http://localhost/*'] });
   });
 
-  it('se Chrome aveva registrato gli host non chiede nulla', async () => {
+  it('if Chrome had registered the hosts it asks for nothing', async () => {
     const permissions = chromeLikePermissions([ALL_URLS, 'http://localhost/*']);
     await saveSettings({ generator: OLLAMA });
 
@@ -56,7 +56,7 @@ describe('spegnere le descrizioni senza togliere l\'accesso ai provider', () => 
     expect(permissions.request).not.toHaveBeenCalled();
   });
 
-  it('se l\'utente rifiuta, restituisce gli host rimasti senza permesso', async () => {
+  it('if the user refuses, it returns the hosts left without permission', async () => {
     const permissions = chromeLikePermissions([ALL_URLS], false);
     await saveSettings({ generator: OLLAMA });
 
@@ -64,7 +64,7 @@ describe('spegnere le descrizioni senza togliere l\'accesso ai provider', () => 
     expect(permissions.origins.size).toBe(0);
   });
 
-  it('senza provider con un server (Gemini Nano, nessuno) toglie solo <all_urls>', async () => {
+  it('without a provider with a server (Gemini Nano, none) it removes only <all_urls>', async () => {
     const permissions = chromeLikePermissions([ALL_URLS]);
 
     expect(await removeDescriptionPermission()).toEqual([]);
@@ -77,15 +77,15 @@ describe('spegnere le descrizioni senza togliere l\'accesso ai provider', () => 
 const OPENROUTER = { preset: 'openrouter', baseUrl: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini' };
 const UNSLOTH = { preset: 'unsloth', baseUrl: 'http://127.0.0.1:8888/v1', model: 'qwen' };
 
-/** "Salva" come lo fa la pagina: il permesso chiesto nel clic, poi il salvataggio. */
+/** "Save" as the page does it: the permission requested in the click, then the save. */
 function save(role: 'classifier' | 'generator', draft: ProviderSettings, apiKey = '') {
   const origin = providerOrigin(draft);
   const granted = origin ? browser.permissions.request({ origins: [origin] }) : Promise.resolve(false);
   return saveProvider(role, draft, apiKey, granted);
 }
 
-describe('salvare un provider', () => {
-  it('salva il provider e la chiave API solo in storage.local; con il permesso è pronto', async () => {
+describe('saving a provider', () => {
+  it('saves the provider and the API key only in storage.local; with the permission it is ready', async () => {
     const permissions = chromeLikePermissions([]);
 
     expect(await save('generator', OPENROUTER, ' sk-123 ')).toBe('ready');
@@ -96,13 +96,13 @@ describe('salvare un provider', () => {
     expect([...permissions.origins]).toEqual(['https://openrouter.ai/*']);
   });
 
-  it("se l'utente rifiuta il permesso lo dice", async () => {
+  it("if the user refuses the permission it says so", async () => {
     chromeLikePermissions([], false);
 
     expect(await save('generator', OPENROUTER)).toBe('no-permission');
   });
 
-  it("cambiando server toglie il permesso dell'host di prima", async () => {
+  it("changing server removes the permission of the previous host", async () => {
     const permissions = chromeLikePermissions([]);
     await save('generator', OLLAMA);
 
@@ -111,7 +111,7 @@ describe('salvare un provider', () => {
     expect([...permissions.origins]).toEqual(['https://openrouter.ai/*']);
   });
 
-  it("tiene il permesso di un host che l'altro provider usa ancora", async () => {
+  it("keeps the permission of a host that the other provider still uses", async () => {
     const permissions = chromeLikePermissions([]);
     await save('classifier', KEV);
     await save('generator', UNSLOTH);
@@ -121,7 +121,7 @@ describe('salvare un provider', () => {
     expect([...permissions.origins].sort()).toEqual(['http://127.0.0.1/*', 'https://openrouter.ai/*']);
   });
 
-  it('Gemini Nano e "nessuno" non chiedono permessi e tolgono quello di prima', async () => {
+  it('Gemini Nano and "none" ask for no permissions and remove the previous one', async () => {
     const permissions = chromeLikePermissions([]);
     await save('generator', OLLAMA);
 
@@ -132,7 +132,7 @@ describe('salvare un provider', () => {
     expect(permissions.request).toHaveBeenCalledTimes(1);
   });
 
-  it('senza modello il Generatore è incompleto; un URL non http(s) non ha permesso da chiedere', async () => {
+  it('without a model the Generator is incomplete; a non-http(s) URL has no permission to request', async () => {
     chromeLikePermissions([]);
 
     expect(await save('generator', { ...OPENROUTER, model: '' })).toBe('incomplete');

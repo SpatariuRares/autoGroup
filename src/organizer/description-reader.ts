@@ -2,14 +2,14 @@ import { browser } from 'wxt/browser';
 import { createSessionCache } from './session-cache';
 import type { CandidateTab } from './tab-selection';
 
-/** Tempo massimo per leggere la descrizione di una tab. */
+/** Maximum time to read the description of a tab. */
 const DESCRIPTION_TIMEOUT_MS = 500;
 const MAX_DESCRIPTION_LENGTH = 300;
 
-/** Descrizioni già lette, per URL; null = pagina letta, ma senza descrizione. */
+/** Descriptions already read, by URL; null = page read, but without a description. */
 const cache = createSessionCache<string | null>('descriptionCache', 1000);
 
-/** Pagine che Chrome non lascia leggere alle estensioni, o che non hanno una meta description. */
+/** Pages that Chrome does not let extensions read, or that have no meta description. */
 function isReadable(tab: CandidateTab): boolean {
   let url: URL;
   try {
@@ -24,13 +24,13 @@ function isReadable(tab: CandidateTab): boolean {
   return true;
 }
 
-/** Eseguita nella pagina: meta description, oppure og:description se la prima manca o è vuota. */
+/** Runs in the page: meta description, or og:description if the first is missing or empty. */
 function readMetaDescription(): string | null {
   const content = (selector: string) => document.querySelector<HTMLMetaElement>(selector)?.content.trim();
   return content('meta[name="description" i]') || content('meta[property="og:description" i]') || null;
 }
 
-/** La descrizione, null se la pagina non ne ha, undefined se non si è potuta leggere (tempo scaduto, accesso negato). */
+/** The description, null if the page has none, undefined if it could not be read (timeout, access denied). */
 async function readOne(tab: CandidateTab): Promise<string | null | undefined> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<undefined>((resolve) => {
@@ -51,15 +51,15 @@ async function readOne(tab: CandidateTab): Promise<string | null | undefined> {
 }
 
 /**
- * Lettore descrizioni: legge in parallelo la meta description delle tab, con un tempo massimo di
- * circa 500 ms per tab. Le tab sospese da Risparmio memoria non vengono mai lette (leggerle le
- * risveglierebbe), e così le pagine non leggibili (chrome://, Web Store, PDF). Le tab dei domini
- * esclusi non arrivano qui, perché sono già state scartate dalla selezione.
+ * Description reader: reads the meta description of the tabs in parallel, with a maximum time of
+ * about 500 ms per tab. Tabs suspended by Memory Saver are never read (reading them would wake them up),
+ * and so are the unreadable pages (chrome://, Web Store, PDF). The tabs of the excluded domains do not
+ * arrive here, because the selection has already discarded them.
  *
- * Le descrizioni lette restano in una cache per URL (anche "nessuna descrizione"), così un nuovo
- * calcolo legge solo le pagine nuove. Una pagina che non ha risposto in tempo non viene ricordata e
- * si riprova la volta dopo. Una tab sospesa già letta prima ritrova la sua descrizione senza risvegliarsi.
- * Restituisce la descrizione per ID di tab di Chrome; le tab senza descrizione mancano.
+ * The descriptions read stay in a cache per URL (including "no description"), so a new computation
+ * reads only the new pages. A page that did not answer in time is not remembered and is retried
+ * next time. A suspended tab already read before gets its description back without waking up.
+ * Returns the description by Chrome tab ID; tabs without a description are missing.
  */
 export async function readDescriptions(tabs: CandidateTab[]): Promise<Map<number, string>> {
   const cached = await cache.getMany(tabs.map((tab) => tab.url));

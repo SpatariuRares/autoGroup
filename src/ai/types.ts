@@ -1,6 +1,6 @@
 import type { ProposalWarning } from '../shared/types';
 
-/** Una tab come la vede l'AI: ID breve, titolo e URL ripulito. Mai gli ID di Chrome. */
+/** A tab as the AI sees it: short ID, title and cleaned URL. Never Chrome's IDs. */
 export interface AiTab {
   id: string;
   title: string;
@@ -8,64 +8,64 @@ export interface AiTab {
   description?: string;
 }
 
-/** Un'opzione nota: categoria della lista o gruppo già aperto. */
+/** A known option: a category from the list or an already open group. */
 export interface AiOption {
   name: string;
   description: string;
 }
 
 export interface GenerateRequest {
-  /** "full": sceglie tra le opzioni o inventa; "new-only": inventa gruppi per le tab rimaste (AG-08). */
+  /** "full": chooses among the options or invents; "new-only": invents groups for the tabs left over (AG-08). */
   mode: 'full' | 'new-only';
   tabs: AiTab[];
   options: AiOption[];
-  /** Lingua dei nomi nuovi, es. "italiano". */
+  /** Language of the new names, e.g. "italiano". */
   language: string;
 }
 
-/** Risposta grezza del Generatore, ancora da validare. */
+/** Raw Generator response, still to be validated. */
 export interface RawGroup {
   name: unknown;
   tabs: unknown;
 }
 
-/** Contratto comune dei Generatori (compatibile OpenAI, Gemini Nano). */
+/** Common contract of the Generators (OpenAI-compatible, Gemini Nano). */
 export interface Generator {
-  /** Nome del provider per gli avvisi, es. "OpenRouter (openrouter.ai)". */
+  /** Provider name for the warnings, e.g. "OpenRouter (openrouter.ai)". */
   readonly label: string;
   generate(request: GenerateRequest, signal?: AbortSignal): Promise<RawGroup[]>;
   /**
-   * Facoltativo: prepara in anticipo quello che serve a `generate` con questa modalità e lingua
-   * (Gemini Nano crea la sessione), mentre la pipeline fa altro. Non fallisce mai.
+   * Optional: prepares in advance what `generate` needs with this mode and language
+   * (Gemini Nano creates the session), while the pipeline does something else. Never fails.
    */
   prepare?(mode: GenerateRequest['mode'], language: string): void;
-  /** Descrizione di una categoria a partire dal nome e da alcune tab di esempio ("Salva nella lista"). */
+  /** Description of a category from its name and a few example tabs ("Save to the list"). */
   describe(request: DescribeRequest, signal?: AbortSignal): Promise<string>;
 }
 
 export interface DescribeRequest {
   name: string;
   examples: AiTab[];
-  /** Lingua della descrizione, es. "italiano". */
+  /** Language of the description, e.g. "italiano". */
   language: string;
 }
 
-/** Esito del Classificatore per una tab: opzione scelta (null = nessuna) e confidenza calibrata. */
+/** Classifier outcome for a tab: chosen option (null = none) and calibrated confidence. */
 export interface Classification {
   choice: string | null;
   confidence: number;
 }
 
-/** Contratto comune dei Classificatori (protocollo System One). */
+/** Common contract of the Classifiers (System One protocol). */
 export interface Classifier {
   readonly label: string;
-  /** Per ogni ID breve di tab, l'opzione scelta e la confidenza. */
+  /** For each short tab ID, the chosen option and the confidence. */
   classify(tabs: AiTab[], options: AiOption[], signal?: AbortSignal): Promise<Map<string, Classification>>;
 }
 
 type ProviderErrorCause = ProposalWarning['cause'];
 
-/** Errore di un provider AI, già classificato per causa. */
+/** Error from an AI provider, already classified by cause. */
 export class ProviderError extends Error {
   constructor(
     readonly reason: ProviderErrorCause,

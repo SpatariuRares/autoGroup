@@ -3,10 +3,10 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import type { GroupColor } from '../src/shared/types';
 
 /**
- * Piccolo simulatore della barra delle tab di Chrome, innestato sul fake browser di WXT.
- * Il fake di WXT non conosce gruppi, tab fissate né posizioni: qui le tab di ogni finestra
- * sono una lista ordinata e `tabs.group`, `tabs.ungroup`, `tabs.move` e `tabGroups` si
- * comportano come Chrome nei casi usati dall'Organizzatore.
+ * Small simulator of Chrome's tab strip, layered on WXT's fake browser.
+ * WXT's fake knows nothing about groups, pinned tabs or positions: here the tabs of each window
+ * are an ordered list, and `tabs.group`, `tabs.ungroup`, `tabs.move` and `tabGroups` behave like
+ * Chrome in the cases the Organizer uses.
  */
 
 const NONE = -1;
@@ -41,7 +41,7 @@ export interface NewTab {
   discarded?: boolean;
   active?: boolean;
   audible?: boolean;
-  /** Ultima volta che la tab è stata guardata, in ms dall'epoca (come `Tab.lastAccessed`). */
+  /** Last time the tab was looked at, in ms since the epoch (like `Tab.lastAccessed`). */
   lastAccessed?: number;
 }
 
@@ -49,7 +49,7 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
   const currentWindowId = options.currentWindowId ?? 1;
   const tabs = new Map<number, TabRecord>();
   const groups = new Map<number, GroupRecord>();
-  const order = new Map<number, number[]>(); // windowId -> ID delle tab in ordine
+  const order = new Map<number, number[]>(); // windowId -> IDs of the tabs, in order
   let nextTabId = 100;
   let nextGroupId = 500;
 
@@ -90,14 +90,14 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
 
   const ids = (value: number | number[]) => (Array.isArray(value) ? value : [value]);
 
-  /** Rimuove i gruppi rimasti senza tab, come fa Chrome. */
+  /** Removes the groups left without tabs, as Chrome does. */
   const dropEmptyGroups = () => {
     for (const id of groups.keys()) {
       if (![...tabs.values()].some((t) => t.groupId === id)) groups.delete(id);
     }
   };
 
-  /** Indice subito dopo l'ultima tab del gruppo nella sua finestra. */
+  /** Index right after the last tab of the group in its window. */
   const endOfGroup = (groupId: number, windowId: number) => {
     const list = strip(windowId);
     let end = -1;
@@ -178,8 +178,8 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
         const list = strip(tab.windowId);
         const index = list.indexOf(tab.id);
         tab.groupId = NONE;
-        // Come Chrome: la prima tab del gruppo (o l'unica) resta dov'è, prima del gruppo; le altre
-        // escono subito dopo il gruppo.
+        // As in Chrome: the first tab of the group (or the only one) stays where it is, before the
+        // group; the others leave right after the group.
         const first = list.findIndex((id) => tabs.get(id)!.groupId === groupId);
         if (first === -1 || index < first) continue;
         removeFromStrip(tab);
@@ -199,7 +199,7 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
         const at = index === -1 || index > list.length ? list.length : index;
         list.splice(at, 0, tab.id);
         if (index !== -1) index = at + 1;
-        // Come in Chrome: una tab che finisce in mezzo a un gruppo vi entra, una che ne esce lo lascia.
+        // As in Chrome: a tab that ends up in the middle of a group joins it, one that leaves drops out of it.
         const pos = list.indexOf(tab.id);
         const left = pos > 0 ? tabs.get(list[pos - 1]!)!.groupId : NONE;
         const right = pos < list.length - 1 ? tabs.get(list[pos + 1]!)!.groupId : NONE;
@@ -233,7 +233,7 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
       if (props.collapsed !== undefined) group.collapsed = props.collapsed;
       return toGroup(group);
     },
-    /** Sposta tutte le tab del gruppo insieme: la prima finisce a `index`, come in Chrome. */
+    /** Moves all the tabs of the group together: the first one ends up at `index`, as in Chrome. */
     async move(id: number, props: Browser.tabGroups.MoveProperties) {
       const group = groups.get(id);
       if (!group) throw new Error(`No group with id: ${id}.`);
@@ -252,7 +252,7 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
   return {
     currentWindowId,
 
-    /** Apre una tab in fondo alla finestra (default: la finestra corrente). */
+    /** Opens a tab at the end of the window (default: the current window). */
     addTab(tab: NewTab): number {
       const record: TabRecord = {
         id: nextTabId++,
@@ -271,7 +271,7 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
       return record.id;
     },
 
-    /** Crea un gruppo già aperto dall'utente con le tab indicate. */
+    /** Creates a group already opened by the user with the given tabs. */
     async addGroup(title: string, color: GroupColor, tabIds: number[]): Promise<number> {
       const id = await fakeTabs.group({ tabIds: tabIds as [number, ...number[]] });
       await fakeTabGroups.update(id, { title, color: color as Browser.tabGroups.Color });
@@ -282,7 +282,7 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
       await fakeTabs.remove(id);
     },
 
-    /** Gruppi della finestra nell'ordine della barra, con i titoli delle loro tab. */
+    /** Groups of the window in the order of the strip, with the titles of their tabs. */
     groupsIn(windowId = currentWindowId) {
       const result: { id: number; title: string; color: string; tabs: string[] }[] = [];
       for (const id of strip(windowId)) {
@@ -299,7 +299,7 @@ export function installFakeTabStrip(options: { currentWindowId?: number } = {}) 
       return result;
     },
 
-    /** La barra della finestra come elenco "titolo" oppure "titolo [gruppo]". */
+    /** The window's strip as a list of "title" or "title [group]". */
     layout(windowId = currentWindowId) {
       return strip(windowId).map((id) => {
         const tab = tabs.get(id)!;

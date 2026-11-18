@@ -10,7 +10,7 @@ import { installFakeTabStrip, type FakeTabStrip } from './fake-tab-strip';
 
 let strip: FakeTabStrip;
 let organizer: Organizer;
-/** Ogni stato annunciato al pannello, nell'ordine. */
+/** Every state announced to the panel, in order. */
 let announced: OrganizerState[];
 const W = 1;
 const OPENROUTER = { preset: 'openrouter', baseUrl: 'https://openrouter.ai/api/v1', model: 'm' };
@@ -35,8 +35,8 @@ afterEach(() => {
 const AI_GROUP = openAiReply({ groups: [{ name: 'Lettura', tabs: ['t1', 't2', 't3'] }] });
 const names = (proposal?: { groups: { name: string; provenance: string }[] }) => proposal?.groups.map((g) => [g.name, g.provenance]);
 
-describe('anteprima per sito durante il calcolo', () => {
-  it('mentre l\'AI calcola, lo stato contiene subito la proposta per sito; poi arriva quella AI', async () => {
+describe('per-site preview during computation', () => {
+  it('while the AI computes, the state immediately contains the per-site proposal; then the AI one arrives', async () => {
     const { requests } = installFakeFetch(HANG);
 
     const running = organizer.propose(W);
@@ -50,7 +50,7 @@ describe('anteprima per sito durante il calcolo', () => {
     await running;
   });
 
-  it('la proposta AI sostituisce l\'anteprima, che non resta nello stato', async () => {
+  it('the AI proposal replaces the preview, which does not remain in the state', async () => {
     installFakeFetch(AI_GROUP);
 
     const state = await organizer.propose(W);
@@ -60,7 +60,7 @@ describe('anteprima per sito durante il calcolo', () => {
     expect(state.preview).toBeUndefined();
   });
 
-  it('"Usa questa" ferma l\'AI e rende l\'anteprima la proposta corrente, modificabile e applicabile', async () => {
+  it('"Use this" stops the AI and makes the preview the current proposal, editable and applicable', async () => {
     const { requests } = installFakeFetch(HANG);
 
     const running = organizer.propose(W);
@@ -79,7 +79,7 @@ describe('anteprima per sito durante il calcolo', () => {
     expect(strip.groupsIn().map((g) => [g.title, g.tabs])).toEqual([['Sito A', ['A1', 'A2']]]);
   });
 
-  it('dopo "Usa questa" la proposta resta attuale: riaprendo il pannello non si interroga di nuovo l\'AI', async () => {
+  it('after "Use this" the proposal stays current: reopening the panel does not query the AI again', async () => {
     const { requests } = installFakeFetch(HANG);
     const running = organizer.propose(W);
     await vi.waitFor(() => expect(requests).toHaveLength(1));
@@ -92,7 +92,7 @@ describe('anteprima per sito durante il calcolo', () => {
     expect(requests).toHaveLength(1);
   });
 
-  it('"Interrompi" resta com\'era: nessuna proposta, nemmeno quella per sito', async () => {
+  it('"Stop" leaves things as they were: no proposal, not even the per-site one', async () => {
     const { requests } = installFakeFetch(HANG);
 
     const running = organizer.propose(W);
@@ -106,14 +106,14 @@ describe('anteprima per sito durante il calcolo', () => {
     expect(state.notice).toEqual({ key: 'popupAborted' });
   });
 
-  it('"Usa questa" senza un calcolo in corso non cambia nulla', async () => {
+  it('"Use this" without a computation in progress changes nothing', async () => {
     installFakeFetch(AI_GROUP);
     const before = await organizer.propose(W);
 
     expect(await organizer.acceptPreview()).toEqual(before);
   });
 
-  it('un calcolo ancora in coda, senza anteprima, finisce come con "Interrompi"', async () => {
+  it('a computation still queued, without preview, ends like with "Stop"', async () => {
     strip.addTab({ url: 'https://c.com/1', title: 'C1', windowId: 2 });
     strip.addTab({ url: 'https://c.com/2', title: 'C2', windowId: 2 });
     const { requests } = installFakeFetch(HANG);
@@ -129,7 +129,7 @@ describe('anteprima per sito durante il calcolo', () => {
     expect(second.notice).toEqual({ key: 'popupAborted' });
   });
 
-  it('nessuna anteprima in modalità per sito: la proposta è già immediata', async () => {
+  it('no preview in per-site mode: the proposal is already immediate', async () => {
     await saveSettings({ mode: 'domain' });
 
     await organizer.propose(W);
@@ -137,19 +137,19 @@ describe('anteprima per sito durante il calcolo', () => {
     expect(announced.some((s) => s.preview)).toBe(false);
   });
 
-  it('nessuna anteprima se nessun livello AI è utilizzabile', async () => {
+  it('no preview if no AI level is usable', async () => {
     await saveSettings({ generator: NO_PROVIDER });
 
     const state = await organizer.propose(W);
 
     expect(announced.some((s) => s.preview)).toBe(false);
-    // Con Generatore e Classificatore su "Nessuno" valgono solo le regole sui siti: qui nessuna.
+    // With Generator and Classifier set to "None", only the site rules apply: none here.
     expect(names(state.proposal)).toEqual([]);
   });
 });
 
-describe('tempi del calcolo', () => {
-  it('la proposta AI riporta la durata di lettura, anteprima, Generatore e il totale', async () => {
+describe('computation timings', () => {
+  it('the AI proposal reports the duration of reading, preview, Generator and the total', async () => {
     installFakeFetch(AI_GROUP);
 
     const { proposal } = await organizer.propose(W);
@@ -158,7 +158,7 @@ describe('tempi del calcolo', () => {
     expect(Object.values(proposal!.timings!).every((ms) => Number.isInteger(ms) && ms >= 0)).toBe(true);
   });
 
-  it('se il Generatore fallisce, si misurano sia il Generatore sia il ripiego per dominio', async () => {
+  it('if the Generator fails, both the Generator and the per-domain fallback are measured', async () => {
     installFakeFetch(openAiReply('non json'));
 
     const { proposal } = await organizer.propose(W);
@@ -167,7 +167,7 @@ describe('tempi del calcolo', () => {
     expect(proposal!.timings).toHaveProperty('domain');
   });
 
-  it('in modalità per sito si misurano solo la lettura del browser e il dominio', async () => {
+  it('in per-site mode only the browser reading and the domain are measured', async () => {
     await saveSettings({ mode: 'domain' });
 
     const { proposal } = await organizer.propose(W);
@@ -175,7 +175,7 @@ describe('tempi del calcolo', () => {
     expect(Object.keys(proposal!.timings!).sort()).toEqual(['domain', 'inputs', 'preview', 'total']);
   });
 
-  it('il cronometro assegna a ogni fase il tempo dall\'ultima chiusura e somma le fasi ripetute', () => {
+  it('the stopwatch assigns each phase the time since the last lap and sums repeated phases', () => {
     let now = 1000;
     const clock = createStopwatch(() => now);
     now += 12.4;

@@ -24,13 +24,13 @@ import { Card } from './Card';
 
 type Status = { kind: 'ok' | 'error' | 'info'; key: string; sub?: string } | null;
 
-/** Testi che cambiano tra Classificatore e Generatore. */
+/** Texts that change between Classifier and Generator. */
 const TEXT = {
   classifier: { title: 'optionsClassifier', hint: 'optionsClassifierHint', none: 'optionsClassifierNone', disabled: 'optionsClassifierDisabled', modelPlaceholder: 'optionsClassifierModelPlaceholder' },
   generator: { title: 'optionsGenerator', hint: 'optionsGeneratorHint', none: 'optionsGeneratorNone', disabled: 'optionsGeneratorDisabled', modelPlaceholder: 'optionsModelPlaceholder' },
 } as const;
 
-/** "Prova connessione" per ruolo: protocollo System One o compatibile OpenAI. */
+/** "Test connection" for each role: System One protocol or OpenAI-compatible. */
 const TEST = {
   classifier: (s: ProviderSettings, apiKey: string) => testSystemOneConnection({ label: '', baseUrl: s.baseUrl, model: s.model, apiKey }),
   generator: (s: ProviderSettings, apiKey: string) => testOpenAiConnection({ label: '', baseUrl: s.baseUrl, model: s.model, apiKey }),
@@ -40,13 +40,13 @@ interface ProviderSectionProps {
   role: ProviderRole;
   saved: ProviderSettings;
   onSaved: (settings: ProviderSettings) => void;
-  /** Solo per il Generatore: lo stato di Gemini Nano, mostrato quando è scelto Nano. */
+  /** Generator only: the Gemini Nano status, shown when Nano is chosen. */
   nano?: ReactNode;
-  /** Campi in più sotto il modello (es. la soglia del Classificatore). */
+  /** Extra fields below the model (e.g. the Classifier threshold). */
   extra?: ReactNode;
 }
 
-/** Sezione impostazioni di un provider: preset, URL base, modello, chiave API, Salva e Prova connessione. */
+/** Settings section of a provider: preset, base URL, model, API key, "Save" and "Test connection". */
 export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderSectionProps) {
   const text = TEXT[role];
   const presets = presetsOf(role);
@@ -73,7 +73,7 @@ export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderS
   function save() {
     const origin = providerOrigin(draft);
     if (origin === null) return setStatus({ kind: 'error', key: 'optionsGeneratorBadUrl' });
-    // permissions.request va chiamato subito, dentro il gesto dell'utente, prima di ogni await.
+    // permissions.request must be called right away, inside the user gesture, before any await.
     const granted = origin ? browser.permissions.request({ origins: [origin] }) : Promise.resolve(false);
     const STATUS: Record<ProviderSaveResult, Status> = {
       off: { kind: 'info', key: text.disabled },
@@ -110,7 +110,7 @@ export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderS
 
   const local = isLocalOnly(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
-  // Nome del provider salvato, per l'etichetta in alto a destra della sezione.
+  // Name of the saved provider, for the label at the top right of the section.
   const active = providerName(role, saved);
   const selectedPreset = presets[draft.preset];
   const homepage = providerHomepage(role, draft.preset);
@@ -190,7 +190,7 @@ export function ProviderSection({ role, saved, onSaved, nano, extra }: ProviderS
         )}
         {dirty && <span className="hint unsaved">{t('optionsUnsaved')}</span>}
       </div>
-      {/* Sempre presente, così l'esito di "Salva" e "Prova connessione" viene letto dallo screen reader. */}
+      {/* Always present, so the outcome of "Save" and "Test connection" is read by the screen reader. */}
       <div role="status">
         {status && <p className={`hint ${status.kind === 'error' ? 'error' : status.kind === 'ok' ? 'ok' : ''}`}>{t(status.key, status.sub)}</p>}
         {!status && permission === false && <p className="hint error">{t('warning_no_permission', providerLabel(role, saved))}</p>}

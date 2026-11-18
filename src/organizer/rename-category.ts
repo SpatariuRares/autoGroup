@@ -1,9 +1,9 @@
 import { categoryKey, loadSettings, saveSettings } from '../settings';
 
 /**
- * Rinomina la categoria che si chiama `oldName` (senza distinguere maiuscole e minuscole), tenendo id,
- * descrizione, colore e siti. Se non c'è non fa nulla. Un nome vuoto, troppo lungo o già di un'altra
- * categoria viene rifiutato con un `SettingsError` e nulla cambia.
+ * Renames the category called `oldName` (case-insensitive), keeping its id,
+ * description, color and sites. If there is none, it does nothing. An empty or too long name, or one
+ * already used by another category, is rejected with a `SettingsError` and nothing changes.
  */
 export async function renameCategory(oldName: string, newName: string): Promise<void> {
   if (!categoryKey(oldName)) return;

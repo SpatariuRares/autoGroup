@@ -1,20 +1,20 @@
 import type { Browser } from 'wxt/browser';
 import { isExcluded, isInternalUrl } from './tab-selection';
 
-/** Dopo quanti giorni senza essere guardata una tab conta come inattiva. */
+/** After how many days without being looked at a tab counts as inactive. */
 export const INACTIVE_DAYS = 7;
 
 const DAY = 86_400_000;
 
-/** Giorni interi da quando la tab è stata guardata l'ultima volta; `undefined` se Chrome non lo sa. */
+/** Whole days since the tab was last looked at; `undefined` if Chrome does not know it. */
 export function daysSinceAccess(tab: Browser.tabs.Tab, now: number): number | undefined {
   return tab.lastAccessed === undefined ? undefined : Math.floor((now - tab.lastAccessed) / DAY);
 }
 
 /**
- * Le tab che "Chiudi inattive" chiuderebbe, nell'ordine della barra: non guardate da almeno
- * `INACTIVE_DAYS` giorni, anche dentro un gruppo. Mai tab fissate, attive o che suonano, pagine del
- * browser o domini esclusi. Le tab vanno passate già filtrate per finestra.
+ * The tabs that "Close inactive" would close, in tab-strip order: not looked at for at least
+ * `INACTIVE_DAYS` days, even inside a group. Never pinned, active or audible tabs, browser pages or
+ * excluded domains. The tabs must be passed already filtered by window.
  */
 export function findInactive(tabs: Browser.tabs.Tab[], excludedDomains: string[], now: number): number[] {
   return [...tabs]

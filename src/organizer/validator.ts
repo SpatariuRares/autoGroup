@@ -9,10 +9,10 @@ export interface ValidGroup {
 }
 
 /**
- * Valida la risposta di un Generatore. Scarta ID inesistenti, nomi vuoti, nomi nuovi oltre le
- * 2 parole e le tab assegnate a più gruppi: quelle tab restano libere. I nomi delle opzioni note
- * (`knownNames`, già passati da `categoryKey`) sono accettati anche se più lunghi. Unisce i gruppi
- * con lo stesso nome.
+ * Validates the response of a Generator. It discards non-existent IDs, empty names, new names beyond
+ * 2 words and tabs assigned to several groups: those tabs stay free. The names of the known options
+ * (`knownNames`, already passed through `categoryKey`) are accepted even if longer. It merges the groups
+ * with the same name.
  */
 export function validateGroups(raw: RawGroup[], knownIds: Set<string>, knownNames: Set<string> = new Set()): ValidGroup[] {
   const groups = new Map<string, ValidGroup>();

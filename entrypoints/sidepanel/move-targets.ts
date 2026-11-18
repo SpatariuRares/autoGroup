@@ -2,9 +2,9 @@ import { t } from '../../src/shared/i18n';
 import type { ExistingGroupView, Proposal, ProposalEdit, ProposedTab, WindowView } from '../../src/shared/types';
 
 /**
- * Una voce di "Sposta in…": `value` la distingue tra le opzioni del menu, `move` sposta la tab. Cosa
- * fa dipende da dove sta la tab: dentro la proposta è una modifica della proposta, fuori sposta
- * davvero la tab nella barra.
+ * An entry of "Move to…": `value` tells it apart among the menu options, `move` moves the tab. What
+ * it does depends on where the tab is: inside the proposal it is an edit of the proposal, outside it really moves
+ * the tab in the tab strip.
  */
 export interface Target {
   value: string;
@@ -12,7 +12,7 @@ export interface Target {
   move: (tab: ProposedTab) => void;
 }
 
-/** Su e giù di un posto nella barra: l'alternativa al trascinamento, dal menu "Sposta in…". */
+/** Up and down one place in the tab strip: the alternative to dragging, from the "Move to…" menu. */
 export interface Reorder {
   up: boolean;
   down: boolean;
@@ -20,8 +20,8 @@ export interface Reorder {
 }
 
 /**
- * Su e Giù per l'elemento `i` di `ids` (nell'ordine della barra): Su va prima del precedente, Giù
- * prima di quello che segue il successivo, o in fondo (`null`).
+ * Up and Down for the element `i` of `ids` (in tab strip order): Up goes before the previous one, Down
+ * before the one that follows the next, or at the end (`null`).
  */
 export function reorderAt(ids: number[], i: number, move: (beforeId: number | null) => void): Reorder {
   return {
@@ -31,7 +31,7 @@ export function reorderAt(ids: number[], i: number, move: (beforeId: number | nu
   };
 }
 
-/** Come lo spostamento arriva all'Organizzatore. */
+/** How the move reaches the Organizer. */
 export interface Moves {
   edit: (change: Extract<ProposalEdit, { kind: 'add-tab' }>) => void;
   groupTab: (tabId: number, groupId: number) => void;
@@ -44,13 +44,13 @@ const newGroup = (move: Target['move']): Target => ({ value: 'n', label: t('pane
 const openGroup = (e: ExistingGroupView, move: Target['move']): Target => ({ value: `c:${e.group.id}`, label: unnamed(e.group.name), move });
 
 /**
- * Le destinazioni di "Sposta in…", per ogni tipo di tab del pannello. "Nuovo gruppo" è sempre l'ultima.
- * - `proposed`: per le tab della proposta. I gruppi della proposta, i gruppi aperti che la proposta non
- *   tocca ancora e un gruppo nuovo, tranne il gruppo dove la tab sta già (`except`).
- * - `free`: per le tab senza gruppo. Con una proposta come sopra; senza, e non durante il calcolo, le
- *   mettono subito in un gruppo aperto o in uno nuovo.
- * - `live`: per le tab di adesso di un gruppo aperto, solo quando si può trascinare (`live`): un altro
- *   gruppo aperto, uno nuovo o fuori dal gruppo.
+ * The destinations of "Move to…", for each kind of tab in the panel. "New group" is always the last.
+ * - `proposed`: for the tabs of the proposal. The groups of the proposal, the open groups that the proposal
+ *   does not touch yet and a new group, except the group where the tab already is (`except`).
+ * - `free`: for the ungrouped tabs. With a proposal as above; without one, and not during computing, they
+ *   are put at once into an open group or into a new one.
+ * - `live`: for the current tabs of an open group, only when they can be dragged (`live`): another
+ *   open group, a new one or outside the group.
  */
 export function moveTargets({ proposal, view, computing, live, moves }: { proposal?: Proposal; view: WindowView; computing: boolean; live: boolean; moves: Moves }) {
   const proposed = (except: { proposedGroupId?: string; openGroupId?: number } = {}): Target[] =>

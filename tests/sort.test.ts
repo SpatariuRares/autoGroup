@@ -19,8 +19,8 @@ beforeEach(async () => {
 
 const open = (title: string, extra: { pinned?: boolean; windowId?: number } = {}) => strip.addTab({ url: `https://${title.toLowerCase().replace(/\W/g, '')}.com/`, title, ...extra });
 
-describe('gruppi A-Z', () => {
-  it('mette i gruppi in ordine alfabetico dopo le fissate, quelli senza nome in fondo, le libere dopo nel loro ordine', async () => {
+describe('groups A-Z', () => {
+  it('puts the groups in alphabetical order after the pinned tabs, those without a name at the end, the free tabs afterwards in their order', async () => {
     open('Fissata', { pinned: true });
     open('Libera 2');
     const z = [open('Z1'), open('Z2')];
@@ -48,7 +48,7 @@ describe('gruppi A-Z', () => {
     ]);
   });
 
-  it('non tocca le altre finestre', async () => {
+  it('does not touch other windows', async () => {
     const b = [open('B', { windowId: 2 })];
     const a = [open('A', { windowId: 2 })];
     await strip.addGroup('Bi', 'blue', b);
@@ -60,8 +60,8 @@ describe('gruppi A-Z', () => {
   });
 });
 
-describe('tab A-Z', () => {
-  it('ordina per titolo dentro ogni gruppo e le libere tra loro, senza spostare gruppi né cambiare gruppo', async () => {
+describe('tabs A-Z', () => {
+  it('sorts by title within each group and the free tabs among themselves, without moving groups or changing group', async () => {
     open('Fissata Z', { pinned: true });
     open('Fissata A', { pinned: true });
     open('libera c');
@@ -87,7 +87,7 @@ describe('tab A-Z', () => {
     ]);
   });
 
-  it('non rende superata la proposta', async () => {
+  it('does not make the proposal stale', async () => {
     open('B');
     open('A');
     strip.addTab({ url: 'https://x.com/2', title: 'X2' });

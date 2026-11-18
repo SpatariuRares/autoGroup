@@ -1,4 +1,4 @@
-/* Parti delle impostazioni comuni alla pagina delle opzioni e alla guida: schede, righe etichetta–campo, modalità, provider. */
+/* Parts of the settings shared by the options page and the guide: cards, label–field rows, modes, providers. */
 .brand {
   display: flex;
   align-items: center;
@@ -18,7 +18,7 @@ h2 {
   margin: 0;
 }
 
-/* Schede piene (filled card). */
+/* Filled cards. */
 .card {
   background: var(--md-sys-color-surface-container-low);
   border-radius: var(--md-sys-shape-corner-large);
@@ -78,7 +78,7 @@ h2 {
   color: var(--md-sys-color-on-secondary-container);
 }
 
-/* Righe etichetta–campo. */
+/* Label–field rows. */
 input[type='number'] {
   width: 112px;
 }
@@ -164,7 +164,7 @@ input[type='number'] {
   margin-top: 8px;
 }
 
-/* Modalità di raggruppamento: due schede selezionabili. */
+/* Grouping modes: two selectable cards. */
 .modes {
   display: grid;
   grid-template-columns: 1fr 1fr;

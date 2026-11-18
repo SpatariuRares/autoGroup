@@ -1,4 +1,4 @@
-/** I 9 colori dei gruppi di tab di Chrome, nell'ordine usato per la rotazione. */
+/** The 9 colors of Chrome's tab groups, in the order used for rotation. */
 export const GROUP_COLORS = [
   'grey',
   'blue',
@@ -13,41 +13,41 @@ export const GROUP_COLORS = [
 
 export type GroupColor = (typeof GROUP_COLORS)[number];
 
-/** Una categoria della lista fissa dell'utente. */
+/** A category of the user's fixed list. */
 export interface Category {
-  /** ID stabile, usato dall'interfaccia per modifiche e riordino. */
+  /** Stable ID, used by the interface for edits and reordering. */
   id: string;
   name: string;
-  /** Spiega all'AI cosa rientra nella categoria. */
+  /** Explains to the AI what belongs in the category. */
   description: string;
   color: GroupColor;
 }
 
-/** Da dove viene un gruppo proposto. `manual`: creato dall'utente con "Nuovo gruppo". */
+/** Where a proposed group comes from. `manual`: created by the user with "+ New group". */
 export type Provenance = 'list' | 'existing' | 'ai' | 'domain' | 'manual';
 
-/** Una tab dentro la proposta. `tabId` è l'ID di Chrome: resta nell'estensione, non va mai all'AI. */
+/** A tab inside the proposal. `tabId` is Chrome's ID: it stays in the extension, never sent to the AI. */
 export interface ProposedTab {
   tabId: number;
   title: string;
   url: string;
   favIconUrl?: string;
-  /** Il sito della regola che ha messo la tab nel suo gruppo; sparisce se l'utente la sposta. */
+  /** The site of the rule that put the tab in its group; disappears if the user moves it. */
   rule?: string;
 }
 
 export interface ProposedGroup {
-  /** ID stabile dentro la proposta, usato dal pannello per le modifiche. */
+  /** Stable ID within the proposal, used by the panel for edits. */
   id: string;
   name: string;
   color: GroupColor;
   provenance: Provenance;
-  /** Presente solo per i gruppi già aperti in Chrome che la proposta estende. */
+  /** Present only for groups already open in Chrome that the proposal extends. */
   existingGroupId?: number;
   tabs: ProposedTab[];
 }
 
-/** Avviso mostrato in cima all'anteprima quando un livello della pipeline è stato saltato. */
+/** Warning shown at the top of the preview when a level of the pipeline was skipped. */
 export interface ProposalWarning {
   level: 'classifier' | 'generator';
   provider: string;
@@ -65,24 +65,24 @@ export interface ProposalWarning {
     | 'not-supported';
 }
 
-/** Fasi misurate di un calcolo della proposta. */
+/** Measured phases of a proposal computation. */
 export type Phase = 'inputs' | 'preview' | 'descriptions' | 'classifier' | 'generator' | 'domain';
 
-/** Durata in ms di ogni fase eseguita e del calcolo intero (`total`). Solo diagnostica. */
+/** Duration in ms of each phase run and of the whole computation (`total`). Diagnostics only. */
 export type Timings = Partial<Record<Phase | 'total', number>>;
 
 export interface Proposal {
   windowId: number;
   createdAt: number;
-  /** Impronta delle tab libere e delle impostazioni usate: serve a capire se la proposta è ancora attuale. */
+  /** Fingerprint of the free tabs and of the settings used: it tells whether the proposal is still current. */
   signature: string;
   groups: ProposedGroup[];
   warnings: ProposalWarning[];
-  /** Dove è andato il tempo del calcolo; assente nell'anteprima per sito. */
+  /** Where the computation time went; absent in the per-site preview. */
   timings?: Timings;
 }
 
-/** Una modifica fatta dall'utente nell'anteprima. */
+/** An edit made by the user in the preview. */
 export type ProposalEdit =
   | { kind: 'rename'; groupId: string; name: string }
   | { kind: 'recolor'; groupId: string; color: GroupColor }
@@ -90,97 +90,97 @@ export type ProposalEdit =
   | { kind: 'remove-tab'; tabId: number }
   | { kind: 'move-tab'; tabId: number; toGroupId: string }
   /**
-   * Mette una tab (libera o già in un gruppo proposto) in un gruppo della proposta, in un gruppo
-   * già aperto in Chrome che la proposta non tocca ancora oppure in un gruppo nuovo, tutto suo. Il
-   * pannello manda i dati della tab perché una tab libera non è nella proposta; l'Organizzatore
-   * controlla che sia davvero libera.
+   * Puts a tab (free, or already in a proposed group) into a group of the proposal, into a group
+   * already open in Chrome that the proposal does not touch yet, or into a new group, all its own. The
+   * panel sends the tab's data because a free tab is not in the proposal; the Organizer
+   * checks that it really is free.
    */
   | { kind: 'add-tab'; tab: ProposedTab; to: { groupId: string } | { existingGroup: ExistingGroupRef } | { newGroup: true } };
 
-/** Un gruppo già aperto in Chrome, come lo vede il pannello. */
+/** A group already open in Chrome, as the panel sees it. */
 export interface ExistingGroupRef {
   id: number;
   name: string;
   color: GroupColor;
 }
 
-/** Foto delle tab coinvolte in un'organizzazione, scattata prima di applicarla. */
+/** Snapshot of the tabs involved in an organization, taken before applying it. */
 export interface UndoSnapshot {
   windowId: number;
   tabs: { tabId: number; windowId: number; index: number; groupId: number }[];
-  /** Gruppi creati dall'operazione. */
+  /** Groups created by the operation. */
   createdGroupIds: number[];
 }
 
-/** "Metti sempre qui" proposto dopo uno spostamento: la tab, il sito che verrebbe salvato e la categoria. */
+/** "Always put here" offered after a move: the tab, the site that would be saved, and the category. */
 export interface RememberOffer {
   tabId: number;
   site: string;
   category: string;
 }
 
-/** Perché una tab non può entrare in un gruppo: l'estensione non la tocca mai. */
+/** Why a tab cannot go into a group: the extension never touches it. */
 export type HeldReason = 'pinned' | 'internal' | 'excluded' | 'loading';
 
-/** Un gruppo già aperto in Chrome, con le sue tab di adesso e quelle che la proposta gli aggiunge. */
+/** A group already open in Chrome, with its tabs right now and the ones the proposal adds to it. */
 export interface ExistingGroupView {
   group: ExistingGroupRef;
   current: ProposedTab[];
   added: ProposedTab[];
-  /** Il gruppo della proposta che lo estende, se c'è. */
+  /** The proposed group that extends it, if any. */
   proposedGroupId?: string;
   collapsed: boolean;
-  /** Vero se il nome è quello di una categoria (senza distinguere maiuscole e minuscole). */
+  /** True if the name is that of a category (case-insensitive). */
   isCategory: boolean;
 }
 
-/** Dettagli dal vivo di una tab che la proposta non porta. */
+/** Live details of a tab that the proposal does not carry. */
 export interface LiveTab {
   active: boolean;
   audible: boolean;
   muted: boolean;
-  /** Giorni senza essere guardata, solo per le tab che "Chiudi inattive" chiuderebbe. */
+  /** Days without being looked at, only for the tabs that "Close inactive" would close. */
   idleDays?: number;
 }
 
-/** Tutta la finestra come la mostra il pannello: niente resta nascosto. */
+/** The whole window as the panel shows it: nothing stays hidden. */
 export interface WindowView {
   existing: ExistingGroupView[];
-  /** Gruppi nuovi della proposta (lista, nuovo AI, sito). */
+  /** New groups of the proposal (list, new AI, site). */
   created: ProposedGroup[];
-  /** Tab libere che la proposta lascia fuori: l'utente può metterle in un gruppo. */
+  /** Free tabs that the proposal leaves out: the user can put them in a group. */
   free: ProposedTab[];
-  /** Tab che l'estensione non tocca mai, con il motivo. */
+  /** Tabs that the extension never touches, with the reason. */
   held: { tab: ProposedTab; reason: HeldReason }[];
-  /** Tab che "Chiudi duplicati" chiuderebbe, nell'ordine della barra. */
+  /** Tabs that "Close duplicates" would close, in tab-strip order. */
   duplicates: ProposedTab[];
-  /** Tab che "Chiudi inattive" chiuderebbe, nell'ordine della barra. */
+  /** Tabs that "Close inactive" would close, in tab-strip order. */
   inactive: ProposedTab[];
-  /** Dopo quanti giorni una tab conta come inattiva. */
+  /** After how many days a tab counts as inactive. */
   inactiveDays: number;
-  /** Dettagli dal vivo di ogni tab della finestra, per ID. */
+  /** Live details of every tab in the window, by ID. */
   live: Record<number, LiveTab>;
 }
 
-/** Esito dell'ultima operazione da mostrare nel pannello (chiave i18n e argomento), es. un nome di categoria rifiutato. */
+/** Outcome of the last operation to show in the panel (i18n key and argument), e.g. a rejected category name. */
 export interface Notice {
   key: string;
   arg?: string | string[];
-  /** Esito di "Aggiungi alle categorie": il pannello lo mostra solo nella snackbar, subito dopo il clic. */
+  /** Outcome of "Add to categories": the panel shows it only in the snackbar, right after the click. */
   snackbar?: true;
 }
 
-/** Campi validi in ogni fase. */
+/** Fields valid in every phase. */
 interface StateCommon {
-  /** Presente finché "Annulla ultima organizzazione" è disponibile. */
+  /** Present as long as "Undo last organization" is available. */
   undo?: UndoSnapshot;
-  /** Chiave i18n dell'ultimo errore, se il calcolo o l'applicazione sono falliti. */
+  /** i18n key of the last error, if the computation or the application failed. */
   error?: string;
-  /** Vale fino alla prossima operazione dell'utente. */
+  /** Valid until the user's next operation. */
   notice?: Notice;
 }
 
-/** Nessuna proposta. `windowId` è la finestra dell'ultima operazione, se c'è. */
+/** No proposal. `windowId` is the window of the last operation, if any. */
 export interface IdleState extends StateCommon {
   phase: 'idle';
   windowId?: number;
@@ -194,8 +194,8 @@ export interface ComputingState extends StateCommon {
   phase: 'computing';
   windowId: number;
   /**
-   * Solo in modalità AI: la proposta per sito, pronta subito. Il pannello la mostra in sola lettura
-   * mentre l'AI lavora; "Usa questa" ferma l'AI e la rende la proposta corrente.
+   * AI mode only: the per-site proposal, ready right away. The panel shows it read-only
+   * while the AI works; "Use this" stops the AI and makes it the current proposal.
    */
   preview?: Proposal;
   proposal?: never;
@@ -207,25 +207,25 @@ export interface ReadyState extends StateCommon {
   phase: 'ready';
   windowId: number;
   proposal: Proposal;
-  /** Vero se le tab, i gruppi aperti o le impostazioni sono cambiati dopo il calcolo della proposta. */
+  /** True if the tabs, the open groups or the settings have changed since the proposal was computed. */
   stale?: boolean;
-  /** Solo nello stato restituito da "Sposta in…" verso una categoria: l'offerta "Metti sempre qui". */
+  /** Only in the state returned by "Move to…" towards a category: the "Always put here" offer. */
   offer?: RememberOffer;
   preview?: never;
 }
 
 /**
- * Stato dell'Organizzatore, salvato in chrome.storage.session. I campi `never` ci sono perché si possa
- * leggere `state.proposal` senza distinguere la fase: vale `undefined` fuori da `ready`.
+ * Organizer state, saved in chrome.storage.session. The `never` fields are there so that
+ * `state.proposal` can be read without distinguishing the phase: it is `undefined` outside `ready`.
  */
 export type OrganizerState = IdleState | ComputingState | ReadyState;
 
-/** La proposta pronta per questa finestra, se c'è. */
+/** The proposal ready for this window, if any. */
 export function proposalIn(state: OrganizerState | null | undefined, windowId: number | null | undefined): Proposal | undefined {
   return state?.phase === 'ready' && state.windowId === windowId ? state.proposal : undefined;
 }
 
-/** L'anteprima per sito del calcolo in corso per questa finestra, se c'è. */
+/** The per-site preview of the computation in progress for this window, if any. */
 export function previewIn(state: OrganizerState | null | undefined, windowId: number | null | undefined): Proposal | undefined {
   return state?.phase === 'computing' && state.windowId === windowId ? state.preview : undefined;
 }

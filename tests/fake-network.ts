@@ -6,21 +6,21 @@ import { isExcluded, isInternalUrl } from '../src/organizer/tab-selection';
 import { loadSettings } from '../src/settings';
 
 /**
- * Pagine del browser o di domini esclusi trovate in una richiesta a un provider: `privacy.md` promette
- * che non escono mai. Ogni richiesta di `installFakeFetch` viene controllata; `tests/setup.ts` fa
- * fallire il test che ne lascia una qui (un errore dentro `fetch` sembrerebbe un provider che non
- * risponde, e il test passerebbe).
+ * Browser pages or excluded domains found in a request to a provider: `privacy.md` promises
+ * that they never leave. Every request of `installFakeFetch` is checked; `tests/setup.ts` makes
+ * the test that leaves one here fail (an error inside `fetch` would look like a provider that does
+ * not respond, and the test would pass).
  */
 export const privacyViolations: string[] = [];
 
-/** Ogni indirizzo nel corpo (con il titolo, se c'è), anche dentro i messaggi che sono testo JSON. */
+/** Every address in the body (with the title, if any), also inside messages that are JSON text. */
 function sentTabs(value: unknown, found: { title?: string; url: string }[] = []) {
   if (typeof value === 'string') {
     if (/^\s*[[{]/.test(value)) {
       try {
         sentTabs(JSON.parse(value), found);
       } catch {
-        // Testo che sembra JSON ma non lo è: nessuna tab dentro.
+        // Text that looks like JSON but is not: no tab inside.
       }
     }
   } else if (Array.isArray(value)) {
@@ -41,17 +41,17 @@ async function checkPrivacy(request: RecordedRequest) {
   );
   const found = (what: string) => privacyViolations.push(`${request.url}: ${what}`);
   for (const tab of sentTabs(request.body)) {
-    // Una pagina del browser ridotta da `cleanUrl` non ha più lo schema: la si riconosce con il titolo.
+    // A browser page reduced by `cleanUrl` no longer has its scheme: it is recognized by the title.
     if (tab.title !== undefined && forbidden.has(`${tab.title}\n${tab.url}`)) found(`«${tab.title}» (${tab.url})`);
-    // Un dominio escluso si riconosce dall'indirizzo, anche senza titolo.
+    // An excluded domain is recognized from the address, even without a title.
     else if (isExcluded(tab.url.includes('://') ? tab.url : `https://${tab.url}`, excludedDomains)) found(`dominio escluso (${tab.url})`);
   }
-  // Un indirizzo interno scritto per intero, in qualunque punto del corpo.
+  // An internal address written in full, anywhere in the body.
   const scheme = JSON.stringify(request.body).match(/(chrome|chrome-extension):\/\/[^\s"\\]*|about:(blank|newtab|srcdoc)/);
   if (scheme) found(`pagina del browser (${scheme[0]})`);
 }
 
-/** Permessi host opzionali: `granted` contiene i pattern concessi, es. "https://openrouter.ai/*". */
+/** Optional host permissions: `granted` contains the granted patterns, e.g. "https://openrouter.ai/*". */
 export function installFakePermissions(granted: string[] = []) {
   const origins = new Set(granted);
   Object.assign(fakeBrowser.permissions, {
@@ -80,12 +80,12 @@ export interface RecordedRequest {
   signal?: AbortSignal;
 }
 
-/** Una risposta che non arriva mai: la richiesta finisce solo per timeout o "Interrompi". */
+/** A reply that never arrives: the request ends only by timeout or "Stop". */
 export const HANG = () => new Promise<never>(() => {});
 
 type Reply = Response | Error | ((request: RecordedRequest) => Response | Error | Promise<Response | Error>);
 
-/** Sostituisce `fetch`: ogni chiamata consuma la prossima risposta in coda e viene registrata. */
+/** Replaces `fetch`: each call consumes the next reply in the queue and is recorded. */
 export function installFakeFetch(...replies: Reply[]) {
   const requests: RecordedRequest[] = [];
   const queue = [...replies];
@@ -100,14 +100,14 @@ export function installFakeFetch(...replies: Reply[]) {
     await checkPrivacy(request);
     const next = queue.length > 1 ? queue.shift()! : queue[0];
     if (!next) throw new Error('fetch inatteso');
-    // Come il fetch vero: un segnale interrotto fa fallire subito la richiesta.
+    // Like the real fetch: an aborted signal makes the request fail immediately.
     const aborted = new Promise<never>((_, reject) => {
       const signal = init?.signal;
       if (!signal) return;
       if (signal.aborted) reject(signal.reason);
       signal.addEventListener('abort', () => reject(signal.reason), { once: true });
     });
-    // Se la risposta arriva prima, nessuno ascolta più questa promessa: niente rifiuti non gestiti.
+    // If the reply arrives first, nobody listens to this promise any more: no unhandled rejections.
     aborted.catch(() => {});
     const reply = typeof next === 'function' ? await Promise.race([next(request), aborted]) : next;
     if (reply instanceof Error) throw reply;
@@ -117,7 +117,7 @@ export function installFakeFetch(...replies: Reply[]) {
   return { requests, fetchMock };
 }
 
-/** Risposta di /chat/completions nel formato OpenAI con il contenuto indicato. */
+/** /chat/completions reply in the OpenAI format with the given content. */
 export function openAiReply(content: unknown, status = 200): Response {
   const text = typeof content === 'string' ? content : JSON.stringify(content);
   return new Response(JSON.stringify({ choices: [{ message: { role: 'assistant', content: text } }] }), {
@@ -130,7 +130,7 @@ export function httpError(status: number): Response {
   return new Response(JSON.stringify({ error: { message: `HTTP ${status}` } }), { status });
 }
 
-/** Risposta di /v1/systemone: per ogni domanda una scelta con la sua confidenza. */
+/** /v1/systemone reply: for each question, a choice with its confidence. */
 export function systemOneReply(answers: Record<string, { choice: string; confidence: number }>): Response {
   const body = {
     model: 'jev-latest',

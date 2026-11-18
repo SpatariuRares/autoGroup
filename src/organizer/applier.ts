@@ -4,10 +4,10 @@ import { TAB_GROUP_ID_NONE } from './tab-selection';
 import { takeSnapshot } from './undo';
 
 /**
- * Crea in Chrome i gruppi della proposta, con nome e colore, ed estende quelli esistenti.
- * Le tab chiuse, spostate in un'altra finestra o raggruppate nel frattempo vengono saltate.
- * Prima di toccare qualunque tab passa la foto dello stato a `saveSnapshot`, così "Annulla"
- * funziona anche se il service worker si interrompe a metà. Restituisce la foto completa.
+ * Creates in Chrome the groups of the proposal, with name and color, and extends the existing ones.
+ * Tabs that were closed, moved to another window or grouped in the meantime are skipped.
+ * Before touching any tab it passes the snapshot of the state to `saveSnapshot`, so "Undo"
+ * works even if the service worker is interrupted midway. Returns the full snapshot.
  */
 export async function applyProposal(
   proposal: Proposal,

@@ -6,16 +6,16 @@ import { Icon } from '../../src/ui/Icon';
 
 interface SitesRowProps {
   category: Category;
-  /** Tutte le categorie: servono a dire in quale si trova già un sito. */
+  /** All the categories: needed to tell which one a site is already in. */
   categories: Category[];
   sites: CategorySites;
-  /** Salva tutti i siti; restituisce false se sono stati rifiutati. */
+  /** Saves all the sites; returns false if they were rejected. */
   onChange: (sites: CategorySites) => Promise<boolean>;
 }
 
-/** Riga "Siti" di una categoria: le tab di questi siti vanno sempre lì, senza chiedere all'AI. */
+/** "Sites" row of a category: the tabs of these sites always go there, without asking the AI. */
 export function SitesRow({ category, categories, sites, onChange }: SitesRowProps) {
-  // null = campo chiuso: una categoria senza siti mostra solo "+ Sito".
+  // null = field closed: a category without sites only shows "+ Site".
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<{ key: string; arg?: string } | null>(null);
   const own = sites[category.id] ?? [];
@@ -30,7 +30,7 @@ export function SitesRow({ category, categories, sites, onChange }: SitesRowProp
     if (!site) return setError({ key: 'optionsSiteInvalid' });
     const owner = categories.find((c) => sites[c.id]?.includes(site));
     if (owner) return setError({ key: 'optionsSiteDuplicate', arg: owner.name });
-    // Se il salvataggio è rifiutato (es. troppi siti) l'errore va sotto il campo, non solo nel banner.
+    // If the save is rejected (e.g. too many sites), the error goes under the field, not only in the banner.
     if (await onChange({ ...sites, [category.id]: [...own, site] })) close();
     else setError({ key: 'optionsSitesTooMany' });
   }
