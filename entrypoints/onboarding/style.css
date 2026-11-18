@@ -1,4 +1,4 @@
-/* Guida al primo avvio: una colonna centrata, un passo alla volta. Riusa schede e campi delle impostazioni. */
+/* First-run guide: a centered column, one step at a time. Reuses the settings cards and fields. */
 body {
   background: var(--md-sys-color-surface);
 }
@@ -30,7 +30,7 @@ body {
   font: var(--md-sys-typescale-label-large);
 }
 
-/* Barra di avanzamento determinata (Material 3). */
+/* Determinate progress bar (Material 3). */
 .onboarding-progress {
   appearance: none;
   width: 100%;
@@ -67,7 +67,7 @@ body {
   max-width: 65ch;
 }
 
-/* Le tre strade per il Generatore, con lo stesso aspetto delle schede della modalità. */
+/* The three routes for the Generator, with the same look as the mode cards. */
 .choices {
   list-style: none;
   padding: 0;
@@ -93,7 +93,7 @@ body {
   background: var(--md-sys-color-surface-container-low);
 }
 
-/* Riepilogo dei livelli: numerati, nell'ordine in cui vengono provati. */
+/* Summary of the levels: numbered, in the order they are tried. */
 .levels {
   margin: 8px 0 20px;
   padding: 0;

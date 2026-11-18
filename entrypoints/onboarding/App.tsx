@@ -12,9 +12,9 @@ import { ProviderSection } from '../../src/ui/settings/ProviderSection';
 import { ThresholdField } from '../../src/ui/settings/ThresholdField';
 
 /**
- * Guida al primo avvio: cosa fa autoGroup, la modalità, il Generatore, il Classificatore facoltativo
- * e un riepilogo dei livelli di ripiego. Riusa le sezioni delle impostazioni, quindi ogni scelta è
- * salvata subito come lì, e i permessi host vengono chiesti dentro il clic su "Salva".
+ * First-run guide: what autoGroup does, the mode, the Generator, the optional Classifier and a
+ * summary of the fallback levels. It reuses the settings sections, so each choice is saved right
+ * away as it is there, and host permissions are requested inside the click on "Save".
  */
 export function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -26,8 +26,8 @@ export function App() {
     loadSettings().then(setSettings);
   }, []);
 
-  // Cambiando passo il focus va sul titolo del nuovo: lo screen reader lo legge, e all'ultimo passo
-  // "Avanti" sparisce e lo lascerebbe sul body.
+  // Changing step moves focus to the new step's title: the screen reader reads it, and on the last step
+  // "Next" disappears and would leave the focus on the body.
   useEffect(() => {
     if (!moved.current) return;
     moved.current = false;
@@ -38,7 +38,7 @@ export function App() {
 
   if (!settings) return null;
   const steps = onboardingSteps(settings.mode);
-  // Passando a "Per sito" i passi diminuiscono: si resta comunque dentro l'elenco.
+  // Switching to "By site" reduces the steps: we stay within the list anyway.
   const current = Math.min(index, steps.length - 1);
   const step = steps[current]!;
   const last = current === steps.length - 1;
@@ -170,7 +170,7 @@ function Choice({ icon, title, text }: { icon: 'check' | 'lock' | 'language'; ti
   );
 }
 
-/** Primo passo: cosa fa l'estensione e come si apre, con la scorciatoia assegnata davvero da Chrome. */
+/** First step: what the extension does and how to open it, with the shortcut actually assigned by Chrome. */
 function Welcome() {
   const [shortcut, setShortcut] = useState<string | null>(null);
   useEffect(() => {
@@ -191,8 +191,8 @@ function Welcome() {
 }
 
 /**
- * Ultimo passo: come verrà fatta la proposta, livello per livello, e dove cambiare le scelte.
- * "Apri il pannello" chiama `sidePanel.open` dentro il clic, come chiede Chrome.
+ * Last step: how the proposal will be made, level by level, and where to change the choices.
+ * "Open the panel" calls `sidePanel.open` inside the click, as Chrome requires.
  */
 function Done({ settings }: { settings: Settings }) {
   const [windowId, setWindowId] = useState<number | null>(null);

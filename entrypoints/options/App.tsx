@@ -11,7 +11,7 @@ import { GeneralView } from './GeneralView';
 import { useSave, type PageProps } from './use-save';
 import { resolveHash, VIEWS, type ViewId } from './views';
 
-/** Il contenuto di ogni pagina del menu: una pagina nuova va aggiunta qui e in `VIEWS`. */
+/** The content of each menu page: a new page must be added here and in `VIEWS`. */
 const PAGES: Record<ViewId, ComponentType<PageProps>> = {
   general: GeneralView,
   categories: CategoriesView,
@@ -19,7 +19,7 @@ const PAGES: Record<ViewId, ComponentType<PageProps>> = {
   about: AboutView,
 };
 
-/** La pagina indicata dall'indirizzo (#general, #categories, … o una sezione come #generator), seguita al cambio. */
+/** The page named by the address (#general, #categories, … or a section such as #generator), followed on change. */
 function useView() {
   const [route, setRoute] = useState(() => resolveHash(location.hash));
   useEffect(() => {
@@ -31,7 +31,7 @@ function useView() {
 }
 
 export function App() {
-  // Lette dal vivo: anche il pannello le cambia (es. "Metti sempre qui" aggiunge un sito), e "Annulla" deve ripartire da quelle vere.
+  // Read live: the side panel changes them too (e.g. "Always put here" adds a site), and "Undo" must start from the real ones.
   const [settings, setSettings] = useSettings();
   const saving = useSave(setSettings);
   const { view, section } = useView();
@@ -41,8 +41,8 @@ export function App() {
   const shownView = useRef<ViewId | null>(null);
   const title = VIEWS.find((v) => v.id === view)!.title;
 
-  // Cambiando pagina si riparte dall'alto; se l'indirizzo nomina una sezione (es. #generator dal pannello) si scorre lì.
-  // Il titolo della scheda nomina la pagina, e il focus va sul suo h1: lo screen reader annuncia dove si è arrivati.
+  // Changing page starts again from the top; if the address names a section (e.g. #generator from the panel), it scrolls there.
+  // The tab title names the page, and the focus goes to its h1: the screen reader announces where you arrived.
   useEffect(() => {
     if (!settings) return;
     document.title = `${t(title)} – ${t('optionsTitle')}`;
@@ -87,8 +87,8 @@ export function App() {
         )}
         <Page settings={settings} saving={saving} />
       </main>
-      {/* Sempre visibili, anche lontano dalla cima della pagina. "Annulla" prende il posto di "Salvato". */}
-      {/* Regione live sempre presente: la snackbar che ci compare dentro viene letta. */}
+      {/* Always visible, even far from the top of the page. "Undo" takes the place of "Saved". */}
+      {/* Live region always present: the snackbar that appears inside it is read out. */}
       <div role="status">
         {saving.undoable && <Snackbar text={saving.undoable.text} action={{ label: t('optionsUndo'), onClick: saving.undo }} hold={saving.holdUndo} />}
       </div>

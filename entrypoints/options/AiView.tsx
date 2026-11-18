@@ -7,8 +7,8 @@ import { DescriptionsSection } from './DescriptionsSection';
 import type { PageProps } from './use-save';
 
 /**
- * AI: prima il Generatore, che basta da solo, poi la lettura delle descrizioni e il Classificatore
- * facoltativo. Nella modalità per sito la pagina resta nel menu e spiega come accendere l'AI.
+ * AI: first the Generator, which is enough on its own, then reading page descriptions and the optional
+ * Classifier. In the by-site mode the page stays in the menu and explains how to turn the AI on.
  */
 export function AiView({ settings, saving: { update, confirm } }: PageProps) {
   if (settings.mode !== 'ai') {

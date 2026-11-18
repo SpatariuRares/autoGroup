@@ -1,4 +1,4 @@
-/* Impostazioni: navigazione a sinistra e colonna di schede, con i token Material 3. */
+/* Settings: navigation on the left and a column of cards, with the Material 3 tokens. */
 .layout {
   display: grid;
   grid-template-columns: 240px minmax(0, 760px);
@@ -22,7 +22,7 @@
   padding: 0;
 }
 
-/* Voci della navigazione come nel navigation drawer: forma piena, indicatore tonale al passaggio. */
+/* Navigation items as in the navigation drawer: full shape, tonal indicator on hover. */
 .sidebar a {
   display: flex;
   align-items: center;
@@ -43,7 +43,7 @@
   color: var(--md-sys-color-on-surface);
 }
 
-/* Pagina corrente: indicatore attivo del navigation drawer. */
+/* Current page: active indicator of the navigation drawer. */
 .sidebar a[aria-current='page'] {
   background: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
@@ -55,7 +55,7 @@
   color: var(--md-sys-color-on-surface-variant);
 }
 
-/* Sotto i 900 px il menu diventa una barra in alto con le 4 pagine, icona sopra ed etichetta sotto. */
+/* Below 900 px the menu becomes a bar at the top with the 4 pages, icon above and label below. */
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
@@ -147,7 +147,7 @@
   color: var(--md-sys-color-on-error-container);
 }
 
-/* Categorie: righe compatte che si aprono per la modifica. */
+/* Categories: compact rows that open for editing. */
 .categories {
   list-style: none;
   padding: 0;
@@ -165,7 +165,7 @@
   border-bottom: none;
 }
 
-/* La descrizione sta arrivando dall'AI: la barra sta sotto la riga, allineata al suo contenuto. */
+/* The description is coming from the AI: the bar sits below the row, aligned with its content. */
 .category-progress {
   margin: 0 16px 8px;
 }
@@ -178,7 +178,7 @@
   min-height: 52px;
 }
 
-/* Pulsante grande quanto la riga: stile "testo" del tema, con lo stato al passaggio del mouse. */
+/* Button as large as the row: the theme's "text" style, with the state on mouse hover. */
 .category-toggle {
   --btn-bg: transparent;
   --btn-fg: var(--md-sys-color-on-surface);
@@ -345,7 +345,7 @@
   display: flex;
 }
 
-/* Tavolozza in un menu a comparsa: superficie di livello 2 (tonale), con ombra leggera per staccarla dall'elenco. */
+/* Palette in a popup menu: level 2 (tonal) surface, with a light shadow to lift it off the list. */
 .palette.popover {
   position: absolute;
   z-index: 10;
@@ -360,7 +360,7 @@
   box-shadow: 0 2px 6px 2px color-mix(in srgb, var(--md-sys-color-shadow) 15%, transparent);
 }
 
-/* Interruttori e impostazioni con titolo. */
+/* Switches and settings with a title. */
 .setting+.setting,
 .form-row+.setting {
   border-top: 1px solid var(--md-sys-color-outline-variant);
@@ -416,7 +416,7 @@
   gap: 16px;
 }
 
-/* "Offrimi un caffè": colori del pulsante Buy Me a Coffee (giallo, testo e contorno neri), uguali nei due temi. */
+/* "Buy me a coffee": colors of the Buy Me a Coffee button (yellow, black text and outline), the same in both themes. */
 a.coffee {
   display: inline-flex;
   align-items: center;
@@ -440,14 +440,14 @@ button.text.danger {
   --btn-fg: var(--md-sys-color-error);
 }
 
-/* La barra di schede in alto resta fissa: le sezioni aperte da un indirizzo non devono finirci sotto. */
+/* The top navigation bar stays fixed: sections opened from an address must not end up under it. */
 @media (max-width: 900px) {
   .card {
     scroll-margin-top: 72px;
   }
 }
 
-/* Snackbar con "Annulla", nello stesso punto del messaggio "Salvato" (stile in base.css). */
+/* Snackbar with "Undo", in the same spot as the "Saved" message (style in base.css). */
 .snackbar {
   position: fixed;
   left: 50%;

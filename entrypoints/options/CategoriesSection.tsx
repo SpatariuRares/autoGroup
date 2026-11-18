@@ -14,35 +14,35 @@ import { moveInRadioGroup } from '../../src/ui/radio-keys';
 import { Card } from '../../src/ui/settings/Card';
 import { SitesRow } from './SitesRow';
 
-/** Quanti siti si vedono nella riga chiusa di una categoria; gli altri diventano "+N". */
+/** How many sites are shown in the closed row of a category; the others become "+N". */
 const VISIBLE_SITES = 2;
 
 interface CategoriesSectionProps {
   categories: Category[];
-  /** Categorie di cui l'AI sta scrivendo la descrizione ("Aggiungi alle categorie" dal pannello). */
+  /** Categories whose description the AI is writing ("Add to categories" from the panel). */
   describing: Set<string>;
-  /** Salva la lista; restituisce false se è stata rifiutata. */
+  /** Saves the list; returns false if it was rejected. */
   onChange: (categories: Category[]) => Promise<boolean>;
   sites: CategorySites;
-  /** Salva i siti di tutte le categorie; restituisce false se sono stati rifiutati. */
+  /** Saves the sites of all the categories; returns false if they were rejected. */
   onSitesChange: (sites: CategorySites) => Promise<boolean>;
   onReset: () => Promise<unknown>;
-  /** Una categoria è stata eliminata e salvata: la pagina offre di annullare. */
+  /** A category was deleted and saved: the page offers to undo. */
   onDeleted: (category: Category) => void;
 }
 
 /**
- * Elenco delle categorie in righe compatte (colore, nome, siti o descrizione): un clic apre la riga
- * per modificare nome, descrizione, siti, ordine ed eliminazione.
+ * List of the categories in compact rows (color, name, sites or description): a click opens the row
+ * to edit name, description, sites, order and deletion.
  */
 export function CategoriesSection({ categories, describing, sites, onChange, onSitesChange, onReset, onDeleted }: CategoriesSectionProps) {
-  // Bozza locale: un nome duplicato resta visibile (con l'errore) finché l'utente non lo corregge.
+  // Local draft: a duplicate name stays visible (with the error) until the user fixes it.
   const [draft, setDraft] = useState(categories);
   const [invalid, setInvalid] = useState<string | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
   useEffect(() => setDraft(categories), [categories]);
 
-  /** Salva la bozza se è valida; restituisce true se è stata salvata. */
+  /** Saves the draft if it is valid; returns true if it was saved. */
   async function commit(next: Category[]): Promise<boolean> {
     setDraft(next);
     const error = validateCategories(next);
@@ -75,7 +75,7 @@ export function CategoriesSection({ categories, describing, sites, onChange, onS
     const used = new Set(draft.map((c) => c.color));
     const color = GROUP_COLORS.find((c) => !used.has(c)) ?? 'grey';
     const id = newCategoryId();
-    // La categoria nuova si apre subito, per darle nome e descrizione.
+    // The new category opens right away, so it can be given a name and a description.
     setOpen((current) => new Set(current).add(id));
     commit([...draft, { id, name, description: '', color }]);
   }
@@ -97,7 +97,7 @@ export function CategoriesSection({ categories, describing, sites, onChange, onS
         {draft.map((category, index) => {
           const expanded = open.has(category.id);
           const own = sites[category.id] ?? [];
-          // Aggiunta dal pannello: la descrizione sta arrivando dall'AI.
+          // Added from the panel: the description is coming from the AI.
           const waiting = describing.has(category.id) && !category.description;
           return (
             <li key={category.id} className={`category${expanded ? ' open' : ''}`} data-category={category.id}>
@@ -206,7 +206,7 @@ export function CategoriesSection({ categories, describing, sites, onChange, onS
   );
 }
 
-/** Raggruppamento automatico: vale solo per i siti delle categorie, quindi sta nella stessa pagina. */
+/** Automatic grouping: it only applies to the sites of the categories, so it lives on the same page. */
 export function AutoGroupSection({ enabled, onChange }: { enabled: boolean; onChange: (value: boolean) => unknown }) {
   return (
     <Card id="autogroup" title={t('optionsAutoGroup')}>
@@ -221,12 +221,12 @@ export function AutoGroupSection({ enabled, onChange }: { enabled: boolean; onCh
   );
 }
 
-/** Pallino del colore che apre la tavolozza dei 9 colori di Chrome. */
+/** Color dot that opens the palette of Chrome's 9 colors. */
 function ColorPicker({ color, onChange }: { color: GroupColor; onChange: (color: GroupColor) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const swatch = useRef<HTMLButtonElement>(null);
-  // Chiudendo la tavolozza il focus torna sul pallino: i suoi pulsanti spariscono e lo lascerebbero sul body.
+  // Closing the palette returns the focus to the dot: its buttons disappear and would leave the focus on the body.
   const close = () => {
     swatch.current?.focus();
     setOpen(false);
@@ -257,7 +257,7 @@ function ColorPicker({ color, onChange }: { color: GroupColor; onChange: (color:
               key={c}
               role="radio"
               aria-checked={c === color}
-              // Aprendo la tavolozza il focus va sul colore attuale; le frecce passano agli altri.
+              // When the palette opens, the focus goes to the current color; the arrows move to the others.
               autoFocus={c === color}
               tabIndex={c === color ? 0 : -1}
               className={`swatch color-${c}${c === color ? ' selected' : ''}`}

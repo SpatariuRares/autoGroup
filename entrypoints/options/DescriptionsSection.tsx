@@ -4,7 +4,7 @@ import { ALL_URLS, hasDescriptionPermission, removeDescriptionPermission } from 
 import { t } from '../../src/shared/i18n';
 import { Card } from '../../src/ui/settings/Card';
 
-/** "Leggi la descrizione delle pagine": serve solo all'AI, quindi sta nella sua pagina. */
+/** "Read page descriptions": only the AI needs it, so it lives on its page. */
 export function DescriptionsSection({ enabled, onChange }: { enabled: boolean; onChange: (value: boolean) => unknown }) {
   const [permitted, setPermitted] = useState<boolean | null>(null);
   const [denied, setDenied] = useState(false);
@@ -14,14 +14,14 @@ export function DescriptionsSection({ enabled, onChange }: { enabled: boolean; o
     hasDescriptionPermission().then(setPermitted);
   }, []);
 
-  /** L'interruttore è acceso solo se l'opzione è salvata e il permesso c'è davvero. */
+  /** The switch is on only if the option is saved and the permission is really granted. */
   const on = enabled && permitted === true;
 
   function toggle(next: boolean) {
     setDenied(false);
     setProviderLost(false);
     if (next) {
-      // permissions.request va chiamato subito, dentro il gesto dell'utente, prima di ogni await.
+      // permissions.request must be called right away, inside the user's gesture, before any await.
       browser.permissions
         .request({ origins: [ALL_URLS] })
         .then(async (granted) => {
@@ -31,7 +31,7 @@ export function DescriptionsSection({ enabled, onChange }: { enabled: boolean; o
         })
         .catch((err) => console.error('autoGroup:', err));
     } else {
-      // Senza await prima: se un provider perde l'accesso, la nuova richiesta parte ancora dentro il clic.
+      // No await before it: if a provider loses access, the new request still goes out inside the click.
       removeDescriptionPermission()
         .then((missing) => setProviderLost(missing.length > 0))
         .catch((err) => console.error('autoGroup:', err))

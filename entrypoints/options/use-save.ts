@@ -2,19 +2,19 @@ import { useRef, useState } from 'react';
 import { loadSettings, saveSettings, SettingsError, type Settings } from '../../src/settings';
 import { useExpiring } from '../../src/ui/use-expiring';
 
-/** Per quanto resta visibile "Annulla" dopo un'eliminazione o un ripristino delle categorie, o un import (fermo con mouse o focus sopra). */
+/** How long "Undo" stays visible after a deletion or a restore of the categories, or an import (paused while the mouse or focus is over it). */
 const UNDO_MS = 8000;
 
-/** Un'azione che si può annullare: il testo della snackbar e i valori di prima delle impostazioni che ha cambiato. */
+/** An action that can be undone: the text of the snackbar and the values from before the settings it changed. */
 export interface Undoable {
   text: string;
   before: Partial<Settings>;
 }
 
 /**
- * L'unico modo in cui la pagina delle opzioni salva: ogni scrittura passa da `save`, che mostra
- * l'errore, rilegge le impostazioni e conferma con "Salvato" oppure, se l'azione si può annullare,
- * con la snackbar "Annulla". `setSettings` è il setter di `useSettings`.
+ * The only way the options page saves: every write goes through `save`, which shows the error,
+ * rereads the settings and confirms with "Saved" or, if the action can be undone, with the "Undo"
+ * snackbar. `setSettings` is the setter of `useSettings`.
  */
 export function useSave(setSettings: (settings: Settings) => void) {
   const [saved, setSaved] = useState(false);
@@ -23,9 +23,9 @@ export function useSave(setSettings: (settings: Settings) => void) {
   const [undoable, setUndoable, holdUndo] = useExpiring<Undoable>(UNDO_MS);
 
   /**
-   * Esegue `action` e la conferma. `undo` riceve il risultato dell'azione (es. le chiavi importate) e
-   * dice cosa offrire con "Annulla". Un errore va in `onError` se c'è (la sezione lo mostra vicino al
-   * campo), altrimenti nel banner in cima alla pagina. Restituisce false se il salvataggio è fallito.
+   * Runs `action` and confirms it. `undo` receives the result of the action (e.g. the imported keys) and
+   * says what to offer with "Undo". An error goes to `onError` if there is one (the section shows it
+   * near the field), otherwise to the banner at the top of the page. Returns false if the save failed.
    */
   async function save<T>(
     action: () => Promise<T>,
@@ -42,7 +42,7 @@ export function useSave(setSettings: (settings: Settings) => void) {
       return false;
     }
     setError(null);
-    // Riletta subito per mostrare il salvataggio; useSettings la rileggerà comunque da storage.onChanged.
+    // Reread right away to show the save; useSettings rereads it anyway from storage.onChanged.
     setSettings(await loadSettings());
     if (options.undo) {
       setUndoable(options.undo(result));
@@ -54,16 +54,16 @@ export function useSave(setSettings: (settings: Settings) => void) {
     return true;
   }
 
-  /** Salva i campi indicati. */
+  /** Saves the given fields. */
   const update = (patch: Partial<Settings>) => save(() => saveSettings(patch));
 
-  /** Un salvataggio fatto da una sezione per conto suo (es. "Salva" di un provider): rilegge e conferma. */
+  /** A save done by a section on its own (e.g. "Save" of a provider): rereads and confirms. */
   const confirm = () => save(async () => {});
 
   async function undo() {
     if (!undoable) return;
     setUndoable(null);
-    // Tutti i valori di prima insieme: eliminando una categoria il salvataggio ha tolto anche i suoi siti.
+    // All the previous values together: deleting a category, the save also removed its sites.
     await update(undoable.before);
   }
 
@@ -71,10 +71,10 @@ export function useSave(setSettings: (settings: Settings) => void) {
     save,
     update,
     confirm,
-    /** Offre "Annulla" per un salvataggio già fatto (es. l'eliminazione di una categoria). */
+    /** Offers "Undo" for a save already done (e.g. the deletion of a category). */
     offerUndo: setUndoable,
     undo,
-    /** "Annulla" prende il posto di "Salvato". */
+    /** "Undo" takes the place of "Saved". */
     saved: saved && !undoable,
     error,
     undoable,
@@ -84,7 +84,7 @@ export function useSave(setSettings: (settings: Settings) => void) {
 
 export type Saving = ReturnType<typeof useSave>;
 
-/** Quello che riceve ogni pagina delle impostazioni. */
+/** What each settings page receives. */
 export interface PageProps {
   settings: Settings;
   saving: Saving;

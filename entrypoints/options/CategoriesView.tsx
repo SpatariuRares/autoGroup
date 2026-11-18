@@ -4,10 +4,10 @@ import { useDescribing } from '../../src/ui/use-describing';
 import { AutoGroupSection, CategoriesSection } from './CategoriesSection';
 import type { PageProps } from './use-save';
 
-/** Categorie: la lista, con i siti di ciascuna, e il raggruppamento automatico che li usa. */
+/** Categories: the list, with each one's sites, and the automatic grouping that uses them. */
 export function CategoriesView({ settings, saving: { save, update, offerUndo } }: PageProps) {
   const describing = useDescribing();
-  // Categorie e siti insieme: eliminando una categoria il salvataggio toglie anche i suoi siti.
+  // Categories and sites together: deleting a category, the save also removes its sites.
   const before = { categories: settings.categories, categorySites: settings.categorySites };
   return (
     <>

@@ -6,15 +6,15 @@ import { Icon } from '../../src/ui/Icon';
 import { Card } from '../../src/ui/settings/Card';
 
 /**
- * "Esporta" scarica un file JSON con le preferenze (senza provider né chiavi); "Importa" lo rilegge.
- * Il download passa da un link locale: non serve il permesso "downloads".
+ * "Export" downloads a JSON file with the preferences (without providers or keys); "Import" reads it back.
+ * The download goes through a local link: the "downloads" permission is not needed.
  */
 export function BackupSection({
   settings,
   onImport,
 }: {
   settings: Settings;
-  /** Importa il testo del file; un file rifiutato chiama `onError` con la chiave del messaggio. */
+  /** Imports the text of the file; a rejected file calls `onError` with the message key. */
   onImport: (text: string, onError: (messageKey: string) => void) => Promise<unknown>;
 }) {
   const input = useRef<HTMLInputElement>(null);
