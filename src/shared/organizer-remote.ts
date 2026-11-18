@@ -3,13 +3,13 @@ import type { Organizer } from '../organizer';
 import type { OrganizerState } from './types';
 
 /**
- * L'Organizzatore come lo vedono il pannello e le altre pagine: gli stessi metodi, ognuno un messaggio
- * al service worker. `autoGroupTab` e `checkStale` restano al service worker, che li chiama dai suoi eventi.
+ * The Organizer as the panel and the other pages see it: the same methods, each one a message
+ * to the service worker. `autoGroupTab` and `checkStale` stay in the service worker, which calls them from its events.
  */
 export type RemoteOrganizer = Omit<Organizer, 'autoGroupTab' | 'checkStale'>;
 type Method = keyof RemoteOrganizer;
 
-/** I metodi chiamabili, anche a runtime: il compilatore li tiene allineati all'interfaccia. */
+/** The callable methods, also at runtime: the compiler keeps them aligned with the interface. */
 const METHODS: Record<Method, true> = {
   state: true,
   propose: true,
@@ -41,7 +41,7 @@ interface OrganizerCall {
   args: unknown[];
 }
 
-/** Notifica dal service worker alle pagine aperte quando lo stato cambia. */
+/** Notification from the service worker to the open pages when the state changes. */
 interface StateChanged {
   type: 'organizer/state-changed';
   state: OrganizerState;
@@ -56,20 +56,20 @@ function isCall(message: unknown): message is OrganizerCall {
 
 async function call(method: Method, args: unknown[]): Promise<unknown> {
   const response = (await browser.runtime.sendMessage({ type: 'organizer/call', method, args } satisfies OrganizerCall)) as CallResponse | undefined;
-  if (!response) throw new Error('Nessuna risposta dal service worker');
+  if (!response) throw new Error('No response from the service worker');
   if (!response.ok) throw new Error(response.error);
   return response.value;
 }
 
-/** Lato pagina: l'Organizzatore del service worker. Un errore nel service worker diventa un'eccezione qui. */
+/** Page side: the service worker's Organizer. An error in the service worker becomes an exception here. */
 export const remoteOrganizer = Object.fromEntries(
   Object.keys(METHODS).map((method) => [method, (...args: unknown[]) => call(method as Method, args)]),
 ) as unknown as RemoteOrganizer;
 
 /**
- * Lato service worker: risponde alle chiamate delle pagine con `organizer`. Ignora gli altri messaggi
- * e i metodi che non sono in `RemoteOrganizer`. Risponde con `sendResponse` + `return true`, che
- * funziona in tutte le versioni di Chrome MV3. Restituisce la funzione per smettere.
+ * Service worker side: answers the pages' calls with `organizer`. Ignores the other messages
+ * and the methods that are not in `RemoteOrganizer`. Answers with `sendResponse` + `return true`, which
+ * works in all versions of Chrome MV3. Returns the function to stop listening.
  */
 export function serveOrganizer(organizer: RemoteOrganizer): () => void {
   const listener = (message: unknown, _sender: unknown, sendResponse: (response: CallResponse) => void) => {
@@ -84,12 +84,12 @@ export function serveOrganizer(organizer: RemoteOrganizer): () => void {
   return () => browser.runtime.onMessage.removeListener(listener);
 }
 
-/** Lato service worker: annuncia il nuovo stato. Se nessuna pagina è aperta l'errore è atteso. */
+/** Service worker side: announces the new state. If no page is open the error is expected. */
 export function announceState(state: OrganizerState): void {
   browser.runtime.sendMessage({ type: 'organizer/state-changed', state } satisfies StateChanged).catch(() => {});
 }
 
-/** Lato pagina: ascolta i cambi di stato annunciati dal service worker. Restituisce la funzione per smettere. */
+/** Page side: listens to the state changes announced by the service worker. Returns the function to stop listening. */
 export function onOrganizerState(listener: (state: OrganizerState) => void): () => void {
   const handler = (message: StateChanged) => {
     if (message?.type === 'organizer/state-changed') listener(message.state);

@@ -6,22 +6,22 @@ import { ProviderError, type AiOption, type AiTab, type DescribeRequest, type Ge
 
 export const NANO_LABEL = 'Gemini Nano';
 
-/** Stato di Gemini Nano: disponibile, da scaricare, in download o non supportato. */
+/** Gemini Nano status: available, to be downloaded, downloading or unsupported. */
 export type NanoAvailability = 'available' | 'downloadable' | 'downloading' | 'unavailable';
 
-/** Lingue in cui Gemini Nano può rispondere (Prompt API di Chrome). */
+/** Languages Gemini Nano can answer in (Chrome's Prompt API). */
 const NANO_LANGUAGES: Record<string, string> = { de: 'German', en: 'English', es: 'Spanish', fr: 'French', ja: 'Japanese' };
 
 /**
- * Lingua delle risposte di Nano: quella del browser se Nano la supporta, altrimenti l'inglese.
- * Chrome chiede di dichiararla a ogni `availability()` e `create()`, altrimenti avvisa in console.
+ * Nano's answer language: the browser's if Nano supports it, otherwise English.
+ * Chrome asks for it to be declared on every `availability()` and `create()`, otherwise it warns in the console.
  */
 export function nanoLanguage(): string {
   const ui = browser.i18n.getUILanguage().toLowerCase().split('-')[0]!;
   return ui in NANO_LANGUAGES ? ui : 'en';
 }
 
-/** Lingue dichiarate alla Prompt API: le tab possono essere nella lingua di Nano o in inglese. */
+/** Languages declared to the Prompt API: tabs can be in Nano's language or in English. */
 function languageOptions() {
   const language = nanoLanguage();
   return {
@@ -31,15 +31,15 @@ function languageOptions() {
 }
 
 /**
- * La lingua dei nomi chiesta nel prompt: se il browser è in una lingua che Nano non supporta
- * (es. italiano), i nomi dei gruppi arrivano in inglese, coerenti con la lingua dichiarata.
+ * The language of the names requested in the prompt: if the browser is set to a language Nano does not
+ * support (e.g. Italian), group names come back in English, consistent with the declared language.
  */
 function withNanoLanguage<T extends { language: string }>(request: T): T {
   const ui = browser.i18n.getUILanguage().toLowerCase().split('-')[0]!;
   return ui in NANO_LANGUAGES ? request : { ...request, language: NANO_LANGUAGES.en! };
 }
 
-/** Disponibilità di Gemini Nano tramite la Prompt API; "unavailable" se l'API non esiste. */
+/** Gemini Nano availability through the Prompt API; "unavailable" if the API does not exist. */
 export async function nanoAvailability(): Promise<NanoAvailability> {
   if (typeof LanguageModel === 'undefined') return 'unavailable';
   try {
@@ -49,7 +49,7 @@ export async function nanoAvailability(): Promise<NanoAvailability> {
   }
 }
 
-/** Avvia il download del modello (richiede un gesto dell'utente) e ne riporta l'avanzamento, da 0 a 1. */
+/** Starts the model download (requires a user gesture) and reports its progress, from 0 to 1. */
 export async function downloadNano(onProgress: (fraction: number) => void): Promise<void> {
   const session = await LanguageModel.create({
     ...languageOptions(),
@@ -60,7 +60,7 @@ export async function downloadNano(onProgress: (fraction: number) => void): Prom
   session.destroy();
 }
 
-/** Spazio del contesto lasciato libero per la risposta. */
+/** Share of the context left free for the response. */
 const RESPONSE_RESERVE = 0.25;
 
 type Session = LanguageModel;
@@ -71,11 +71,11 @@ const measure = (s: Session, text: string) =>
   typeof s.measureContextUsage === 'function' ? s.measureContextUsage(text) : s.measureInputUsage(text);
 
 /**
- * Generatore integrato in Chrome (Gemini Nano, Prompt API), con lo stesso contratto del Generatore
- * compatibile OpenAI. Nessuna chiave e nessun dato esce dal computer.
+ * Generator built into Chrome (Gemini Nano, Prompt API), with the same contract as the OpenAI-compatible
+ * Generator. No key, and no data leaves the computer.
  *
- * Il contesto di Nano è piccolo: se le tab non ci stanno vengono inviate a blocchi, ognuno in una
- * sessione nuova, e i nomi inventati nei blocchi precedenti diventano opzioni dei blocchi successivi.
+ * Nano's context is small: if the tabs don't fit, they are sent in blocks, each in a new
+ * session, and the names invented in earlier blocks become options for the later blocks.
  */
 export function createNanoGenerator(): Generator {
   return {
@@ -89,9 +89,9 @@ export function createNanoGenerator(): Generator {
 }
 
 /**
- * Applica a ogni chiamata a Nano lo stesso tempo massimo di una richiesta al Generatore compatibile
- * OpenAI: allo scadere la chiamata si interrompe con un `ProviderError('timeout')`. Con più blocchi
- * ognuno ha il suo tempo, come ogni richiesta HTTP. "Interrompi" passa così com'è.
+ * Applies to every call to Nano the same maximum time as a request to the OpenAI-compatible
+ * Generator: when it runs out, the call is interrupted with a `ProviderError('timeout')`. With several blocks
+ * each one has its own time, like every HTTP request. "Stop" passes through as is.
  */
 async function withTimeout<T>(signal: AbortSignal | undefined, run: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const time = deadline(TIMINGS.generator, signal);
@@ -105,22 +105,22 @@ async function withTimeout<T>(signal: AbortSignal | undefined, run: (signal: Abo
   }
 }
 
-/** Un errore della Prompt API che non è un'interruzione diventa un `ProviderError` con la causa data. */
+/** A Prompt API error that is not an interruption becomes a `ProviderError` with the given cause. */
 function asProviderError(err: unknown, signal: AbortSignal, reason: 'unavailable' | 'invalid-request'): unknown {
   if (signal.aborted || err instanceof ProviderError) return err;
   return new ProviderError(reason, String(err));
 }
 
-/** Sessioni base già create, per prompt di sistema. Legate all'oggetto `LanguageModel`, che i test sostituiscono. */
+/** Base sessions already created, one per system prompt. Bound to the `LanguageModel` object, which the tests replace. */
 const baseSessions = new WeakMap<object, Map<string, Promise<Session>>>();
-/** Una per modalità e lingua bastano; oltre, la più vecchia viene distrutta. */
+/** One per mode and language is enough; beyond that, the oldest is destroyed. */
 const MAX_BASE_SESSIONS = 4;
 
 /**
- * La sessione con il prompt di sistema, creata una volta e poi riusata: non riceve mai un prompt,
- * viene solo misurata e clonata per ogni blocco, quindi resta pulita. Crearla carica il modello e
- * legge il prompt di sistema; `prepare` la avvia mentre la pipeline legge le pagine o interroga il
- * Classificatore, e i calcoli successivi la ritrovano pronta finché il service worker resta vivo.
+ * The session with the system prompt, created once and then reused: it never receives a prompt,
+ * it is only measured and cloned for each block, so it stays clean. Creating it loads the model and
+ * reads the system prompt; `prepare` starts it while the pipeline reads the pages or queries the
+ * Classifier, and the later computations find it ready as long as the service worker stays alive.
  */
 function baseSession(system: string): Promise<Session> {
   let sessions = baseSessions.get(LanguageModel);
@@ -137,14 +137,14 @@ function baseSession(system: string): Promise<Session> {
   return created;
 }
 
-/** Toglie una sessione base dalla cache (se è ancora quella) e la distrugge quando è pronta. */
+/** Removes a base session from the cache (if it is still the same one) and destroys it when ready. */
 function forgetBase(system: string, session: Promise<Session>): void {
   const sessions = baseSessions.get(LanguageModel);
   if (sessions?.get(system) === session) sessions.delete(system);
   session.then((s) => s.destroy(), () => {});
 }
 
-/** Attende `promise`, ma si ferma subito se il segnale viene interrotto (la promessa resta valida per gli altri). */
+/** Waits for `promise`, but stops immediately if the signal is aborted (the promise stays valid for the others). */
 function untilAborted<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) return reject(signal.reason);
@@ -161,7 +161,7 @@ async function generate(request: GenerateRequest, signal?: AbortSignal): Promise
     try {
       return await untilAborted(pending, s);
     } catch (err) {
-      // Una creazione scaduta o fallita non va riusata: il prossimo calcolo ne crea una nuova.
+      // A creation that timed out or failed must not be reused: the next computation creates a new one.
       if (!signal?.aborted) forgetBase(system, pending);
       throw asProviderError(err, s, 'unavailable');
     }
@@ -189,13 +189,13 @@ async function generate(request: GenerateRequest, signal?: AbortSignal): Promise
     }
     return results;
   } catch (err) {
-    // La sessione base potrebbe non essere più valida (es. distrutta da Chrome): non la si riusa.
+    // The base session may no longer be valid (e.g. destroyed by Chrome): it is not reused.
     if (!signal?.aborted) forgetBase(system, pending);
     throw err;
   }
 }
 
-/** Un blocco di tab in una copia della sessione di base, che ha già il prompt di sistema. */
+/** A block of tabs in a copy of the base session, which already has the system prompt. */
 async function promptBlock(base: Session, request: GenerateRequest, signal: AbortSignal): Promise<RawGroup[]> {
   let content: string;
   let session: Session | undefined;
@@ -230,14 +230,14 @@ async function describe(request: DescribeRequest, signal: AbortSignal): Promise<
 }
 
 /**
- * Divide le tab in blocchi che stanno nel contesto: ogni blocco, con le opzioni e un margine per
- * i nomi che verranno aggiunti, deve restare entro `budget`. Un blocco contiene sempre almeno una tab.
+ * Splits the tabs into blocks that fit the context: each block, with the options and a margin for
+ * the names that will be added, must stay within `budget`. A block always contains at least one tab.
  */
 async function splitIntoBlocks(session: Session, request: GenerateRequest, budget: number): Promise<AiTab[][]> {
   const whole = await measure(session, userPrompt(request));
   if (whole <= budget) return [request.tabs];
 
-  // Tutte le misure insieme: ognuna è una chiamata al modello, in fila costerebbero N giri.
+  // All the measurements together: each one is a call to the model, queued they would cost N rounds.
   const [fixed, costs] = await Promise.all([
     measure(session, userPrompt({ ...request, tabs: [] })),
     Promise.all(request.tabs.map((tab) => measure(session, JSON.stringify(tab)))),
@@ -247,7 +247,7 @@ async function splitIntoBlocks(session: Session, request: GenerateRequest, budge
   let used = fixed;
   for (const [i, tab] of request.tabs.entries()) {
     const cost = costs[i]!;
-    // Margine per i nomi inventati nei blocchi precedenti, aggiunti alle opzioni.
+    // Margin for the names invented in the earlier blocks, added to the options.
     const reserve = blocks.length * 16;
     if (current.length > 0 && used + cost + reserve > budget) {
       blocks.push(current);

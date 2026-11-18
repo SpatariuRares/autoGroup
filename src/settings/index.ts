@@ -18,88 +18,88 @@ import {
 export * from './categories';
 export * from './providers';
 
-/** Soglia di confidenza di default del Classificatore. */
+/** Default confidence threshold of the Classifier. */
 export const DEFAULT_THRESHOLD = 0.7;
 
-/** Regole sui siti: ID della categoria → siti "dominio[/percorso]" le cui tab vanno sempre lì. */
+/** Site rules: category ID → sites "domain[/path]" whose tabs always go there. */
 export type CategorySites = Record<string, string[]>;
 
-/** Quota di un elemento di chrome.storage.sync: byte del nome della chiave più il valore in JSON. */
+/** Quota of a chrome.storage.sync item: bytes of the key name plus the value in JSON. */
 export const SYNC_ITEM_QUOTA = 8192;
 
 /**
- * Come raggruppare: "domain" = sempre per dominio, senza nessuna AI; "ai" = Classificatore e
- * Generatore configurati, con il dominio come ultimo ripiego.
+ * How to group: "domain" = always by domain, with no AI at all; "ai" = Classifier and
+ * Generator configured, with the domain as the last fallback.
  */
 export type GroupingMode = 'ai' | 'domain';
 
 /**
- * Modalità AI con Generatore e Classificatore tutti e due su "Nessuno": il pannello la chiama "Con
- * regole" e si applicano solo le regole sui siti, senza il ripiego per dominio.
+ * AI mode with Generator and Classifier both set to "None": the panel calls it "With rules"
+ * and only the site rules apply, without the domain fallback.
  */
 export function isRulesOnly(settings: Pick<Settings, 'mode' | 'generator' | 'classifier'>): boolean {
   return settings.mode === 'ai' && settings.generator.preset === 'none' && settings.classifier.preset === 'none';
 }
 
-/** Preferenze sincronizzate tra i Chrome dell'utente (chrome.storage.sync). */
+/** Preferences synced across the user's Chrome browsers (chrome.storage.sync). */
 export interface Settings {
   mode: GroupingMode;
-  /** Numero minimo di tab per creare un gruppo nuovo. Intero ≥ 1. */
+  /** Minimum number of tabs to create a new group. Integer ≥ 1. */
   minTabs: number;
-  /** Domini le cui tab non vengono mai proposte né inviate all'AI. Valgono anche per i sottodomini. */
+  /** Domains whose tabs are never proposed nor sent to the AI. They also apply to subdomains. */
   excludedDomains: string[];
   /**
-   * Lista fissa delle categorie, nell'ordine scelto dall'utente. Finché l'utente non la modifica
-   * non è salvata e vale la lista predefinita nella lingua del browser.
+   * Fixed list of categories, in the order chosen by the user. Until the user edits it, it is not
+   * saved and the default list in the browser's language applies.
    */
   categories: Category[];
   /**
-   * Regole sui siti, salvate in una chiave a parte per non togliere spazio alle categorie: le tab di
-   * questi siti vanno sempre nella categoria, prima dell'AI e del raggruppamento per dominio.
+   * Site rules, saved under a separate key so as not to take up space from the categories: the tabs of
+   * these sites always go to the category, before the AI and the grouping by domain.
    */
   categorySites: CategorySites;
-  /** Generatore scelto dall'utente: compatibile OpenAI, Gemini Nano o nessuno (senza la chiave API, che sta in storage.local). */
+  /** Generator chosen by the user: OpenAI-compatible, Gemini Nano or none (without the API key, which lives in storage.local). */
   generator: ProviderSettings;
-  /** Classificatore System One scelto dall'utente (senza la chiave API). */
+  /** System One Classifier chosen by the user (without the API key). */
   classifier: ProviderSettings;
-  /** Confidenza minima perché il Classificatore assegni una tab, tra 0 e 1. */
+  /** Minimum confidence for the Classifier to assign a tab, between 0 and 1. */
   threshold: number;
-  /** "Leggi la descrizione delle pagine": vale solo se il permesso opzionale <all_urls> è concesso. */
+  /** "Read page descriptions": only applies if the optional <all_urls> permission is granted. */
   readDescriptions: boolean;
-  /** Raggruppamento automatico: una tab che apre un sito delle regole va subito nel gruppo della sua categoria. */
+  /** Automatic grouping: a tab that opens a rule site goes straight into the group of its category. */
   autoGroupSites: boolean;
 }
 
 /** Regole di una preferenza: valore di default, controllo, pulizia e se va nel backup. */
 interface Field<T> {
-  /** Il valore quando non c'è niente di salvato, o quello salvato non è valido. */
+  /** The value when nothing is saved, or the saved one is not valid. */
   fallback: () => T;
-  /** Chiave i18n del motivo per cui il valore non va salvato, oppure null se va bene. */
+  /** i18n key of the reason why the value must not be saved, or null if it is fine. */
   check: (value: unknown) => string | null;
-  /** Pulizia di un valore già controllato, prima del salvataggio e dopo la lettura. */
+  /** Cleanup of an already checked value, before saving and after reading. */
   normalize?: (value: T) => T;
-  /** Portata da un browser all'altro con "Esporta" e "Importa". Provider e chiavi API mai. */
+  /** Carried from one browser to another with "Export" and "Import". Providers and API keys never. */
   backup: boolean;
 }
 
-/** La chiave dell'errore se il controllo non passa, altrimenti null. */
+/** The error key if the check does not pass, otherwise null. */
 const errorUnless = (ok: boolean, error = 'errorSaveSettings') => (ok ? null : error);
 const isBoolean = (value: unknown) => errorUnless(typeof value === 'boolean');
 
-/** Domini normalizzati, senza doppioni e in ordine; quelli non validi vengono scartati. */
+/** Normalized domains, without duplicates and in order; the invalid ones are discarded. */
 function normalizeDomains(list: unknown[]): string[] {
   const domains = list.map((d) => (typeof d === 'string' ? normalizeDomain(d) : null)).filter((d): d is string => d !== null);
   return [...new Set(domains)].sort();
 }
 
 /**
- * Tutte le preferenze, una voce per campo di `Settings`: aggiungerne una significa aggiungere il
- * campo all'interfaccia e una voce qui. Lettura, salvataggio, default e backup si ricavano da questa tabella.
+ * All the preferences, one entry per field of `Settings`: adding one means adding the
+ * field to the interface and an entry here. Reading, saving, defaults and backup are derived from this table.
  */
 const FIELDS: { [K in keyof Settings]: Field<Settings[K]> } = {
   mode: { fallback: () => 'ai', check: (v) => errorUnless(v === 'ai' || v === 'domain'), backup: true },
   minTabs: { fallback: () => 2, check: (v) => errorUnless(isValidMinTabs(v), 'optionsMinTabsInvalid'), backup: true },
-  // Un dominio rovinato si scarta da solo: svuotare la lista manderebbe all'AI le tab dei siti esclusi.
+  // A broken domain discards itself: emptying the list would send the AI the tabs of the excluded sites.
   excludedDomains: { fallback: () => [], check: (v) => errorUnless(Array.isArray(v)), normalize: normalizeDomains, backup: true },
   categories: { fallback: defaultCategories, check: validateCategories, normalize: normalizeCategories, backup: true },
   categorySites: { fallback: () => ({}), check: validateCategorySites, backup: true },
@@ -122,7 +122,7 @@ const FIELDS: { [K in keyof Settings]: Field<Settings[K]> } = {
 
 const KEYS = Object.keys(FIELDS) as (keyof Settings)[];
 
-/** Le preferenze che vanno nel file di "Esporta". */
+/** The preferences that go into the "Export" file. */
 export const BACKUP_KEYS = KEYS.filter((key) => FIELDS[key].backup);
 
 const field = (key: keyof Settings) => FIELDS[key] as Field<unknown>;
@@ -141,14 +141,14 @@ export async function loadSettings(): Promise<Settings> {
   return settings as Settings;
 }
 
-/** Errore di validazione delle impostazioni, con la chiave i18n del messaggio da mostrare. */
+/** Settings validation error, with the i18n key of the message to show. */
 export class SettingsError extends Error {
   constructor(readonly messageKey: string) {
     super(messageKey);
   }
 }
 
-/** Salva solo i campi indicati. Se un valore non è valido la patch è rifiutata con un `SettingsError` e non cambia nulla. */
+/** Saves only the given fields. If a value is not valid, the patch is rejected with a `SettingsError` and changes nothing. */
 export async function saveSettings(patch: Partial<Settings>): Promise<void> {
   const checked: Partial<Record<keyof Settings, unknown>> = {};
   for (const key of KEYS) {
@@ -159,7 +159,7 @@ export async function saveSettings(patch: Partial<Settings>): Promise<void> {
     checked[key] = field(key).normalize?.(value) ?? value;
   }
   if (checked.categories !== undefined || checked.categorySites !== undefined) {
-    // Senza le categorie che non esistono più e senza liste vuote.
+    // Without the categories that no longer exist and without empty lists.
     const current = await loadSettings();
     const ids = new Set(((checked.categories as Category[] | undefined) ?? current.categories).map((c) => c.id));
     const sites = Object.entries((checked.categorySites as CategorySites | undefined) ?? current.categorySites).filter(([id, list]) => ids.has(id) && list.length > 0);
@@ -168,7 +168,7 @@ export async function saveSettings(patch: Partial<Settings>): Promise<void> {
   await browser.storage.sync.set(checked);
 }
 
-/** Permesso opzionale per leggere la descrizione delle pagine. */
+/** Optional permission to read the description of pages. */
 export const ALL_URLS = '<all_urls>';
 
 export async function hasDescriptionPermission(): Promise<boolean> {
@@ -176,12 +176,12 @@ export async function hasDescriptionPermission(): Promise<boolean> {
 }
 
 /**
- * Spegne la lettura delle descrizioni togliendo `<all_urls>`, senza togliere l'accesso ai provider.
- * Se l'host di un provider è stato concesso mentre `<all_urls>` era attivo, Chrome può non averlo
- * registrato a parte (la richiesta era già coperta): tolto `<all_urls>`, il provider resterebbe senza
- * accesso. Per questo gli host dei provider che non hanno più il permesso vengono richiesti subito,
- * ancora dentro il clic dell'utente sull'interruttore. Se Chrome li aveva registrati non si chiede nulla.
- * Restituisce gli host rimasti senza permesso (l'utente ha rifiutato).
+ * Turns off reading descriptions by removing `<all_urls>`, without removing access to the providers.
+ * If a provider's host was granted while `<all_urls>` was active, Chrome may not have recorded it
+ * separately (the request was already covered): with `<all_urls>` removed, the provider would be left without
+ * access. For this reason the hosts of the providers that no longer have the permission are requested right away,
+ * still inside the user's click on the toggle. If Chrome had recorded them, nothing is asked.
+ * Returns the hosts left without permission (the user refused).
  */
 export async function removeDescriptionPermission(): Promise<string[]> {
   const { classifier, generator } = await loadSettings();
@@ -201,14 +201,14 @@ export async function removeDescriptionPermission(): Promise<string[]> {
   return granted ? [] : missing;
 }
 
-/** Esito di "Salva" per un provider: spento, Gemini Nano, dati mancanti, pronto, oppure permesso rifiutato. */
+/** Outcome of "Save" for a provider: off, Gemini Nano, missing data, ready, or permission refused. */
 export type ProviderSaveResult = 'off' | 'nano' | 'incomplete' | 'ready' | 'no-permission';
 
 /**
- * "Salva" di un provider: salva le impostazioni e la chiave API (solo in storage.local), toglie il
- * permesso host dell'URL base di prima se nessuno dei due provider lo usa più, poi aspetta la risposta
- * dell'utente al permesso. `granted` è la promessa di `permissions.request`, che la pagina chiama dentro
- * il clic per l'origine di `providerOrigin(draft)` (o `false` se non serve).
+ * "Save" of a provider: saves the settings and the API key (only in storage.local), removes the
+ * host permission of the previous base URL if neither provider uses it anymore, then waits for the
+ * user's answer to the permission. `granted` is the promise of `permissions.request`, which the page calls inside
+ * the click for the origin of `providerOrigin(draft)` (or `false` if it is not needed).
  */
 export async function saveProvider(role: ProviderRole, draft: ProviderSettings, apiKey: string, granted: Promise<boolean>): Promise<ProviderSaveResult> {
   const previous = (await loadSettings())[role];
@@ -223,8 +223,8 @@ export async function saveProvider(role: ProviderRole, draft: ProviderSettings, 
 }
 
 /**
- * Toglie il permesso host di un URL base non più usato. Classificatore e Generatore possono
- * condividere un host (es. entrambi su 127.0.0.1): il permesso resta finché uno dei due lo usa.
+ * Removes the host permission of a base URL no longer in use. Classifier and Generator can
+ * share a host (e.g. both on 127.0.0.1): the permission stays as long as one of the two uses it.
  */
 async function releaseUnusedPermission(previousBaseUrl: string) {
   const previous = originPattern(previousBaseUrl);
@@ -234,7 +234,7 @@ async function releaseUnusedPermission(previousBaseUrl: string) {
   if (!inUse) await browser.permissions.remove({ origins: [previous] }).catch(() => {});
 }
 
-/** "Ripristina default": torna alla lista predefinita nella lingua del browser, senza siti. */
+/** "Restore defaults": goes back to the default list in the browser's language, without sites. */
 export async function resetCategories(): Promise<Category[]> {
   await browser.storage.sync.remove(['categories', 'categorySites']);
   return defaultCategories();
@@ -249,8 +249,8 @@ export function isValidMinTabs(value: unknown): value is number {
 }
 
 /**
- * Riduce quello che l'utente scrive a un dominio: minuscole, senza schema, percorso, porta né "www.".
- * Restituisce null se il risultato non sembra un dominio.
+ * Reduces what the user types to a domain: lowercase, without scheme, path, port or "www.".
+ * Returns null if the result does not look like a domain.
  */
 export function normalizeDomain(input: string): string | null {
   let value = input.trim().toLowerCase();
@@ -268,8 +268,8 @@ export function normalizeDomain(input: string): string | null {
 }
 
 /**
- * Riduce un sito scritto dall'utente a "dominio[/percorso]": il dominio come `normalizeDomain`, il
- * percorso in minuscolo, senza query, frammento né "/" finale. Restituisce null se il dominio non è valido.
+ * Reduces a site written by the user to "domain[/path]": the domain as `normalizeDomain`, the
+ * path in lowercase, without query, fragment or trailing "/". Returns null if the domain is not valid.
  */
 export function normalizeSite(input: string): string | null {
   let value = input.trim();
@@ -287,8 +287,8 @@ export function normalizeSite(input: string): string | null {
 }
 
 /**
- * Restituisce la chiave i18n del primo errore dei siti, oppure null se vanno bene: ogni sito già
- * normalizzato, nessun sito in due categorie, tutto dentro la quota di un elemento di storage.sync.
+ * Returns the i18n key of the first site error, or null if they are fine: every site already
+ * normalized, no site in two categories, everything within the quota of a storage.sync item.
  */
 export function validateCategorySites(value: unknown): 'optionsSitesInvalid' | 'optionsSitesTooMany' | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return 'optionsSitesInvalid';
@@ -304,7 +304,7 @@ export function validateCategorySites(value: unknown): 'optionsSitesInvalid' | '
   return bytes > SYNC_ITEM_QUOTA ? 'optionsSitesTooMany' : null;
 }
 
-/** Vero se l'host è uno dei domini esclusi o un loro sottodominio (google.com esclude mail.google.com). */
+/** True if the host is one of the excluded domains or a subdomain of one (google.com excludes mail.google.com). */
 export function isExcludedHost(host: string, excludedDomains: string[]): boolean {
   const h = host.toLowerCase().replace(/\.$/, '');
   return excludedDomains.some((d) => h === d || h.endsWith(`.${d}`));

@@ -1,20 +1,20 @@
 import { browser, type Browser } from 'wxt/browser';
 import type { GroupingMode } from '../settings';
 
-/** Pagina della guida, aperta all'installazione e dal link "Rivedi la guida" delle impostazioni. */
+/** Guide page, opened at installation and from the "Show the guide again" link in the settings. */
 export const ONBOARDING_PATH = '/onboarding.html';
 
 export type OnboardingStep = 'welcome' | 'mode' | 'generator' | 'classifier' | 'done';
 
 /**
- * Passi della guida. Con l'AI ci sono anche il Generatore e il Classificatore (facoltativo): prima il
- * Generatore, che basta da solo (Gemini Nano è già scelto), poi il Classificatore per chi ne ha uno.
+ * Steps of the guide. With the AI there are also the Generator and the Classifier (optional): first the
+ * Generator, which is enough on its own (Gemini Nano is already selected), then the Classifier for those who have one.
  */
 export function onboardingSteps(mode: GroupingMode): OnboardingStep[] {
   return mode === 'ai' ? ['welcome', 'mode', 'generator', 'classifier', 'done'] : ['welcome', 'mode', 'done'];
 }
 
-/** Al primo avvio apre la guida in una scheda; aggiornamenti e ricaricamenti non la riaprono. */
+/** On first start opens the guide in a tab; updates and reloads do not reopen it. */
 export async function openOnboardingOnInstall(details: Browser.runtime.InstalledDetails): Promise<void> {
   if (details.reason !== 'install') return;
   await browser.tabs.create({ url: browser.runtime.getURL(ONBOARDING_PATH) });

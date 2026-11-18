@@ -2,17 +2,17 @@ import { BACKUP_KEYS, saveSettings, SettingsError, type Settings } from './index
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** Il file di "Esporta": JSON leggibile, con il nome dell'app e la versione del formato. */
+/** The "Export" file: readable JSON, with the app name and the format version. */
 export function exportSettings(settings: Settings): string {
-  // Solo le preferenze con `backup` nella tabella: provider e chiavi API non lasciano mai il browser.
+  // Only the preferences with `backup` in the table: providers and API keys never leave the browser.
   const picked = Object.fromEntries(BACKUP_KEYS.map((key) => [key, settings[key]]));
   return `${JSON.stringify({ app: 'autoGroup', version: 1, exportedAt: new Date().toISOString(), settings: picked }, null, 2)}\n`;
 }
 
 /**
- * "Importa": salva le preferenze del file, con la stessa validazione delle impostazioni. Le chiavi
- * assenti restano come sono; i domini esclusi sono normalizzati e quelli non validi scartati. Un file
- * non valido è rifiutato con un `SettingsError` e non cambia nulla. Restituisce le chiavi salvate.
+ * "Import": saves the preferences from the file, with the same validation as the settings. Missing keys
+ * stay as they are; the excluded domains are normalized and the invalid ones discarded. An invalid file
+ * is rejected with a `SettingsError` and changes nothing. Returns the saved keys.
  */
 export async function importSettings(text: string): Promise<Partial<Settings>> {
   let data: unknown;
@@ -29,7 +29,7 @@ export async function importSettings(text: string): Promise<Partial<Settings>> {
   try {
     await saveSettings(patch);
   } catch (err) {
-    // Un valore senza un messaggio suo (es. un interruttore che non è un booleano) rende il file non valido.
+    // A value without a message of its own (e.g. a switch that is not a boolean) makes the file invalid.
     if (err instanceof SettingsError && err.messageKey === 'errorSaveSettings') throw new SettingsError('optionsImportInvalid');
     throw err;
   }

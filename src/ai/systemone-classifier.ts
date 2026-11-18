@@ -1,9 +1,9 @@
 import { postJson, TIMINGS } from './http';
 import { ProviderError, type AiOption, type AiTab, type Classification, type Classifier } from './types';
 
-/** Massimo di opzioni per domanda "choice" nel protocollo System One. */
+/** Maximum options per "choice" question in the System One protocol. */
 const MAX_CHOICE_OPTIONS = 255;
-/** Opzione aggiunta alle categorie, come consiglia TypeSafe: la tab non rientra in nessuna. */
+/** Option added to the categories, as TypeSafe recommends: the tab fits none of them. */
 const NONE_OPTION = 'none_of_the_above';
 const NONE_DESCRIPTION = 'The tab fits none of the other options.';
 const INSTRUCTIONS = 'Which group should this browser tab go into';
@@ -17,8 +17,8 @@ export interface SystemOneConfig {
   apiKey?: string;
   timeoutMs?: number;
   /**
-   * "per-tab": una richiesta per tab (state = la tab), con al massimo `concurrency` richieste insieme.
-   * "batch": una sola richiesta con una domanda per tab (state = tutte le tab).
+   * "per-tab": one request per tab (state = the tab), with at most `concurrency` requests at once.
+   * "batch": a single request with one question per tab (state = all the tabs).
    */
   strategy?: ClassifierStrategy;
   concurrency?: number;
@@ -30,7 +30,7 @@ interface ChoiceAnswer {
   confidence?: unknown;
 }
 
-/** criteria: nome → descrizione di ogni opzione, più "nessuna delle precedenti". */
+/** criteria: name → description of each option, plus "none of the above". */
 export function buildCriteria(options: AiOption[]): Record<string, string> {
   const criteria: Record<string, string> = {};
   for (const option of options.slice(0, MAX_CHOICE_OPTIONS - 1)) {
@@ -43,8 +43,8 @@ export function buildCriteria(options: AiOption[]): Record<string, string> {
 const tabState = (tab: AiTab) => ({ title: tab.title, url: tab.url, ...(tab.description ? { description: tab.description } : {}) });
 
 /**
- * Classificatore sul protocollo System One (`POST {baseUrl}/v1/systemone`): Jev, Kev, Rizzo Flow.
- * Ogni tab riceve una domanda "choice" con le opzioni note come criteria.
+ * Classifier on the System One protocol (`POST {baseUrl}/v1/systemone`): Jev, Kev, Rizzo Flow.
+ * Each tab receives a "choice" question with the known options as criteria.
  */
 export function createSystemOneClassifier(config: SystemOneConfig): Classifier {
   async function call(body: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, ChoiceAnswer>> {
@@ -59,7 +59,7 @@ export function createSystemOneClassifier(config: SystemOneConfig): Classifier {
     return json.answers as Record<string, ChoiceAnswer>;
   }
 
-  /** Una risposta illeggibile per una tab la lascia "rimasta", senza far fallire le altre. */
+  /** An unreadable answer for a tab leaves it "left over", without making the others fail. */
   function read(answer: ChoiceAnswer | undefined, criteria: Record<string, string>): Classification {
     const choice = typeof answer?.choice === 'string' && answer.choice in criteria && answer.choice !== NONE_OPTION ? answer.choice : null;
     const confidence = typeof answer?.confidence === 'number' ? answer.confidence : 0;
@@ -84,7 +84,7 @@ export function createSystemOneClassifier(config: SystemOneConfig): Classifier {
         return result;
       }
 
-      // Al primo errore la pipeline scende di livello: le richieste ancora in corso non servono più.
+      // On the first error the pipeline falls back a level: the requests still in progress are no longer needed.
       const stop = new AbortController();
       const shared = signal ? AbortSignal.any([signal, stop.signal]) : stop.signal;
       try {
@@ -100,7 +100,7 @@ export function createSystemOneClassifier(config: SystemOneConfig): Classifier {
   };
 }
 
-/** Esegue `task` su ogni elemento con al massimo `limit` esecuzioni insieme; al primo errore si ferma. */
+/** Runs `task` on each item with at most `limit` executions at once; stops at the first error. */
 async function mapWithLimit<T>(items: T[], limit: number, task: (item: T) => Promise<void>): Promise<void> {
   let next = 0;
   let failed = false;
@@ -117,7 +117,7 @@ async function mapWithLimit<T>(items: T[], limit: number, task: (item: T) => Pro
   await Promise.all(workers);
 }
 
-/** "Prova connessione": una domanda minima che verifica URL, chiave e modello. */
+/** "Test connection": a minimal question that checks the URL, key and model. */
 export async function testSystemOneConnection(config: SystemOneConfig): Promise<void> {
   const classifier = createSystemOneClassifier({ ...config, strategy: 'per-tab' });
   await classifier.classify([{ id: 't1', title: 'Example', url: 'example.com' }], [{ name: 'test', description: 'Test option' }]);

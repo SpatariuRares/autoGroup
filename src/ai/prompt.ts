@@ -1,6 +1,6 @@
 import type { DescribeRequest, GenerateRequest } from './types';
 
-/** Schema JSON della risposta del Generatore: un elenco di gruppi con nome e ID brevi delle tab. */
+/** JSON schema of the Generator's response: a list of groups with name and short tab IDs. */
 export const GROUPS_SCHEMA = {
   type: 'object',
   properties: {
@@ -21,7 +21,7 @@ export const GROUPS_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-/** Istruzioni di sistema per il Generatore. */
+/** System instructions for the Generator. */
 export function systemPrompt(request: GenerateRequest): string {
   const rules = [
     'You organize browser tabs into groups.',
@@ -42,9 +42,9 @@ export function systemPrompt(request: GenerateRequest): string {
 }
 
 /**
- * Messaggio utente: opzioni note e tab, in JSON compatto. In "solo nuovi" le opzioni servono solo a
- * non ripeterne i nomi, quindi vanno senza descrizione: meno token da elaborare (e, con Gemini Nano,
- * più tab per blocco).
+ * User message: known options and tabs, in compact JSON. In "new only" the options serve only to
+ * avoid repeating their names, so they go without description: fewer tokens to process (and, with Gemini Nano,
+ * more tabs per block).
  */
 export function userPrompt(request: GenerateRequest): string {
   return JSON.stringify({
@@ -53,7 +53,7 @@ export function userPrompt(request: GenerateRequest): string {
   });
 }
 
-/** Estrae l'elenco dei gruppi dal testo della risposta, accettando anche un blocco ```json. */
+/** Extracts the list of groups from the response text, also accepting a ```json block. */
 export function parseGroups(content: string): unknown[] | null {
   const text = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   try {
@@ -64,10 +64,10 @@ export function parseGroups(content: string): unknown[] | null {
   }
 }
 
-/** Lunghezza massima della descrizione generata, uguale al limite delle categorie. */
+/** Maximum length of the generated description, equal to the categories' limit. */
 export const MAX_DESCRIPTION_LENGTH = 300;
 
-/** Istruzioni per "descrivi": una frase che dica cosa rientra nella categoria. */
+/** Instructions for "describe": one sentence saying what belongs in the category. */
 export function describePrompt(request: DescribeRequest): { system: string; user: string } {
   return {
     system: [
@@ -79,7 +79,7 @@ export function describePrompt(request: DescribeRequest): { system: string; user
   };
 }
 
-/** Ripulisce la descrizione generata: virgolette, spazi, lunghezza massima. */
+/** Cleans up the generated description: quotes, spaces, maximum length. */
 export function cleanDescription(text: string): string {
   return text
     .trim()

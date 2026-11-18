@@ -1,19 +1,19 @@
 import { browser } from 'wxt/browser';
 
-/** I due ruoli AI: Classificatore (System One) e Generatore (compatibile OpenAI). */
+/** The two AI roles: Classifier (System One) and Generator (OpenAI-compatible). */
 export type ProviderRole = 'classifier' | 'generator';
 
 export interface ProviderPreset {
   label: string;
   baseUrl: string;
   model: string;
-  /** Pagina ufficiale con documentazione e, per i provider open source, download/installazione. */
+  /** Official page with documentation and, for open source providers, downloads/installation. */
   homepage: string;
 }
 
 /**
- * Preset per ruolo. Aggiungere un provider compatibile con uno dei due protocolli significa
- * aggiungere una voce qui: pipeline e adattatori non cambiano.
+ * Presets per role. Adding a provider compatible with one of the two protocols means
+ * adding an entry here: the pipeline and the adapters do not change.
  */
 const PROVIDER_PRESETS = {
   classifier: {
@@ -35,12 +35,12 @@ const PROVIDER_PRESETS = {
 } satisfies Record<ProviderRole, Record<string, ProviderPreset>>;
 
 /**
- * "none" = nessun provider; "custom" = URL e modello scelti dall'utente; per il Generatore anche
- * "nano" = Gemini Nano integrato in Chrome, senza URL né chiave.
+ * "none" = no provider; "custom" = URL and model chosen by the user; for the Generator also
+ * "nano" = Gemini Nano built into Chrome, with no URL or key.
  */
 type ProviderPresetId = string;
 
-/** Configurazione di un provider in storage.sync. La chiave API sta a parte, in storage.local. */
+/** Configuration of a provider in storage.sync. The API key is kept separately, in storage.local. */
 export interface ProviderSettings {
   preset: ProviderPresetId;
   baseUrl: string;
@@ -49,11 +49,11 @@ export interface ProviderSettings {
 
 export const NO_PROVIDER: ProviderSettings = { preset: 'none', baseUrl: '', model: '' };
 
-/** Generatore Gemini Nano: è il default, così senza configurazione si usa Nano se il browser lo ha. */
+/** Gemini Nano Generator: it is the default, so without configuration Nano is used if the browser has it. */
 export const NANO_PRESET = 'nano';
 export const NANO_PROVIDER: ProviderSettings = { preset: NANO_PRESET, baseUrl: '', model: '' };
 
-/** Vero se il provider non ha un server da contattare (nessuno, oppure Gemini Nano): niente URL né permesso. */
+/** True if the provider has no server to contact (none, or Gemini Nano): no URL or permission. */
 export function isLocalOnly(settings: ProviderSettings): boolean {
   return settings.preset === 'none' || settings.preset === NANO_PRESET;
 }
@@ -62,7 +62,7 @@ export function presetsOf(role: ProviderRole): Record<string, ProviderPreset> {
   return PROVIDER_PRESETS[role];
 }
 
-/** Pagina ufficiale del preset, se la selezione non è "nessuno", Nano o personalizzata. */
+/** Official page of the preset, if the selection is not "none", Nano or custom. */
 export function providerHomepage(role: ProviderRole, preset: string): string | null {
   return presetsOf(role)[preset]?.homepage ?? null;
 }
@@ -80,9 +80,9 @@ export function isProviderSettings(role: ProviderRole, value: unknown): value is
 }
 
 /**
- * Vero se l'utente ha scelto un provider utilizzabile. Il Generatore richiede sempre il modello;
- * per il Classificatore il protocollo System One lo rende facoltativo. Rizzo Flow però lo richiede
- * (422 senza), quindi il suo preset ha già `rizzo-latest`.
+ * True if the user has chosen a usable provider. The Generator always requires the model;
+ * for the Classifier the System One protocol makes it optional. Rizzo Flow, however, requires it
+ * (422 without), so its preset already has `rizzo-latest`.
  */
 export function isProviderConfigured(role: ProviderRole, settings: ProviderSettings): boolean {
   if (isLocalOnly(settings) || settings.baseUrl.trim() === '') return false;
@@ -90,22 +90,22 @@ export function isProviderConfigured(role: ProviderRole, settings: ProviderSetti
 }
 
 /**
- * Nome del provider per gli avvisi: etichetta del preset e URL base, es. "Kev (http://127.0.0.1:8009)".
- * Per un provider personalizzato basta l'URL.
+ * Provider name for the warnings: preset label and base URL, e.g. "Kev (http://127.0.0.1:8009)".
+ * For a custom provider the URL is enough.
  */
 export function providerLabel(role: ProviderRole, settings: ProviderSettings): string {
   const preset = presetsOf(role)[settings.preset];
   return preset ? `${preset.label} (${settings.baseUrl})` : settings.baseUrl;
 }
 
-/** Pulisce URL (spazi e "/" finale) e modello prima del salvataggio. */
+/** Cleans up the URL (spaces and trailing "/") and the model before saving. */
 export function normalizeProvider(settings: ProviderSettings): ProviderSettings {
   return { ...settings, baseUrl: settings.baseUrl.trim().replace(/\/+$/, ''), model: settings.model.trim() };
 }
 
 /**
- * Pattern del permesso host opzionale per un URL base, es. "https://openrouter.ai/*".
- * Le porte non contano nei pattern di Chrome. Restituisce null se l'URL non è http(s).
+ * Optional host permission pattern for a base URL, e.g. "https://openrouter.ai/*".
+ * Ports do not count in Chrome's patterns. Returns null if the URL is not http(s).
  */
 export function originPattern(baseUrl: string): string | null {
   try {
@@ -118,15 +118,15 @@ export function originPattern(baseUrl: string): string | null {
 }
 
 /**
- * Il permesso host da chiedere salvando un provider: `undefined` se non ha un server (nessuno, Gemini
- * Nano), `null` se l'URL base non è http(s). Sincrono, perché va calcolato dentro il clic, prima di
+ * The host permission to request when saving a provider: `undefined` if it has no server (none, Gemini
+ * Nano), `null` if the base URL is not http(s). Synchronous, because it must be computed inside the click, before
  * `permissions.request`.
  */
 export function providerOrigin(settings: ProviderSettings): string | null | undefined {
   return isLocalOnly(settings) ? undefined : originPattern(settings.baseUrl);
 }
 
-/** Vero se il permesso host per l'URL base è già stato concesso. */
+/** True if the host permission for the base URL has already been granted. */
 export async function hasHostPermission(baseUrl: string): Promise<boolean> {
   const origin = originPattern(baseUrl);
   if (!origin) return false;
@@ -135,7 +135,7 @@ export async function hasHostPermission(baseUrl: string): Promise<boolean> {
 
 const apiKeyName = (role: ProviderRole) => `${role}ApiKey`;
 
-/** Chiave API del provider: solo in storage.local, mai sincronizzata. */
+/** Provider API key: only in storage.local, never synced. */
 export async function loadApiKey(role: ProviderRole): Promise<string> {
   const key = apiKeyName(role);
   const stored = await browser.storage.local.get<Record<string, string>>(key);
