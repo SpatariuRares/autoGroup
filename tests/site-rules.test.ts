@@ -16,20 +16,20 @@ beforeEach(() => {
 });
 
 describe('normalizeSite', () => {
-  it('riduce quello che scrive l\'utente a dominio[/percorso]', () => {
+  it('reduces what the user types to domain[/path]', () => {
     expect(normalizeSite('https://www.GitHub.com/Mia-Org/')).toBe('github.com/mia-org');
     expect(normalizeSite('github.com')).toBe('github.com');
     expect(normalizeSite('  docs.google.com/document/d/x?usp=sharing#h  ')).toBe('docs.google.com/document/d/x');
     expect(normalizeSite('localhost:3000/app')).toBe('localhost/app');
   });
 
-  it('rifiuta ciò che non è un sito', () => {
+  it('rejects what is not a site', () => {
     for (const bad of ['', '   ', 'non un sito', 'http://', '-bad.com']) expect(normalizeSite(bad)).toBeNull();
   });
 });
 
-describe('siti delle categorie nelle impostazioni', () => {
-  it('di default non ci sono siti; si salvano in una chiave a parte di storage.sync', async () => {
+describe('category sites in the settings', () => {
+  it('by default there are no sites; they are saved under a separate key of storage.sync', async () => {
     expect((await loadSettings()).categorySites).toEqual({});
 
     await saveSettings({ categories: CATS, categorySites: { dev: ['github.com'], work: ['github.com/mia-org'] } });
@@ -39,7 +39,7 @@ describe('siti delle categorie nelle impostazioni', () => {
     expect(stored.categorySites).toEqual({ dev: ['github.com'], work: ['github.com/mia-org'] });
   });
 
-  it('rifiuta siti non normalizzati e lo stesso sito in due categorie', async () => {
+  it('rejects non-normalized sites and the same site in two categories', async () => {
     await saveSettings({ categories: CATS });
 
     await expect(saveSettings({ categorySites: { dev: ['https://GitHub.com'] } })).rejects.toThrow(SettingsError);
@@ -48,14 +48,14 @@ describe('siti delle categorie nelle impostazioni', () => {
     });
   });
 
-  it('rifiuta più siti di quanti ne stanno nella quota di storage.sync', async () => {
+  it('rejects more sites than fit in the storage.sync quota', async () => {
     await saveSettings({ categories: CATS });
     const many = Array.from({ length: 400 }, (_, i) => `sito-numero-${i}.example.com`);
 
     await expect(saveSettings({ categorySites: { dev: many } })).rejects.toMatchObject({ messageKey: 'optionsSitesTooMany' });
   });
 
-  it('toglie i siti delle categorie eliminate e le liste vuote', async () => {
+  it('removes the sites of deleted categories and empty lists', async () => {
     await saveSettings({ categories: CATS, categorySites: { dev: ['github.com'], work: ['jira.com'] } });
 
     await saveSettings({ categories: [CATS[1]!] });
@@ -65,7 +65,7 @@ describe('siti delle categorie nelle impostazioni', () => {
     expect((await loadSettings()).categorySites).toEqual({});
   });
 
-  it('"Ripristina default" cancella anche i siti', async () => {
+  it('"Restore defaults" also clears the sites', async () => {
     await saveSettings({ categories: CATS, categorySites: { dev: ['github.com'] } });
 
     await resetCategories();
@@ -74,10 +74,10 @@ describe('siti delle categorie nelle impostazioni', () => {
   });
 });
 
-describe('regole sui siti', () => {
+describe('site rules', () => {
   const match = (url: string, sites: CategorySites) => createSiteMatcher(CATS, sites)(url);
 
-  it('un dominio prende anche i sottodomini, con o senza www', () => {
+  it('a domain also takes its subdomains, with or without www', () => {
     const sites = { work: ['atlassian.net'] };
 
     expect(match('https://team.atlassian.net/browse/X-1', sites)?.category.name).toBe('Work');
@@ -85,7 +85,7 @@ describe('regole sui siti', () => {
     expect(match('https://notatlassian.net/', sites)).toBeNull();
   });
 
-  it('un percorso si confronta per segmenti interi, senza distinguere maiuscole e minuscole', () => {
+  it('a path is compared by whole segments, regardless of case', () => {
     const sites = { work: ['github.com/mia-org'] };
 
     expect(match('https://github.com/Mia-Org/repo?tab=1', sites)?.site).toBe('github.com/mia-org');
@@ -94,25 +94,25 @@ describe('regole sui siti', () => {
     expect(match('https://github.com/', sites)).toBeNull();
   });
 
-  it('vince la regola più specifica, qualunque sia l\'ordine delle categorie', () => {
+  it('the most specific rule wins, whatever the order of the categories', () => {
     const sites = { dev: ['github.com'], work: ['github.com/mia-org'] };
 
     expect(match('https://github.com/mia-org/x', sites)?.category.name).toBe('Work');
     expect(match('https://github.com/altro/x', sites)?.category.name).toBe('Dev');
   });
 
-  it('a parità di componenti vince il percorso più lungo', () => {
+  it('with equal components the longer path wins', () => {
     const sites = { dev: ['a.google.com'], work: ['google.com/x'] };
 
     expect(match('https://a.google.com/x', sites)?.category.name).toBe('Work');
   });
 
-  it('ignora le pagine senza dominio e i siti di categorie che non esistono', () => {
+  it('ignores pages without a domain and the sites of categories that do not exist', () => {
     expect(match('file:///Users/me/a.pdf', { dev: ['github.com'] })).toBeNull();
     expect(match('https://github.com/', { ghost: ['github.com'] })).toBeNull();
   });
 
-  it('il sito da ricordare è quello della regola che decide la tab, altrimenti il dominio', () => {
+  it('the site to remember is that of the rule that decides the tab, otherwise the domain', () => {
     const sites = { work: ['github.com/mia-org'] };
 
     expect(siteToRemember('https://github.com/mia-org/x', CATS, sites)).toBe('github.com/mia-org');

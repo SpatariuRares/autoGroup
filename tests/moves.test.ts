@@ -19,7 +19,7 @@ beforeEach(async () => {
 
 const open = (title: string, extra: { pinned?: boolean; windowId?: number } = {}) => strip.addTab({ url: `https://${title.toLowerCase()}.com/`, title, ...extra });
 
-/** Barra di prova: fissata, A (a1 a2 a3), libera x, B (b1 b2), libera y. */
+/** Test strip: pinned, A (a1 a2 a3), free x, B (b1 b2), free y. */
 async function setup() {
   const ids: Record<string, number> = {};
   for (const t of ['P', 'a1', 'a2', 'a3', 'x', 'b1', 'b2', 'y']) ids[t] = open(t, { pinned: t === 'P' });
@@ -28,8 +28,8 @@ async function setup() {
   return { ids, A, B };
 }
 
-describe('drag and drop di una tab', () => {
-  it('la riordina dentro il suo gruppo, verso sinistra, verso destra e in fondo', async () => {
+describe('drag and drop of a tab', () => {
+  it('reorders it within its group, to the left, to the right and to the end', async () => {
     const { ids, A } = await setup();
 
     await organizer.moveTab(ids.a3!, A, ids.a1!);
@@ -40,7 +40,7 @@ describe('drag and drop di una tab', () => {
     expect(strip.groupsIn()[0]!.tabs).toEqual(['a3', 'a2', 'a1']);
   });
 
-  it('la mette in un altro gruppo, prima di una sua tab o in fondo', async () => {
+  it('puts it in another group, before one of its tabs or at the end', async () => {
     const { ids, B } = await setup();
 
     await organizer.moveTab(ids.a2!, B, ids.b2!);
@@ -49,7 +49,7 @@ describe('drag and drop di una tab', () => {
     expect(strip.layout()).toEqual(['P', 'a3 [A]', 'x', 'b1 [B]', 'a2 [B]', 'b2 [B]', 'a1 [B]', 'y']);
   });
 
-  it('la toglie dal gruppo, prima di una tab senza gruppo o dopo l\'ultima', async () => {
+  it('removes it from the group, before a tab without a group or after the last one', async () => {
     const { ids } = await setup();
 
     await organizer.moveTab(ids.b1!, null, ids.x!);
@@ -58,7 +58,7 @@ describe('drag and drop di una tab', () => {
     expect(strip.layout()).toEqual(['P', 'a2 [A]', 'a3 [A]', 'b1', 'x', 'b2 [B]', 'y', 'a1']);
   });
 
-  it('una tab senza gruppo entra in un gruppo o si riordina tra le libere', async () => {
+  it('a tab without a group joins a group or is reordered among the free ones', async () => {
     const { ids, A } = await setup();
 
     await organizer.moveTab(ids.x!, null, null);
@@ -67,7 +67,7 @@ describe('drag and drop di una tab', () => {
     expect(strip.layout()).toEqual(['P', 'a1 [A]', 'y [A]', 'a2 [A]', 'a3 [A]', 'b1 [B]', 'b2 [B]', 'x']);
   });
 
-  it('ignora le tab fissate, una destinazione fuori dal gruppo di arrivo e gruppi di altre finestre', async () => {
+  it('ignores pinned tabs, a destination outside the arrival group, and groups of other windows', async () => {
     const { ids, A } = await setup();
     const other = open('z', { windowId: 2 });
     const C = await strip.addGroup('C', 'green', [other]);
@@ -83,9 +83,9 @@ describe('drag and drop di una tab', () => {
   });
 });
 
-describe('una tab che esce dal suo gruppo, come in Chrome', () => {
-  // Visto in Chrome vero: la prima tab resta prima del gruppo, le altre finiscono subito dopo.
-  it('"Nuovo gruppo" sulla prima tab la lascia prima del gruppo, su un\'altra la mette dopo', async () => {
+describe('a tab that leaves its group, as in Chrome', () => {
+  // Seen in real Chrome: the first tab stays before the group, the others end up right after it.
+  it('"New group" on the first tab leaves it before the group, on another one puts it after', async () => {
     const { ids } = await setup();
 
     await organizer.newGroup(ids.a1!);
@@ -94,7 +94,7 @@ describe('una tab che esce dal suo gruppo, come in Chrome', () => {
     expect(strip.layout()).toEqual(['P', 'a1 [a1.com]', 'a2 [A]', 'a3 [a3.com]', 'x', 'b1 [B]', 'b2 [B]', 'y']);
   });
 
-  it('l\'unica tab di un gruppo resta dov\'è', async () => {
+  it('the only tab of a group stays where it is', async () => {
     const { ids } = await setup();
     await organizer.newGroup(ids.b1!);
 
@@ -104,8 +104,8 @@ describe('una tab che esce dal suo gruppo, come in Chrome', () => {
   });
 });
 
-describe('drag and drop di un gruppo', () => {
-  it('lo sposta intero prima di un altro gruppo, verso sinistra', async () => {
+describe('drag and drop of a group', () => {
+  it('moves it whole before another group, to the left', async () => {
     const { B, A } = await setup();
 
     await organizer.moveGroup(B, A);
@@ -113,7 +113,7 @@ describe('drag and drop di un gruppo', () => {
     expect(strip.layout()).toEqual(['P', 'b1 [B]', 'b2 [B]', 'a1 [A]', 'a2 [A]', 'a3 [A]', 'x', 'y']);
   });
 
-  it('verso destra e dopo l\'ultimo gruppo, senza entrare in un altro gruppo', async () => {
+  it('to the right and after the last group, without entering another group', async () => {
     const { A } = await setup();
     const c = [open('c1'), open('c2')];
     const C = await strip.addGroup('C', 'green', c);
@@ -127,7 +127,7 @@ describe('drag and drop di un gruppo', () => {
     expect(strip.layout().filter((t) => !t.includes('['))).toEqual(['P', 'x', 'y']);
   });
 
-  it('prima di sé stesso o del gruppo che lo segue non cambia nulla', async () => {
+  it('before itself or the group that follows it changes nothing', async () => {
     const { A, B } = await setup();
     const before = strip.layout();
 

@@ -27,20 +27,20 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** Apre una tab con la sua pagina finta. */
+/** Opens a tab with its fake page. */
 function open(title: string, url: string, page: FakePage = { description: `Descrizione di ${title}` }, extra: { discarded?: boolean } = {}) {
   const id = strip.addTab({ url, title, ...extra });
   pages.set(id, page);
   return id;
 }
 
-/** Tab inviate al Generatore nell'ultima richiesta. */
+/** Tabs sent to the Generator in the last request. */
 function sentTabs(requests: RecordedRequest[]) {
   return JSON.parse(requests.at(-1)!.body.messages[1].content).tabs;
 }
 
-describe('descrizione delle pagine', () => {
-  it('con l\'opzione accesa e il permesso concesso la descrizione arriva al Generatore', async () => {
+describe('page descriptions', () => {
+  it('with the option on and the permission granted the description reaches the Generator', async () => {
     open('A', 'https://a.com/');
     open('B', 'https://b.com/', { description: '  Una   descrizione\nsu più righe  ' });
     open('C', 'https://c.com/', { description: null });
@@ -57,7 +57,7 @@ describe('descrizione delle pagine', () => {
     ]);
   });
 
-  it('la descrizione arriva anche al Classificatore, nello state', async () => {
+  it('the description also reaches the Classifier, in the state', async () => {
     await saveSettings({ classifier: { preset: 'kev', baseUrl: 'http://127.0.0.1:8009', model: '' } });
     open('A', 'https://a.com/');
     installFakeScripting(pages);
@@ -68,7 +68,7 @@ describe('descrizione delle pagine', () => {
     expect(requests[0]!.body.state).toEqual({ title: 'A', url: 'a.com', description: 'Descrizione di A' });
   });
 
-  it('senza il permesso <all_urls> non legge nessuna pagina: solo titolo e URL', async () => {
+  it('without the <all_urls> permission it reads no page: only title and URL', async () => {
     installFakePermissions(['https://openrouter.ai/*']);
     open('A', 'https://a.com/');
     const { read } = installFakeScripting(pages);
@@ -80,7 +80,7 @@ describe('descrizione delle pagine', () => {
     expect(sentTabs(requests)).toEqual([{ id: 't1', title: 'A', url: 'a.com' }]);
   });
 
-  it('con l\'opzione spenta non legge nessuna pagina, anche con il permesso', async () => {
+  it('with the option off it reads no page, even with the permission', async () => {
     await saveSettings({ readDescriptions: false });
     open('A', 'https://a.com/');
     const { read } = installFakeScripting(pages);
@@ -91,7 +91,7 @@ describe('descrizione delle pagine', () => {
     expect(read).toEqual([]);
   });
 
-  it('non legge né risveglia le tab sospese da Risparmio memoria', async () => {
+  it('does not read nor wake the tabs suspended by Memory Saver', async () => {
     open('Attiva', 'https://a.com/');
     const sleeping = open('Sospesa', 'https://b.com/', undefined, { discarded: true });
     const { read } = installFakeScripting(pages);
@@ -103,7 +103,7 @@ describe('descrizione delle pagine', () => {
     expect(sentTabs(requests)[1]).toEqual({ id: 't2', title: 'Sospesa', url: 'b.com' });
   });
 
-  it('se una pagina non risponde entro ~500 ms usa solo titolo e URL per quella tab', async () => {
+  it('if a page does not respond within ~500 ms it uses only title and URL for that tab', async () => {
     open('Veloce', 'https://a.com/');
     open('Lenta', 'https://b.com/', { description: 'mai', delay: Infinity });
     installFakeScripting(pages);
@@ -119,11 +119,11 @@ describe('descrizione delle pagine', () => {
     ]);
   });
 
-  it('salta Web Store e PDF; una pagina non accessibile non blocca le altre', async () => {
+  it('skips Web Store and PDF; an inaccessible page does not block the others', async () => {
     open('Store', 'https://chromewebstore.google.com/detail/x');
     open('Store vecchio', 'https://chrome.google.com/webstore/detail/x');
     open('Documento', 'https://a.com/file.PDF');
-    const blocked = strip.addTab({ url: 'https://b.com/', title: 'Bloccata' }); // nessuna pagina: executeScript fallisce
+    const blocked = strip.addTab({ url: 'https://b.com/', title: 'Bloccata' }); // no page: executeScript fails
     open('Normale', 'https://c.com/');
     const { read } = installFakeScripting(pages);
     const { requests } = installFakeFetch(openAiReply({ groups: [] }));
@@ -134,7 +134,7 @@ describe('descrizione delle pagine', () => {
     expect(sentTabs(requests).filter((t: { description?: string }) => t.description).map((t: { title: string }) => t.title)).toEqual(['Normale']);
   });
 
-  it('non legge mai le tab dei domini esclusi', async () => {
+  it('never reads the tabs of excluded domains', async () => {
     await saveSettings({ excludedDomains: ['bank.com'] });
     const bank = open('Conto', 'https://online.bank.com/');
     open('A', 'https://a.com/');
@@ -146,7 +146,7 @@ describe('descrizione delle pagine', () => {
     expect(read).not.toContain(bank);
   });
 
-  it('senza AI (solo regole sui siti) non legge nessuna pagina', async () => {
+  it('without AI (site rules only) it reads no page', async () => {
     await saveSettings({ generator: { preset: 'none', baseUrl: '', model: '' } });
     open('A1', 'https://a.com/1');
     open('A2', 'https://a.com/2');

@@ -10,13 +10,13 @@ beforeEach(() => {
   create = vi.spyOn(fakeBrowser.tabs, 'create');
 });
 
-describe('guida al primo avvio', () => {
-  it('con l\'AI guida anche Generatore e Classificatore; per sito salta i provider', () => {
+describe('first-run guide', () => {
+  it('with AI the guide also covers Generator and Classifier; by site it skips the providers', () => {
     expect(onboardingSteps('ai')).toEqual(['welcome', 'mode', 'generator', 'classifier', 'done']);
     expect(onboardingSteps('domain')).toEqual(['welcome', 'mode', 'done']);
   });
 
-  it('si apre in una scheda alla prima installazione', async () => {
+  it('opens in a tab on the first installation', async () => {
     await openOnboardingOnInstall({ reason: 'install' });
 
     expect(create).toHaveBeenCalledExactlyOnceWith({ url: fakeBrowser.runtime.getURL('/onboarding.html') });
@@ -26,7 +26,7 @@ describe('guida al primo avvio', () => {
     { reason: 'update', previousVersion: '0.1.0' },
     { reason: 'chrome_update' },
     { reason: 'shared_module_update', id: 'abc' },
-  ] as Browser.runtime.InstalledDetails[])('non si apre dopo "$reason"', async (details) => {
+  ] as Browser.runtime.InstalledDetails[])('does not open after "$reason"', async (details) => {
     await openOnboardingOnInstall(details);
 
     expect(create).not.toHaveBeenCalled();

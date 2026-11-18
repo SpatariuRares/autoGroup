@@ -24,8 +24,8 @@ function model(state: OrganizerState | null, input: Partial<PanelInput> = {}) {
   return panelModel({ state, windowId: W, view: EMPTY, failure: null, done: null, ...input });
 }
 
-describe('pannello: fasi e banner', () => {
-  it('i banner compaiono in ordine fisso: errore, superata, avvisi AI, doppioni, inattive', () => {
+describe('panel: phases and banners', () => {
+  it('the banners appear in fixed order: error, outdated, AI warnings, duplicates, inactive', () => {
     const ready: OrganizerState = {
       phase: 'ready',
       windowId: W,
@@ -43,7 +43,7 @@ describe('pannello: fasi e banner', () => {
     );
   });
 
-  it("durante il calcolo l'anteprima per sito è in sola lettura e doppioni e inattive aspettano", () => {
+  it("during the computation the per-site preview is read-only and duplicates and inactive wait", () => {
     const view = { ...EMPTY, duplicates: [tab(8)], inactive: [tab(9)] };
 
     const computing = model({ phase: 'computing', windowId: W, preview: proposal() }, { view });
@@ -53,7 +53,7 @@ describe('pannello: fasi e banner', () => {
     expect(model({ phase: 'computing', windowId: W }, { view })).toMatchObject({ readOnly: false, announcement: 'Calcolo della proposta…' });
   });
 
-  it("senza proposta l'esito diventa un banner; quello di \"Aggiungi alle categorie\" mai", () => {
+  it("without a proposal the outcome becomes a banner; the one of \"Add to categories\" never does", () => {
     expect(model({ phase: 'idle', windowId: W, notice: { key: 'popupAborted' } }).banners).toEqual([
       { kind: 'info', text: 'Calcolo interrotto: nessuna proposta. Premi «Ricalcola» per riprovare.' },
     ]);
@@ -65,7 +65,7 @@ describe('pannello: fasi e banner', () => {
     expect(saved).toMatchObject({ banners: [], notice: undefined });
   });
 
-  it("lo stato di un'altra finestra non mostra né la sua proposta né il suo \"Annulla\"", () => {
+  it("another window's state shows neither its proposal nor its \"Undo\"", () => {
     const other = model({ phase: 'ready', windowId: 2, proposal: { ...proposal(), windowId: 2 }, undo: { windowId: 2, tabs: [], createdGroupIds: [] } });
 
     expect(other).toMatchObject({ proposal: undefined, canUndo: false, banners: [] });
