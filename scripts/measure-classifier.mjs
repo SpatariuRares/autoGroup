@@ -1,16 +1,16 @@
-// Misura le due strategie di richiesta del Classificatore System One su un server reale.
+// Measures the two request strategies of the System One Classifier on a real server.
 //
 //   SYSTEMONE_URL=http://127.0.0.1:8009 node scripts/measure-classifier.mjs
 //   SYSTEMONE_URL=https://api.typesafe.ai SYSTEMONE_KEY=… SYSTEMONE_MODEL=jev-latest node scripts/measure-classifier.mjs
 //
-// Variabili facoltative: TABS (default 30), RUNS (default 3), CONCURRENCY (default 4).
-// Stampa per ogni strategia il tempo totale (mediana), i token di input dichiarati dal server e
-// quante tab ricevono la stessa scelta nelle due strategie. Le richieste sono costruite come in
+// Optional variables: TABS (default 30), RUNS (default 3), CONCURRENCY (default 4).
+// For each strategy it prints the total time (median), the input tokens reported by the server and
+// how many tabs get the same choice in both strategies. The requests are built as in
 // src/ai/systemone-classifier.ts.
 
 const url = process.env.SYSTEMONE_URL;
 if (!url) {
-  console.error('Imposta SYSTEMONE_URL (es. http://127.0.0.1:8009).');
+  console.error('Set SYSTEMONE_URL (e.g. http://127.0.0.1:8009).');
   process.exit(1);
 }
 const key = process.env.SYSTEMONE_KEY;
@@ -94,12 +94,12 @@ for (const [name, run] of [['per-tab', perTab], ['batch', batch]]) {
     times.push(performance.now() - start);
   }
   results[name] = last;
-  console.log(`${name.padEnd(8)} mediana ${Math.round(median(times))} ms su ${RUNS} prove, ${last.tokens} token di input`);
+  console.log(`${name.padEnd(8)} median ${Math.round(median(times))} ms over ${RUNS} runs, ${last.tokens} input tokens`);
 }
 const same = tabs.filter((t) => results['per-tab'].choices[t.id] === results.batch.choices[t.id]).length;
-console.log(`Stessa scelta nelle due strategie: ${same}/${tabs.length}`);
+console.log(`Same choice in both strategies: ${same}/${tabs.length}`);
 const expected = ['Work', 'Dev', 'AI', 'Social', 'News', 'Video', 'Shopping', 'Travel', 'Finance', 'Study'];
 for (const name of ['per-tab', 'batch']) {
   const right = tabs.filter((t, i) => results[name].choices[t.id] === expected[i % expected.length]).length;
-  console.log(`${name.padEnd(8)} scelte attese: ${right}/${tabs.length}`);
+  console.log(`${name.padEnd(8)} expected choices: ${right}/${tabs.length}`);
 }

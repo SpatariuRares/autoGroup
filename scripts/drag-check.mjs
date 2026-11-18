@@ -1,9 +1,9 @@
-// Prova del drag and drop del pannello con il mouse vero in Chrome for Testing: il trascinamento
-// nativo lo fa Chrome, e i test con il browser finto non lo vedono. In particolare Chrome annulla un
-// trascinamento se la riga trascinata si sposta appena parte (es. per un elemento che compare sopra
-// di lei): così le tab senza gruppo non si trascinavano più quando la zona "Nuovo gruppo" stava sopra.
-// Esce con codice 1 se un caso fallisce.
-// Uso: npm run build && node scripts/drag-check.mjs
+// Drag and drop check of the side panel with the real mouse in Chrome for Testing: the native drag
+// is done by Chrome, and tests with the fake browser don't see it. In particular Chrome cancels a
+// drag if the dragged row moves right after it starts (e.g. for an element that appears above it):
+// so free tabs stopped being draggable when the "New group" zone was above them.
+// Exits with code 1 if a case fails.
+// Usage: npm run build && node scripts/drag-check.mjs
 import http from 'node:http';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
@@ -26,11 +26,11 @@ try {
   sw.on('console', (m) => m.type() === 'error' && errors.push(`[sw] ${m.text()}`));
   const extId = new URL(swTarget.url()).host;
 
-  // Un gruppo aperto ("Lavoro") e due tab senza gruppo.
+  // One existing group ("Lavoro") and two free tabs.
   for (const p of ['/lavoro', '/libera-1', '/libera-2']) await (await browser.newPage()).goto(`http://localhost:${port}${p}`);
   const panel = await browser.newPage();
-  panel.on('console', (m) => m.type() === 'error' && errors.push(`[pannello] ${m.text()}`));
-  panel.on('pageerror', (e) => errors.push(`[pannello] ${e.message}`));
+  panel.on('console', (m) => m.type() === 'error' && errors.push(`[panel] ${m.text()}`));
+  panel.on('pageerror', (e) => errors.push(`[panel] ${e.message}`));
   await panel.goto(`chrome-extension://${extId}/sidepanel.html`);
   await panel.evaluate(async () => {
     const [tab] = await chrome.tabs.query({ url: '*://localhost/lavoro' });
@@ -39,7 +39,7 @@ try {
   });
   await panel.waitForSelector('.group.existing');
 
-  /** Il gruppo di ogni tab, per percorso: "Lavoro", "localhost" o "-" se senza gruppo. */
+  /** The group of each tab, by path: "Lavoro", "localhost" or "-" if it has no group. */
   const strip = () =>
     panel.evaluate(async () => {
       const groups = new Map((await chrome.tabGroups.query({})).map((g) => [g.id, g.title]));
@@ -50,8 +50,8 @@ try {
     const box = await (await panel.waitForSelector(selector, { timeout: 2000 })).boundingBox();
     return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   };
-  // Trascina col mouse: preme sulla riga, si muove un poco perché il trascinamento parta (e compaia
-  // ciò che compare solo durante il trascinamento), poi cerca il bersaglio e ci lascia la tab.
+  // Drags with the mouse: presses on the row, moves a little so the drag starts (and whatever only
+  // appears during a drag shows up), then looks for the target and drops the tab there.
   const drag = async (rowSelector, targetSelector) => {
     const from = await center(rowSelector);
     await panel.mouse.move(from.x, from.y);
@@ -60,8 +60,8 @@ try {
     await pause(200);
     const to = await center(targetSelector).catch(() => null);
     if (to) {
-      // A piccoli passi e con una pausa sopra il bersaglio: Chrome lascia la tab solo dove ha appena
-      // mandato un dragover accettato, e un mouse troppo veloce rilascia prima che arrivi.
+      // In small steps and with a pause over the target: Chrome drops the tab only where it has just
+      // sent an accepted dragover, and a mouse that is too fast releases before it gets there.
       for (let i = 1; i <= 10; i++) {
         await panel.mouse.move(from.x + ((to.x - from.x) * i) / 10, from.y + ((to.y - from.y) * i) / 10);
         await pause(30);
@@ -80,24 +80,24 @@ try {
 
   const row = (p) => `li.tab[title$="${p}"]`;
 
-  // Una tab senza gruppo sulla scheda di un gruppo aperto: entra nel gruppo.
+  // A free tab dropped on the tab strip of an existing group: it joins the group.
   await drag(row('/libera-1'), '.group.existing');
   const afterGroup = await strip();
-  check('tab senza gruppo → gruppo aperto', afterGroup['/libera-1'] === 'Lavoro', afterGroup);
+  check('free tab → existing group', afterGroup['/libera-1'] === 'Lavoro', afterGroup);
 
-  // Una tab senza gruppo sulla zona "Nuovo gruppo": nasce un gruppo col nome del sito.
+  // A free tab dropped on the "New group" zone: a group named after the site is created.
   const zoneSeen = await drag(row('/libera-2'), '.new-group-drop');
   const afterNew = await strip();
-  check('tab senza gruppo → nuovo gruppo', zoneSeen && afterNew['/libera-2'] === 'localhost', { zona: zoneSeen, ...afterNew });
+  check('free tab → new group', zoneSeen && afterNew['/libera-2'] === 'localhost', { zone: zoneSeen, ...afterNew });
 
-  // Una tab di un gruppo aperto sulla zona "Nuovo gruppo".
+  // A tab of an existing group dropped on the "New group" zone.
   await panel.click('.group.existing .group-toggle[aria-expanded="false"]').catch(() => {});
   const lavoro = await drag(row('/lavoro'), '.new-group-drop');
   const afterGrouped = await strip();
-  check('tab di un gruppo aperto → nuovo gruppo', lavoro && afterGrouped['/lavoro'] === 'localhost', { zona: lavoro, ...afterGrouped });
+  check('tab of an existing group → new group', lavoro && afterGrouped['/lavoro'] === 'localhost', { zone: lavoro, ...afterGrouped });
 } finally {
   await browser.close();
   server.close();
 }
-console.log(errors.length ? `Errori:\n${errors.join('\n')}` : 'Nessun errore in console.');
+console.log(errors.length ? `Errors:\n${errors.join('\n')}` : 'No errors in console.');
 if (failures.length) process.exit(1);

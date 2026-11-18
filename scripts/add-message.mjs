@@ -1,10 +1,10 @@
-// Aggiunge, cambia o toglie un testo dell'interfaccia in tutte le lingue di public/_locales, senza
-// riformattare i file (il resto del JSON resta com'è, byte per byte).
-// Uso: node scripts/add-message.mjs <chiave> --after <chiaveVicina> --it "…" --en "…" --es "…" --fr "…" --de "…"
+// Adds, changes or removes a UI text in all the locales of public/_locales, without
+// reformatting the files (the rest of the JSON stays as it is, byte for byte).
+// Usage: node scripts/add-message.mjs <key> --after <nearbyKey> --it "…" --en "…" --es "…" --fr "…" --de "…"
 //      [--placeholders '{"count":{"content":"$1"}}']
-//      node scripts/add-message.mjs <chiave> --set --it "…" --en "…" --es "…" --fr "…" --de "…" [--placeholders '…']
-//      node scripts/add-message.mjs <chiave> --remove
-// Con --set gli altri campi della voce restano (i placeholders anche, salvo --placeholders).
+//      node scripts/add-message.mjs <key> --set --it "…" --en "…" --es "…" --fr "…" --de "…" [--placeholders '…']
+//      node scripts/add-message.mjs <key> --remove
+// With --set the other fields of the entry stay (placeholders too, unless --placeholders is given).
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 
@@ -26,16 +26,16 @@ const fail = (message) => {
   process.exit(1);
 };
 const [key] = positionals;
-if (!key || !/^[A-Za-z0-9_]+$/.test(key)) fail('serve una chiave fatta solo di lettere, cifre e _');
+if (!key || !/^[A-Za-z0-9_]+$/.test(key)) fail('the key must be made only of letters, digits and _');
 const modes = [values.after !== undefined, values.set, values.remove].filter(Boolean).length;
-if (modes !== 1) fail('serve una sola tra --after <chiave vicina> (aggiunge), --set (cambia) e --remove (toglie)');
+if (modes !== 1) fail('use exactly one of --after <nearby key> (adds), --set (changes) or --remove (removes)');
 if (!values.remove) {
   const missing = locales.filter((l) => values[l] === undefined);
-  if (missing.length) fail(`manca il testo per: ${missing.map((l) => `--${l}`).join(' ')}`);
+  if (missing.length) fail(`missing text for: ${missing.map((l) => `--${l}`).join(' ')}`);
 }
 const placeholders = values.placeholders ? JSON.parse(values.placeholders) : undefined;
 
-/** La voce `name` nel testo: da "\n  "name": {" fino alla sua riga "  }" (rientro di due spazi), virgola compresa. */
+/** The `name` entry in the text: from "\n  "name": {" up to its "  }" line (two-space indent), comma included. */
 function entryOf(text, name) {
   const start = text.indexOf(`\n  ${JSON.stringify(name)}: {`);
   const end = text.slice(start).search(/\n  \},?\n/) + start;
@@ -43,10 +43,10 @@ function entryOf(text, name) {
   return { start, end: end + close.length, comma: close.endsWith(',\n') };
 }
 
-/** La voce scritta come le altre: rientro di due spazi, virgola se non è l'ultima (senza il ritorno a capo finale). */
+/** The entry written like the others: two-space indent, comma unless it is the last one (without the final newline). */
 const entryText = (name, entry, comma) => `\n  ${JSON.stringify(name)}: ${JSON.stringify(entry, null, 2).replace(/\n/g, '\n  ')}${comma ? ',' : ''}`;
 
-/** Sostituisce il testo tra `start` e `end` di una voce, tenendo il ritorno a capo con cui finisce. */
+/** Replaces the text between `start` and `end` of an entry, keeping the newline it ends with. */
 const replaceEntry = (text, { start, end }, replacement) => text.slice(0, start) + replacement + text.slice(end - 1);
 
 const files = locales.map((locale) => {
@@ -55,23 +55,23 @@ const files = locales.map((locale) => {
   const json = JSON.parse(text);
   let next;
   if (values.after !== undefined) {
-    if (key in json) fail(`${locale}: la chiave ${key} esiste già`);
-    if (!(values.after in json)) fail(`${locale}: la chiave ${values.after} non esiste`);
+    if (key in json) fail(`${locale}: the key ${key} already exists`);
+    if (!(values.after in json)) fail(`${locale}: the key ${values.after} does not exist`);
     const neighbour = entryOf(text, values.after);
     const entry = { message: values[locale], ...(placeholders ? { placeholders } : {}) };
-    // La vicina prende la virgola; la nuova eredita la sua (nessuna se la vicina era l'ultima).
+    // The neighbour gets the comma; the new entry inherits its own (none if the neighbour was the last one).
     const neighbourText = text.slice(neighbour.start, neighbour.end).replace(/\n  \},?\n$/, '\n  },');
     next = replaceEntry(text, neighbour, neighbourText + entryText(key, entry, neighbour.comma));
   } else {
-    if (!(key in json)) fail(`${locale}: la chiave ${key} non esiste`);
+    if (!(key in json)) fail(`${locale}: the key ${key} does not exist`);
     const current = entryOf(text, key);
     if (values.set) {
-      // Gli altri campi della voce (es. placeholders, description) restano; --placeholders li sostituisce.
+      // The other fields of the entry (e.g. placeholders, description) stay; --placeholders replaces them.
       const entry = { ...json[key], message: values[locale], ...(placeholders ? { placeholders } : {}) };
       next = replaceEntry(text, current, entryText(key, entry, current.comma));
     } else {
       next = replaceEntry(text, current, '');
-      // Tolta l'ultima voce, la virgola della precedente non serve più.
+      // If the last entry was removed, the previous one no longer needs its comma.
       if (!current.comma) next = next.replace(/\n  \},(\n\}\s*)$/, '\n  }$1');
     }
   }
@@ -79,5 +79,5 @@ const files = locales.map((locale) => {
   return { url, next };
 });
 for (const { url, next } of files) writeFileSync(url, next);
-const done = values.after !== undefined ? `aggiunta dopo ${values.after}` : values.set ? 'cambiata' : 'tolta';
+const done = values.after !== undefined ? `added after ${values.after}` : values.set ? 'changed' : 'removed';
 console.log(`add-message: ${key} ${done} in ${locales.join(', ')}`);
