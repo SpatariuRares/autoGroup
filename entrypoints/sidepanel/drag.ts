@@ -1,24 +1,24 @@
 import { createContext, useContext, useState, type DragEvent } from 'react';
 
 /*
- * Drag and drop del pannello (nativo del browser), solo sui gruppi già aperti e sulle tab senza
- * gruppo. Le righe e le schede dicono dove andrebbe ciò che si trascina; lo spostamento vero lo fa
- * l'Organizzatore (`moveTab`, `moveGroup`, `newGroup`). Da tastiera restano "Sposta in…" e i pulsanti A-Z.
+ * Drag and drop of the panel (native to the browser), only on the groups already open and on the tabs without
+ * a group. The rows and the cards show where what is dragged would go; the actual move is done by
+ * the Organizer (`moveTab`, `moveGroup`, `newGroup`). From the keyboard "Move to…" and the A-Z buttons remain.
  */
 
-/** Cosa si sta trascinando. */
+/** What is being dragged. */
 export type DragItem = { kind: 'tab'; tabId: number } | { kind: 'group'; groupId: number };
 
 /**
- * Dove va lasciandolo: una tab in un gruppo (o senza gruppo, `null`) prima di un'altra tab o in fondo,
- * oppure in un gruppo nuovo; un gruppo prima di un altro o in fondo.
+ * Where it is dropped: a tab into a group (or ungrouped, `null`) before another tab or at the end,
+ * or into a new group; a group before another or at the end.
  */
 export type DropTarget =
   | { kind: 'tab'; groupId: number | null; beforeTabId: number | null }
   | { kind: 'new-group' }
   | { kind: 'group'; beforeGroupId: number | null };
 
-/** Il segno mostrato durante il trascinamento: una linea prima o dopo, o l'evidenza di un gruppo o della sezione. */
+/** The mark shown during dragging: a line before or after, or the highlight of a group or of the section. */
 interface Indicator {
   key: string;
   edge: 'before' | 'after' | 'into';
@@ -31,13 +31,13 @@ interface DragState {
   start: (item: DragItem) => void;
   show: (indicator: Indicator | null) => void;
   drop: (target: DropTarget) => void;
-  /** Fine del trascinamento, anche senza rilascio (Esc o fuori dal pannello). */
+  /** End of the dragging, even without a drop (Esc or outside the panel). */
   end: () => void;
 }
 
 export const DragContext = createContext<DragState>({ enabled: false, item: null, indicator: null, start: () => {}, show: () => {}, drop: () => {}, end: () => {} });
 
-/** Lo stato del trascinamento per `App`: `onDrop` riceve cosa e dove, a trascinamento finito. */
+/** The dragging state for `App`: `onDrop` receives what and where, when the dragging ends. */
 export function useDragState(enabled: boolean, onDrop: (item: DragItem, target: DropTarget) => void): DragState {
   const [item, setItem] = useState<DragItem | null>(null);
   const [indicator, setIndicator] = useState<Indicator | null>(null);
@@ -62,19 +62,19 @@ export function useDragState(enabled: boolean, onDrop: (item: DragItem, target: 
   };
 }
 
-/** Classe del segno per l'elemento `key`, e `dragging` per quello trascinato. */
+/** Mark class for the element `key`, and `dragging` for the one being dragged. */
 function classes(state: DragState, key: string, dragged: boolean): string {
   const edge = state.indicator?.key === key ? ` drop-${state.indicator.edge}` : '';
   return `${dragged ? ' dragging' : ''}${edge}`;
 }
 
-/** Metà superiore o inferiore dell'elemento sotto il puntatore. */
+/** Upper or lower half of the element under the pointer. */
 const edgeOf = (e: DragEvent<HTMLElement>): 'before' | 'after' => {
   const box = e.currentTarget.getBoundingClientRect();
   return e.clientY < box.top + box.height / 2 ? 'before' : 'after';
 };
 
-/** Uscendo davvero dall'elemento (non verso un suo figlio) il suo segno sparisce. */
+/** Really leaving the element (not toward one of its children) makes its mark disappear. */
 function leave(state: DragState, key: string) {
   return (e: DragEvent<HTMLElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null) && state.indicator?.key === key) state.show(null);
@@ -90,7 +90,7 @@ function startDrag(state: DragState, item: DragItem) {
   };
 }
 
-/** Accetta il rilascio qui: senza `preventDefault` il browser non lo permette. */
+/** Accepts the drop here: without `preventDefault` the browser does not allow it. */
 function accept(e: DragEvent<HTMLElement>) {
   e.preventDefault();
   e.stopPropagation();
@@ -98,8 +98,8 @@ function accept(e: DragEvent<HTMLElement>) {
 }
 
 /**
- * Una riga trascinabile: una tab di un gruppo aperto (`groupId`) o senza gruppo (`null`). Una tab
- * lasciata sopra la riga va prima o dopo di lei (`nextTabId` è la tab che la segue, `null` se è l'ultima).
+ * A draggable row: a tab of an open group (`groupId`) or ungrouped (`null`). A tab
+ * dropped over the row goes before or after it (`nextTabId` is the tab that follows it, `null` if it is the last one).
  */
 export function useTabDrag(tabId: number, place?: { groupId: number | null; nextTabId: number | null }) {
   const state = useContext(DragContext);
@@ -127,9 +127,9 @@ export function useTabDrag(tabId: number, place?: { groupId: number | null; next
 }
 
 /**
- * La scheda di un gruppo aperto. Si trascina dall'intestazione (`header`); un altro gruppo lasciato
- * sopra la scheda va prima o dopo (`nextGroupId` è il gruppo che segue nella barra), una tab lasciata
- * fuori dalle righe va in fondo al gruppo.
+ * The card of an open group. It is dragged from the header (`header`); another group dropped
+ * over the card goes before or after (`nextGroupId` is the group that follows it in the tab strip), a tab dropped
+ * outside the rows goes to the end of the group.
  */
 export function useGroupDrag(groupId: number, nextGroupId: number | null) {
   const state = useContext(DragContext);
@@ -160,7 +160,7 @@ export function useGroupDrag(groupId: number, nextGroupId: number | null) {
   };
 }
 
-/** L'elenco delle tab senza gruppo: una tab lasciata fuori dalle righe esce dal suo gruppo e va in fondo. */
+/** The list of ungrouped tabs: a tab dropped outside the rows leaves its group and goes to the end. */
 export function useFreeDrop() {
   const state = useContext(DragContext);
   if (!state.enabled) return { className: '' };
@@ -182,7 +182,7 @@ export function useFreeDrop() {
   };
 }
 
-/** La zona "Nuovo gruppo", che compare trascinando una tab: lasciata qui, la tab va in un gruppo tutto suo. */
+/** The "New group" zone, which appears when dragging a tab: dropped here, the tab goes into a group of its own. */
 export function useNewGroupDrop() {
   const state = useContext(DragContext);
   if (!state.enabled) return { className: '' };

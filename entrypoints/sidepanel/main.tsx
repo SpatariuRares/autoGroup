@@ -7,7 +7,7 @@ import '../../src/ui/md3-tokens.css';
 import '../../src/ui/base.css';
 import './style.css';
 
-// La lingua dei testi, non quella del browser: senza traduzione Chrome usa l'italiano (default_locale).
+// The language of the texts, not the browser's: without a translation Chrome uses Italian (default_locale).
 document.documentElement.lang = t('extLang');
 dismissTooltipsOnEscape();
 document.title = t('popupTitle');

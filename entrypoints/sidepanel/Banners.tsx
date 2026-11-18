@@ -5,8 +5,8 @@ import { Icon, type IconName } from '../../src/ui/Icon';
 import { openSettings } from './open-settings';
 
 /**
- * Calcolo in corso: barra di avanzamento, "Interrompi" e, con l'anteprima per sito, "Usa questa".
- * I pulsanti compaiono solo quando il service worker ha davvero iniziato (`started`).
+ * Computing in progress: progress bar, "Stop" and, with the per-site preview, "Use this".
+ * The buttons appear only once the service worker has really started (`started`).
  */
 export function ComputingStatus({
   preview,
@@ -20,7 +20,7 @@ export function ComputingStatus({
   onAbort: () => void;
 }) {
   return (
-    // Il testo è annunciato dalla regione live del pannello: questa compare già piena e non verrebbe letta.
+    // The text is announced by the panel's live region: this one already appears full and would not be read.
     <div className="status computing">
       <div className="md-linear-progress" aria-hidden="true" />
       <div className="status-row">
@@ -44,7 +44,7 @@ export function ComputingStatus({
   );
 }
 
-/** Banner informativo con l'icona "i". */
+/** Informational banner with the "i" icon. */
 export function InfoBanner({ text }: { text: string }) {
   return (
     <p className="banner">
@@ -63,7 +63,7 @@ export function ErrorBanner({ messageKey }: { messageKey: string }) {
   );
 }
 
-/** Le tab sono cambiate dopo la proposta: si offre di ricalcolare, senza farlo da soli. */
+/** The tabs changed after the proposal: it offers to recompute, without doing it on its own. */
 export function StaleBanner({ onRecompute }: { onRecompute: () => void }) {
   return (
     <div className="banner stale">
@@ -76,7 +76,7 @@ export function StaleBanner({ onRecompute }: { onRecompute: () => void }) {
   );
 }
 
-/** Host di un URL per distinguere due tab con lo stesso titolo; l'URL intero se non ne ha. */
+/** Host of a URL, to tell apart two tabs with the same title; the whole URL if it has none. */
 const hostOf = (url: string) => {
   try {
     return new URL(url).host || url;
@@ -86,8 +86,8 @@ const hostOf = (url: string) => {
 };
 
 /**
- * Tab che si possono chiudere in blocco (doppioni, inattive). "Rivedi" apre l'anteprima: le tab che
- * verrebbero chiuse, tutte spuntate; si tolgono le spunte a quelle da tenere, poi "Chiudi" chiude solo le altre.
+ * Tabs that can be closed in bulk (duplicates, inactive). "Review" opens the preview: the tabs that
+ * would be closed, all checked; the checks are removed from those to keep, then "Close" closes only the others.
  */
 export function CloseTabsBanner({
   icon,
@@ -103,7 +103,7 @@ export function CloseTabsBanner({
   onClose: (tabIds: number[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  // Le tab da tenere, non quelle da chiudere: un doppione nuovo comparso mentre l'anteprima è aperta parte spuntato.
+  // The tabs to keep, not the ones to close: a new duplicate appearing while the preview is open starts checked.
   const [kept, setKept] = useState<Set<number>>(new Set());
   const chosen = tabs.filter((tab) => !kept.has(tab.tabId)).map((tab) => tab.tabId);
   const toggle = (tabId: number) =>
@@ -113,7 +113,7 @@ export function CloseTabsBanner({
       return next;
     });
 
-  // "Rivedi" sparisce aprendo l'anteprima e torna chiudendola: il focus lo segue, invece di finire sul body.
+  // "Review" disappears when the preview opens and comes back when it closes: focus follows it, instead of ending up on the body.
   const review = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const returnFocus = useRef(false);
@@ -174,10 +174,10 @@ export function CloseTabsBanner({
   );
 }
 
-/** Livelli dell'AI saltati, con la causa e il collegamento alla sezione giusta delle impostazioni. */
+/** AI levels that were skipped, with the cause and the link to the right section of the settings. */
 export function WarningsBanner({ warnings }: { warnings: Proposal['warnings'] }) {
   return (
-    // role="alert" su un contenitore: sulla <ul> sostituirebbe la semantica di elenco.
+    // role="alert" on a container: on the <ul> it would replace the list semantics.
     <div role="alert">
       <ul className="banner warnings">
       {warnings.map((w, i) => (

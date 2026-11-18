@@ -6,8 +6,8 @@ import { providerName } from '../../src/ui/provider-name';
 import { openSettings } from './open-settings';
 
 /**
- * Selettore *Per sito* / *Con AI* sotto la barra in alto, con il riepilogo dei provider. Senza nessun
- * provider il secondo pulsante diventa *Con regole*: valgono solo le regole sui siti.
+ * *By site* / *With AI* selector under the top bar, with the provider summary. Without any
+ * provider the second button becomes *With rules*: only the site rules apply.
  */
 export function ModePicker({ settings, disabled, onChoose }: { settings: Settings; disabled: boolean; onChoose: (mode: GroupingMode) => void }) {
   const rules = isRulesOnly({ ...settings, mode: 'ai' });
@@ -36,7 +36,7 @@ export function ModePicker({ settings, disabled, onChoose }: { settings: Setting
   );
 }
 
-/** Riepilogo dei provider sotto il selettore: cosa verrà usato con la modalità scelta. */
+/** Provider summary under the selector: what will be used with the chosen mode. */
 function ProviderSummary({ settings }: { settings: Settings }) {
   if (settings.mode === 'domain') return <p className="mode-summary">{t('panelModeSiteSummary')}</p>;
   if (isRulesOnly(settings)) {

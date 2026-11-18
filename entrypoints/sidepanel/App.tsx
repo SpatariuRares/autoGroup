@@ -40,11 +40,11 @@ export function App() {
   async function chooseMode(mode: GroupingMode) {
     if (!settings || settings.mode === mode) return;
     await saveSettings({ mode });
-    // Si ricalcola solo una proposta già mostrata, che con la modalità nuova sarebbe superata.
+    // Only a proposal already shown is recomputed: with the new mode it would be outdated.
     if (proposal) recompute();
   }
 
-  // L'Organizzatore toglie le tab chiuse dalla proposta e la tiene attuale: nessun avviso di proposta vecchia.
+  // The Organizer removes closed tabs from the proposal and keeps it current: no outdated-proposal warning.
   const actions: PanelActions = {
     busy,
     edit,
@@ -59,7 +59,7 @@ export function App() {
   const closeDuplicates = (tabIds: number[]) => windowId !== null && send(() => organizer.closeDuplicates(windowId, tabIds));
   const closeInactive = (tabIds: number[]) => windowId !== null && send(() => organizer.closeInactive(windowId, tabIds));
 
-  // Riordinano la barra di Chrome; il pannello segue da solo (vedi `useWindowView`).
+  // They reorder Chrome's tab strip; the panel follows on its own (see `useWindowView`).
   const sortButtons = (which: ('groups' | 'tabs')[]) =>
     windowId !== null &&
     which.map((kind) => (
@@ -75,17 +75,17 @@ export function App() {
       </button>
     ));
 
-  // Drag and drop sui gruppi aperti e sulle tab senza gruppo: sposta davvero tab e gruppi nella barra.
+  // Drag and drop on open groups and on ungrouped tabs: it really moves tabs and groups in the tab strip.
   const moveByDrag = (item: DragItem, target: DropTarget) => {
     if (item.kind === 'tab' && target.kind === 'tab') actions.moveTab(item.tabId, target.groupId, target.beforeTabId);
     if (item.kind === 'tab' && target.kind === 'new-group') send(() => organizer.newGroup(item.tabId));
     if (item.kind === 'group' && target.kind === 'group') send(() => organizer.moveGroup(item.groupId, target.beforeGroupId));
   };
   const drag = useDragState(!computing && !busy && !readOnly, moveByDrag);
-  // Il gruppo che segue ciascuno nella barra (`view.existing` è nell'ordine della barra).
+  // The group that follows each one in the tab strip (`view.existing` is in tab strip order).
   const nextGroup = new Map(view.existing.map((e, i) => [e.group.id, view.existing[i + 1]?.group.id ?? null]));
 
-  // Le alternative al trascinamento ("Sposta in…" sulle tab di un gruppo aperto, Su e Giù) valgono quando vale il trascinamento.
+  // The alternatives to dragging ("Move to…" on the tabs of an open group, Up and Down) apply whenever dragging does.
   const targets = moveTargets({
     proposal,
     view,
@@ -186,13 +186,13 @@ export function App() {
             </Section>
           )}
 
-          {/* Trascinando una tab la sezione c'è anche vuota: lasciandola qui esce dal suo gruppo. */}
+          {/* While dragging a tab the section is shown even when empty: dropping it here takes it out of its group. */}
           {(view.free.length > 0 || drag.item?.kind === 'tab') && (
             <Section
               title={t('panelSectionFree')}
               count={view.free.length}
               hint={targets.free.length > 0 ? t('panelFreeHint') : undefined}
-              // Con gruppi aperti "Tab A-Z" sta già nella loro intestazione e ordina anche queste.
+              // With open groups, "Sort tabs A to Z" is already in their header and sorts these too.
               actions={view.existing.length === 0 && view.free.length > 1 && sortButtons(['tabs'])}
             >
               <FreeTabs>
@@ -210,7 +210,7 @@ export function App() {
             </Section>
           )}
 
-          {/* In fondo, sotto ogni riga trascinabile: comparendo sopra la riga trascinata la sposterebbe, e Chrome annullerebbe il trascinamento. */}
+          {/* At the bottom, below every draggable row: appearing above the dragged row would move it, and Chrome would cancel the drag. */}
           {drag.item?.kind === 'tab' && <NewGroupDrop />}
 
           {view.held.length > 0 && (
@@ -255,7 +255,7 @@ export function App() {
         )}
         <span className="spacer" />
         {windowId !== null && !computing && (
-          // Il calcolo parte solo da qui: senza proposta è l'azione principale, "Organizza".
+          // Computing starts only from here: without a proposal this is the main action, "Organize".
           <button className={`recompute${proposal ? ' secondary' : ''}`} disabled={busy} onClick={recompute}>
             <Icon name={proposal ? 'refresh' : 'category'} size={18} />
             {t(proposal ? 'popupRecompute' : 'panelOrganize')}
@@ -281,7 +281,7 @@ export function App() {
   );
 }
 
-/** L'elenco delle tab senza gruppo, che accoglie una tab trascinata fuori dal suo gruppo. */
+/** The list of ungrouped tabs, which takes a tab dragged out of its group. */
 function FreeTabs({ children }: { children: React.ReactNode }) {
   const { className, ...drop } = useFreeDrop();
   return (
@@ -291,7 +291,7 @@ function FreeTabs({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Compare trascinando una tab: lasciandola qui finisce in un gruppo nuovo. */
+/** Shown while dragging a tab: dropping it here puts it in a new group. */
 function NewGroupDrop() {
   const { className, ...drop } = useNewGroupDrop();
   return (

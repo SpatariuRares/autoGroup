@@ -6,20 +6,20 @@ import type { OrganizerState, ProposalEdit, WindowView } from '../../src/shared/
 import { useExpiring } from '../../src/ui/use-expiring';
 
 /**
- * Lo stato dell'Organizzatore per la finestra del pannello. All'apertura lo legge soltanto, senza
- * calcolare: una proposta già fatta per questa finestra si rivede, una nuova parte solo da
- * "Organizza". Poi segue gli aggiornamenti del service worker, solo quelli di questa finestra.
+ * The Organizer's state for the panel's window. On opening it only reads it, without
+ * computing: a proposal already made for this window is shown again, a new one starts only from
+ * "Organize". Then it follows the service worker's updates, only those of this window.
  */
 export function useOrganizer() {
   const [state, setState] = useState<OrganizerState | null>(null);
   const [windowId, setWindowId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
-  // Letta dall'ascoltatore: l'annuncio dell'anteprima può arrivare prima che React aggiorni `windowId`.
+  // Read by the listener: the preview announcement can arrive before React updates `windowId`.
   const currentWindow = useRef<number | null>(null);
 
   useEffect(() => {
-    // Lo stato è unico per tutte le finestre: si mostrano solo gli aggiornamenti di questa.
+    // The state is shared by all windows: only the updates of this one are shown.
     return onOrganizerState((next) => {
       if (currentWindow.current !== null && next.windowId === currentWindow.current) setState(next);
     });
@@ -38,8 +38,8 @@ export function useOrganizer() {
   }, []);
 
   /**
-   * Operazione che blocca i pulsanti finché non finisce: sulla proposta intera, sulla finestra o lunga
-   * (Organizza, Applica, Annulla, A-Z, Aggiungi alle categorie).
+   * Operation that blocks the buttons until it ends: on the whole proposal, on the window or long
+   * (Organize, Apply, Cancel, A-Z, Add to categories).
    */
   async function run(request: () => Promise<OrganizerState>, after?: () => void) {
     setBusy(true);
@@ -56,8 +56,8 @@ export function useOrganizer() {
   }
 
   /**
-   * Richiesta senza attesa visibile, per le azioni su una tab o un gruppo che finiscono subito (modifiche,
-   * chiudere, spostare): il nuovo stato, o `null` se fallisce (con l'errore mostrato).
+   * Request without visible wait, for actions on a tab or a group that end at once (edits,
+   * closing, moving): the new state, or `null` if it fails (with the error shown).
    */
   async function send(request: () => Promise<OrganizerState>): Promise<OrganizerState | null> {
     setFailure(null);
@@ -80,9 +80,9 @@ export function useOrganizer() {
 const EMPTY_VIEW: WindowView = { existing: [], created: [], free: [], held: [], duplicates: [], inactive: [], inactiveDays: 0, live: {} };
 
 /**
- * La finestra come la costruisce l'Organizzatore (vedi `Organizer.view`), riletta a ogni cambio di
- * tab o gruppi della finestra, di stato o di impostazioni. Una risposta arrivata dopo una più nuova
- * viene scartata. Se la proposta è vecchia lo dice lo stato (`stale`), non la vista.
+ * The window as the Organizer builds it (see `Organizer.view`), re-read at every change of
+ * the window's tabs or groups, of state or of settings. A response that arrives after a newer one
+ * is discarded. If the proposal is outdated the state says so (`stale`), not the view.
  */
 export function useWindowView(windowId: number | null, state: OrganizerState | null, settings: Settings | null) {
   const [view, setView] = useState<WindowView>(EMPTY_VIEW);
@@ -142,16 +142,16 @@ export function useWindowView(windowId: number | null, state: OrganizerState | n
   return view;
 }
 
-/** Per quanto resta visibile una snackbar con un esito o un'offerta. */
+/** How long a snackbar with an outcome or an offer stays visible. */
 export const SNACKBAR_MS = 8000;
 
-/** Dopo quanto il segno di categoria sparisce se la vista non cambia (es. categoria già esistente). */
+/** After how long the category mark disappears if the view does not change (e.g. category already existing). */
 const ADDED_MARK_MS = 1500;
 
 /**
- * "Aggiungi alle categorie": il gruppo (`adding.id`, della proposta o di Chrome) mostra subito il segno
- * di categoria e la snackbar dice che si sta salvando. Finito il salvataggio si aspetta la vista nuova,
- * così il segno non torna indietro. L'esito (`saved`) resta nella snackbar per qualche secondo.
+ * "Add to categories": the group (`adding.id`, of the proposal or of Chrome) shows the category mark at once
+ * and the snackbar says it is being saved. When saving ends, the new view is awaited,
+ * so the mark does not go back. The outcome (`saved`) stays in the snackbar for a few seconds.
  */
 export function useSaveToCategories(run: ReturnType<typeof useOrganizer>['run'], view: WindowView) {
   const [adding, setAdding] = useState<{ id: string | number; name: string; done: boolean } | null>(null);
@@ -171,7 +171,7 @@ export function useSaveToCategories(run: ReturnType<typeof useOrganizer>['run'],
     setSaved(null);
     await run(async () => {
       const next = await request();
-      // Anche un errore delle impostazioni (es. troppe categorie) arriva come esito.
+      // Even a settings error (e.g. too many categories) arrives as an outcome.
       if (next.notice) setSaved(next.notice);
       return next;
     });

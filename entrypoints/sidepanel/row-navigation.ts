@@ -2,13 +2,13 @@ import type { KeyboardEvent } from 'react';
 
 const KEYS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End']);
 
-/** I controlli di una riga, nell'ordine in cui li raggiunge Tab. */
+/** The controls of a row, in the order Tab reaches them. */
 const controls = (row: HTMLElement) => [...row.querySelectorAll<HTMLElement>('button, select')];
 
 /**
- * Frecce su e giù tra le righe delle tab del pannello, Home e Fine per la prima e l'ultima: il focus va
- * sullo stesso controllo della riga di arrivo (es. da ✕ a ✕), o sulla riga se non ce l'ha. Nei menu
- * "Sposta in…" e nei campi di testo le frecce restano quelle native. Le righe dentro sezioni chiuse sono saltate.
+ * Up and down arrows between the rows of the panel's tabs, Home and End for the first and the last: focus goes
+ * to the same control of the arriving row (e.g. from ✕ to ✕), or to the row if it has none. In the
+ * "Move to…" menus and in text fields the arrows remain the native ones. Rows inside closed sections are skipped.
  */
 export function moveBetweenRows(e: KeyboardEvent<HTMLElement>) {
   if (!KEYS.has(e.key)) return;

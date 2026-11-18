@@ -2,8 +2,8 @@ import { createContext, useContext } from 'react';
 import type { LiveTab } from '../../src/shared/types';
 
 /**
- * Dettagli dal vivo delle tab della finestra (tab attiva, audio, giorni di inattività), per ID: la
- * proposta non li porta. Dato da `App` a tutte le righe, senza passarlo di mano in mano.
+ * Live details of the window's tabs (active tab, audio, days of inactivity), by ID: the
+ * proposal does not carry them. Given by `App` to all the rows, without passing it from hand to hand.
  */
 export type LiveTabs = Record<number, LiveTab>;
 
