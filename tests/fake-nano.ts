@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 export interface NanoCall {
   system: string;
   input: string;
-  /** Opzioni e tab del blocco, lette dal JSON del prompt. */
+  /** Options and tabs of the block, read from the prompt JSON. */
   options: { name: string }[];
   tabs: { id: string }[];
   schema: unknown;
@@ -11,17 +11,17 @@ export interface NanoCall {
 
 export interface FakeNanoOptions {
   availability: 'available' | 'downloadable' | 'downloading' | 'unavailable';
-  /** Dimensione del contesto, in "token" da 4 caratteri. */
+  /** Context size, in "tokens" of 4 characters. */
   contextWindow?: number;
-  /** Risposta del modello a ogni prompt, oppure un errore da lanciare. */
+  /** The model's reply to each prompt, or an error to throw. */
   respond?: (call: NanoCall) => unknown;
-  /** Attesa prima di ogni risposta, in millisecondi. */
+  /** Wait before each reply, in milliseconds. */
   delay?: number;
-  /** Errore lanciato da `clone()`, come quando la sessione è stata distrutta. */
+  /** Error thrown by `clone()`, as when the session has been destroyed. */
   cloneError?: Error;
 }
 
-/** Stub dell'oggetto globale LanguageModel (Prompt API di Chrome). */
+/** Stub of the global LanguageModel object (Chrome's Prompt API). */
 export function installFakeNano(options: FakeNanoOptions) {
   const calls: NanoCall[] = [];
   const created = { count: 0 };
@@ -46,7 +46,7 @@ export function installFakeNano(options: FakeNanoOptions) {
       const parsed = JSON.parse(input);
       const call: NanoCall = { system: this.system, input, options: parsed.options, tabs: parsed.tabs, schema: opts?.responseConstraint };
       calls.push(call);
-      // Come la Prompt API: un segnale interrotto durante l'attesa fa fallire la chiamata.
+      // Like the Prompt API: an aborted signal during the wait makes the call fail.
       if (options.delay) {
         await new Promise((resolve, reject) => {
           const timer = setTimeout(resolve, options.delay);

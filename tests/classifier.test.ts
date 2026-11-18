@@ -20,7 +20,7 @@ beforeEach(async () => {
   installFakePermissions(['http://127.0.0.1/*', 'https://openrouter.ai/*']);
   strip = installFakeTabStrip({ currentWindowId: W });
   organizer = createOrganizer();
-  // Nessun Generatore, salvo nei test che lo configurano: Nano (il predefinito) qui non è supportato e darebbe un avviso.
+  // No Generator, except in the tests that configure one: Nano (the default) is not supported here and would give a warning.
   await saveSettings({
     classifier: KEV,
     generator: { preset: 'none', baseUrl: '', model: '' },
@@ -35,10 +35,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** Classificazione decisa dal titolo della tab: "titolo" → [scelta, confidenza]. */
+/** Classification decided by the tab title: "title" → [choice, confidence]. */
 type Verdicts = Record<string, [string, number]>;
 
-/** Server finto: System One risponde secondo `verdicts`, il Generatore con `generator(tab rimaste)`. */
+/** Fake server: System One replies according to `verdicts`, the Generator with `generator(remaining tabs)`. */
 function servers(verdicts: Verdicts, generator?: (tabs: { id: string; title: string }[]) => unknown) {
   return installFakeFetch((request: RecordedRequest) => {
     if (request.url.endsWith('/v1/systemone')) {
@@ -58,8 +58,8 @@ function open(...titles: string[]) {
   titles.forEach((title, i) => strip.addTab({ url: `https://site${i}.com/${title.toLowerCase()}`, title }));
 }
 
-describe('Classificatore System One', () => {
-  it('usa POST /v1/systemone con una domanda choice per tab e le opzioni come criteria', async () => {
+describe('System One Classifier', () => {
+  it('uses POST /v1/systemone with a choice question per tab and the options as criteria', async () => {
     await saveApiKey('classifier', 'sk-jev');
     const mine = strip.addTab({ url: 'https://x.com/', title: 'X' });
     await strip.addGroup('Mio', 'pink', [mine]);
@@ -85,7 +85,7 @@ describe('Classificatore System One', () => {
     });
   });
 
-  it('senza chiave (server locali) non invia l\'intestazione Authorization; con Jev invia il modello', async () => {
+  it('without a key (local servers) does not send the Authorization header; with Jev it sends the model', async () => {
     open('Posta');
     let { requests } = servers({});
     await organizer.propose(W);
@@ -99,7 +99,7 @@ describe('Classificatore System One', () => {
     expect(requests[0]!.body.model).toBe('jev-latest');
   });
 
-  it('le opzioni nei criteria sono al massimo 255', async () => {
+  it('the options in the criteria are at most 255', async () => {
     await saveSettings({
       categories: Array.from({ length: 300 }, (_, i) => ({ id: `c${i}`, name: `Cat ${i}`, description: '', color: 'blue' as const })),
     });
@@ -111,16 +111,16 @@ describe('Classificatore System One', () => {
     expect(Object.keys(requests[0]!.body.questions.group.criteria)).toHaveLength(255);
   });
 
-  it('riga 2 (solo Classificatore): assegna sopra soglia, le tab incerte e le categorie sotto il minimo restano libere', async () => {
+  it('row 2 (Classifier only): assigns above the threshold, the uncertain tabs and the categories below the minimum stay free', async () => {
     const mine = strip.addTab({ url: 'https://x.com/', title: 'X' });
     await strip.addGroup('Mio', 'pink', [mine]);
     open('Posta', 'Documento', 'Giornale', 'Incerta', 'Extra');
     servers({
       Posta: ['Lavoro', 0.95],
       Documento: ['Lavoro', 0.8],
-      Giornale: ['Notizie', 0.99], // da sola: la categoria non raggiunge il minimo
-      Incerta: ['Lavoro', 0.5], // sotto la soglia di 0,7
-      Extra: ['Mio', 0.9], // una tab sola può entrare in un gruppo esistente
+      Giornale: ['Notizie', 0.99], // alone: the category does not reach the minimum
+      Incerta: ['Lavoro', 0.5], // below the threshold of 0.7
+      Extra: ['Mio', 0.9], // a single tab can join an existing group
     });
 
     const state = await organizer.propose(W);
@@ -132,7 +132,7 @@ describe('Classificatore System One', () => {
     expect(state.proposal!.warnings).toEqual([]);
   });
 
-  it('la soglia è configurabile', async () => {
+  it('the threshold is configurable', async () => {
     await saveSettings({ threshold: 0.9 });
     open('Posta', 'Documento');
     servers({ Posta: ['Lavoro', 0.95], Documento: ['Lavoro', 0.8] });
@@ -140,7 +140,7 @@ describe('Classificatore System One', () => {
     expect(summary(await organizer.propose(W))).toEqual([]);
   });
 
-  it('riga 1: le tab rimaste passano al Generatore "solo nuovi"; i gruppi nuovi sotto il minimo vengono sciolti', async () => {
+  it('row 1: the remaining tabs go to the Generator "new only"; new groups below the minimum are dissolved', async () => {
     await saveSettings({ generator: OPENROUTER });
     open('Posta', 'Documento', 'Giornale', 'Ricetta', 'Pizza', 'Sola');
     const { requests } = servers(
@@ -159,7 +159,7 @@ describe('Classificatore System One', () => {
 
     const generatorRequest = requests.find((r) => r.url.endsWith('/chat/completions'))!;
     const sent = JSON.parse(generatorRequest.body.messages[1].content);
-    // Solo le rimaste: sotto soglia, "nessuna" e la categoria rimasta sola.
+    // Only the remaining ones: below threshold, "none" and the category left alone.
     expect(sent.tabs.map((t: { title: string }) => t.title)).toEqual(['Giornale', 'Ricetta', 'Pizza', 'Sola']);
     expect(generatorRequest.body.messages[0].content).toContain('Do not reuse the known options');
     expect(summary(state)).toEqual([
@@ -168,7 +168,7 @@ describe('Classificatore System One', () => {
     ]);
   });
 
-  it('il Generatore non viene chiamato se non ci sono tab rimaste', async () => {
+  it('the Generator is not called if no tabs remain', async () => {
     await saveSettings({ generator: OPENROUTER });
     open('Posta', 'Documento');
     const { requests } = servers({ Posta: ['Lavoro', 0.95], Documento: ['Lavoro', 0.9] });
@@ -179,7 +179,7 @@ describe('Classificatore System One', () => {
     expect(summary(state)).toEqual([['Lavoro', 'list', ['Posta', 'Documento']]]);
   });
 
-  it('se il passo 2 fallisce, le rimaste restano libere e compare un avviso', async () => {
+  it('if step 2 fails, the remaining ones stay free and a warning appears', async () => {
     await saveSettings({ generator: OPENROUTER });
     open('Posta', 'Documento', 'Ricetta', 'Pizza');
     servers({ Posta: ['Lavoro', 0.95], Documento: ['Lavoro', 0.9] }, () => 'non json');
@@ -190,7 +190,7 @@ describe('Classificatore System One', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'generator', provider: 'OpenRouter (https://openrouter.ai/api/v1)', cause: 'invalid-response' }]);
   });
 
-  it('se il Classificatore va in errore si passa al Generatore "completo", con un avviso', async () => {
+  it('if the Classifier errors, it falls back to the "full" Generator, with a warning', async () => {
     await saveSettings({ generator: OPENROUTER });
     open('Posta', 'Documento');
     const { requests } = installFakeFetch((request: RecordedRequest) =>
@@ -204,7 +204,7 @@ describe('Classificatore System One', () => {
     expect(requests.at(-1)!.body.messages[0].content).toContain('Prefer the known options');
   });
 
-  it('se il Classificatore va in errore e non c\'è Generatore, la proposta è per dominio', async () => {
+  it('if the Classifier errors and there is no Generator, the proposal is by domain', async () => {
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
     installFakeFetch(httpError(401));
@@ -215,7 +215,7 @@ describe('Classificatore System One', () => {
     expect(state.proposal!.warnings).toEqual([{ level: 'classifier', provider: 'Kev (http://127.0.0.1:8009)', cause: 'invalid-key' }]);
   });
 
-  it('senza permesso host il Classificatore non è usato, con un avviso', async () => {
+  it('without host permission the Classifier is not used, with a warning', async () => {
     installFakePermissions([]);
     strip.addTab({ url: 'https://a.com/1', title: 'A1' });
     strip.addTab({ url: 'https://a.com/2', title: 'A2' });
@@ -228,14 +228,14 @@ describe('Classificatore System One', () => {
   });
 });
 
-describe('strategie di richiesta del Classificatore', () => {
+describe('Classifier request strategies', () => {
   const tabs = [
     { id: 't1', title: 'Posta', url: 'mail.com' },
     { id: 't2', title: 'Giornale', url: 'news.com' },
   ];
   const options = [{ name: 'Lavoro', description: 'L' }, { name: 'Notizie', description: 'N' }];
 
-  it('"batch" invia una sola richiesta con una domanda per tab e dà lo stesso risultato', async () => {
+  it('"batch" sends a single request with one question per tab and gives the same result', async () => {
     const { requests } = installFakeFetch(
       systemOneReply({ t1: { choice: 'Lavoro', confidence: 0.9 }, t2: { choice: 'Notizie', confidence: 0.8 } }),
     );
@@ -255,7 +255,7 @@ describe('strategie di richiesta del Classificatore', () => {
     ]);
   });
 
-  it('"per-tab" rispetta il limite di richieste in parallelo', async () => {
+  it('"per-tab" respects the parallel request limit', async () => {
     let active = 0;
     let peak = 0;
     installFakeFetch(async () => {
@@ -272,7 +272,7 @@ describe('strategie di richiesta del Classificatore', () => {
     expect(peak).toBe(3);
   });
 
-  it('"per-tab" al primo errore non invia altre richieste e interrompe quelle in corso', async () => {
+  it('"per-tab" on the first error sends no other requests and interrupts those in progress', async () => {
     const { requests } = installFakeFetch((request: RecordedRequest) =>
       request.body.state.title === 'T0'
         ? new Response('{}', { status: 401 })
@@ -283,12 +283,12 @@ describe('strategie di richiesta del Classificatore', () => {
     const outcome = createSystemOneClassifier({ label: 'Jev', baseUrl: 'http://k', concurrency: 3 }).classify(many, options);
 
     await expect(outcome).rejects.toMatchObject({ reason: 'invalid-key' });
-    await new Promise((r) => setTimeout(r, 100)); // il tempo per altre richieste, se ne partissero
+    await new Promise((r) => setTimeout(r, 100)); // time for other requests, if any were started
     expect(requests).toHaveLength(3);
     expect(requests.every((r) => r.signal?.aborted)).toBe(true);
   });
 
-  it('in modalità "solo dominio" nessuna AI viene interrogata, anche se configurata, e non ci sono avvisi', async () => {
+  it('in "By site" mode no AI is queried, even if configured, and there are no warnings', async () => {
     await saveSettings({ mode: 'domain' });
     strip.addTab({ url: 'https://mail.com/1', title: 'Posta' });
     strip.addTab({ url: 'https://mail.com/2', title: 'Posta 2' });
@@ -301,7 +301,7 @@ describe('strategie di richiesta del Classificatore', () => {
     expect(state.proposal!.warnings).toEqual([]);
   });
 
-  it('una scelta sconosciuta o "nessuna" lascia la tab senza categoria', async () => {
+  it('an unknown or "none" choice leaves the tab without category', async () => {
     installFakeFetch(systemOneReply({ t1: { choice: 'Inventata', confidence: 0.99 }, t2: { choice: 'none_of_the_above', confidence: 0.99 } }));
 
     const result = await createSystemOneClassifier({ label: 'Kev', baseUrl: 'http://k', strategy: 'batch' }).classify(tabs, options);
@@ -311,7 +311,7 @@ describe('strategie di richiesta del Classificatore', () => {
 });
 
 describe('review AG-R2', () => {
-  it('senza opzioni il Classificatore non viene interrogato: decide il Generatore', async () => {
+  it('without options the Classifier is not queried: the Generator decides', async () => {
     await saveSettings({ categories: [], generator: OPENROUTER });
     open('Posta', 'Documento');
     const { requests } = servers({}, () => ({ groups: [{ name: 'Lavoro', tabs: ['t1', 't2'] }] }));
@@ -322,7 +322,7 @@ describe('review AG-R2', () => {
     expect(summary(state)).toEqual([['Lavoro', 'ai', ['Posta', 'Documento']]]);
   });
 
-  it('il passo 2 non parte se le tab rimaste sono meno del minimo', async () => {
+  it('step 2 does not start if the remaining tabs are fewer than the minimum', async () => {
     await saveSettings({ generator: OPENROUTER });
     open('Posta', 'Documento', 'Sola');
     const { requests } = servers({ Posta: ['Lavoro', 0.95], Documento: ['Lavoro', 0.9], Sola: ['Lavoro', 0.1] });

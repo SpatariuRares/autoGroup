@@ -34,8 +34,8 @@ afterEach(() => {
 const summary = (state: OrganizerState) =>
   state.proposal!.groups.map((g) => ({ name: g.name, provenance: g.provenance, color: g.color, tabs: g.tabs.map((t) => t.title) }));
 
-describe('regole sui siti, modalità per sito', () => {
-  it('le tab dei siti vanno nella loro categoria, le altre per dominio, con colori distinti', async () => {
+describe('site rules, per-site mode', () => {
+  it('site tabs go to their category, the others by domain, with distinct colors', async () => {
     strip.addTab({ url: 'https://mail.google.com/mail/u/0', title: 'Posta' });
     strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
     strip.addTab({ url: 'https://calendar.google.com/r', title: 'Calendario' });
@@ -51,7 +51,7 @@ describe('regole sui siti, modalità per sito', () => {
     expect(state.proposal!.groups[1]!.tabs.map((t) => t.rule)).toEqual([undefined, undefined]);
   });
 
-  it('vince la regola più specifica', async () => {
+  it('the most specific rule wins', async () => {
     strip.addTab({ url: 'https://github.com/mia-org/a', title: 'Org A' });
     strip.addTab({ url: 'https://github.com/torvalds/linux', title: 'Linux' });
     strip.addTab({ url: 'https://github.com/mia-org/b', title: 'Org B' });
@@ -63,7 +63,7 @@ describe('regole sui siti, modalità per sito', () => {
     ]);
   });
 
-  it('una categoria sotto il minimo non forma il gruppo: la tab resta libera, non va nel gruppo del suo dominio', async () => {
+  it('a category below the minimum does not form the group: the tab stays free, it does not go into its domain\'s group', async () => {
     strip.addTab({ url: 'https://github.com/mia-org/a', title: 'Org A' });
     strip.addTab({ url: 'https://github.com/altro', title: 'Altro' });
     strip.addTab({ url: 'https://github.com/altro2', title: 'Altro 2' });
@@ -71,7 +71,7 @@ describe('regole sui siti, modalità per sito', () => {
     expect(summary(await organizer.propose(W))).toEqual([{ name: 'Dev', provenance: 'list', color: 'grey', tabs: ['Altro', 'Altro 2'] }]);
   });
 
-  it('un gruppo aperto con il nome della categoria riceve anche una sola tab', async () => {
+  it('an open group with the category\'s name also receives a single tab', async () => {
     const mine = strip.addTab({ url: 'https://x.com/', title: 'Mia' });
     const open = await strip.addGroup('dev', 'pink', [mine]);
     strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
@@ -81,7 +81,7 @@ describe('regole sui siti, modalità per sito', () => {
     expect(proposal!.groups).toMatchObject([{ name: 'dev', color: 'pink', provenance: 'existing', existingGroupId: open, tabs: [{ title: 'Repo' }] }]);
   });
 
-  it('le regole seguono la categoria anche se viene rinominata', async () => {
+  it('rules follow the category even if it is renamed', async () => {
     await saveSettings({ categories: CATEGORIES.map((c) => (c.id === 'dev' ? { ...c, name: 'Codice' } : c)) });
     strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
     strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
@@ -89,7 +89,7 @@ describe('regole sui siti, modalità per sito', () => {
     expect(summary(await organizer.propose(W))).toEqual([{ name: 'Codice', provenance: 'list', color: 'grey', tabs: ['Repo 1', 'Repo 2'] }]);
   });
 
-  it('una tab spostata dall\'utente perde l\'indicazione della regola', async () => {
+  it('a tab moved by the user loses the rule indication', async () => {
     strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
     strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
     strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
@@ -102,7 +102,7 @@ describe('regole sui siti, modalità per sito', () => {
     expect(state.proposal!.groups.find((g) => g.id === hn!.id)!.tabs.at(-1)).not.toHaveProperty('rule');
   });
 
-  it('cambiare i siti rende non più attuale una proposta salvata', async () => {
+  it('changing the sites makes a saved proposal no longer current', async () => {
     strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
     strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
     const first = await organizer.propose(W);
@@ -122,11 +122,11 @@ async function aiMode(extra: Parameters<typeof saveSettings>[0] = {}) {
   await saveApiKey('generator', 'sk-test');
 }
 
-/** Titoli delle tab inviate al Generatore in una richiesta. */
+/** Titles of the tabs sent to the Generator in a request. */
 const sentTitles = (request: RecordedRequest) => JSON.parse(request.body.messages[1].content).tabs.map((t: { title: string }) => t.title);
 
-describe('regole sui siti, modalità AI', () => {
-  it('all\'AI arrivano solo le tab che nessuna regola ha preso; i gruppi con lo stesso nome si uniscono', async () => {
+describe('site rules, AI mode', () => {
+  it('only the tabs no rule has taken reach the AI; groups with the same name are merged', async () => {
     await aiMode();
     strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
     strip.addTab({ url: 'https://stackoverflow.com/q/1', title: 'Domanda' });
@@ -143,7 +143,7 @@ describe('regole sui siti, modalità AI', () => {
     ]);
   });
 
-  it('ignora l\'ID di una tab delle regole se l\'AI lo usa comunque', async () => {
+  it('ignores the ID of a rule tab if the AI uses it anyway', async () => {
     await aiMode();
     strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
     strip.addTab({ url: 'https://cucina.it/pasta', title: 'Pasta' });
@@ -155,7 +155,7 @@ describe('regole sui siti, modalità AI', () => {
     expect(summary(state)).toEqual([{ name: 'Cucina', provenance: 'ai', color: 'grey', tabs: ['Pasta', 'Pizza'] }]);
   });
 
-  it('se tutte le tab sono prese dalle regole non interroga l\'AI e non mostra l\'anteprima', async () => {
+  it('if all tabs are taken by rules it does not query the AI and does not show the preview', async () => {
     await aiMode();
     strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
     strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
@@ -171,7 +171,7 @@ describe('regole sui siti, modalità AI', () => {
     expect(summary(state)).toEqual([{ name: 'Dev', provenance: 'list', color: 'grey', tabs: ['Repo 1', 'Repo 2'] }]);
   });
 
-  it('l\'anteprima per sito contiene già i gruppi delle regole, e "Usa questa" li tiene', async () => {
+  it('the per-site preview already contains the rule groups, and "Use this" keeps them', async () => {
     await aiMode();
     strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
     strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
@@ -191,7 +191,7 @@ describe('regole sui siti, modalità AI', () => {
     expect(state.proposal!.groups.map((g) => g.name)).toEqual(['Dev', 'cucina.it']);
   });
 
-  it('se l\'AI non risponde il ripiego è regole + dominio', async () => {
+  it('if the AI does not respond the fallback is rules + domain', async () => {
     await aiMode();
     strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
     strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
@@ -208,7 +208,7 @@ describe('regole sui siti, modalità AI', () => {
     ]);
   });
 
-  it('Classificatore: le tab delle regole contano per il minimo e non vanno mai al Generatore', async () => {
+  it('Classifier: the rule tabs count toward the minimum and never go to the Generator', async () => {
     await aiMode({ classifier: KEV });
     strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
     strip.addTab({ url: 'https://stackoverflow.com/q/1', title: 'Domanda' });
@@ -230,14 +230,14 @@ describe('regole sui siti, modalità AI', () => {
     expect(classified.sort()).toEqual(['Domanda', 'Pasta', 'Pizza']);
     const generated = requests.filter((r) => !r.url.endsWith('/v1/systemone')).flatMap(sentTitles);
     expect(generated).toEqual(['Pasta', 'Pizza']);
-    // "Org" (Work) resta sotto il minimo: libera, non passata al Generatore.
+    // "Org" (Work) stays below the minimum: free, not passed to the Generator.
     expect(summary(state)).toEqual([
       { name: 'Dev', provenance: 'list', color: 'grey', tabs: ['Repo', 'Domanda'] },
       { name: 'Cucina', provenance: 'ai', color: 'blue', tabs: ['Pasta', 'Pizza'] },
     ]);
   });
 
-  it('non legge la descrizione delle pagine prese dalle regole', async () => {
+  it('does not read the description of pages taken by rules', async () => {
     installFakePermissions(['https://openrouter.ai/*', '<all_urls>']);
     await aiMode({ readDescriptions: true });
     const repo = strip.addTab({ url: 'https://github.com/a', title: 'Repo' });
@@ -253,8 +253,8 @@ describe('regole sui siti, modalità AI', () => {
 
 const NONE = { preset: 'none', baseUrl: '', model: '' };
 
-describe('regole sui siti, modalità "Con regole" (nessun provider)', () => {
-  it('applica solo le regole: le altre tab restano libere anche se dello stesso dominio', async () => {
+describe('site rules, "With rules" mode (no provider)', () => {
+  it('applies only the rules: the other tabs stay free even if from the same domain', async () => {
     await saveSettings({ mode: 'ai', generator: NONE, classifier: NONE });
     strip.addTab({ url: 'https://mail.google.com/mail/u/0', title: 'Posta' });
     strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
@@ -269,7 +269,7 @@ describe('regole sui siti, modalità "Con regole" (nessun provider)', () => {
     expect(requests).toEqual([]);
   });
 
-  it('una categoria sotto il minimo non forma il gruppo, ma una tab sola entra nel gruppo aperto con lo stesso nome', async () => {
+  it('a category below the minimum does not form the group, but a single tab joins the open group with the same name', async () => {
     await saveSettings({ mode: 'ai', generator: NONE, classifier: NONE });
     const open = strip.addTab({ url: 'https://example.com/', title: 'Altro' });
     await strip.addGroup('Dev', 'cyan', [open]);
@@ -279,7 +279,7 @@ describe('regole sui siti, modalità "Con regole" (nessun provider)', () => {
     expect(summary(await organizer.propose(W))).toEqual([{ name: 'Dev', provenance: 'existing', color: 'cyan', tabs: ['Repo'] }]);
   });
 
-  it('con Gemini Nano scelto resta il ripiego per dominio', async () => {
+  it('with Gemini Nano chosen, the per-domain fallback remains', async () => {
     await saveSettings({ mode: 'ai', generator: { preset: 'nano', baseUrl: '', model: '' }, classifier: NONE });
     strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
     strip.addTab({ url: 'https://news.ycombinator.com/item?id=1', title: 'HN 2' });
@@ -288,8 +288,8 @@ describe('regole sui siti, modalità "Con regole" (nessun provider)', () => {
   });
 });
 
-describe('Metti sempre qui', () => {
-  it('ricorda il dominio della tab nella categoria del suo gruppo, e la proposta resta attuale', async () => {
+describe('Always put here', () => {
+  it('remembers the tab\'s domain in the category of its group, and the proposal stays current', async () => {
     strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
     strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
     const gitlab = strip.addTab({ url: 'https://www.gitlab.com/x', title: 'GitLab' });
@@ -302,11 +302,11 @@ describe('Metti sempre qui', () => {
     expect((await loadSettings()).categorySites).toEqual({ ...SITES, dev: ['github.com', 'gitlab.com'] });
     expect(state.notice).toEqual({ key: 'panelSiteRemembered', arg: ['gitlab.com', 'Dev'] });
     expect(state.proposal!.groups.find((g) => g.id === dev.id)!.tabs.find((t) => t.tabId === gitlab)!.rule).toBe('gitlab.com');
-    // Riaprendo il pannello la proposta modificata resta.
+    // Reopening the panel, the modified proposal stays.
     expect((await organizer.propose(W)).proposal).toEqual(state.proposal);
   });
 
-  it('sposta dalla sua categoria il sito che oggi decide la tab', async () => {
+  it('moves out of its category the site that currently decides the tab', async () => {
     const orgA = strip.addTab({ url: 'https://github.com/mia-org/a', title: 'Org A' });
     strip.addTab({ url: 'https://github.com/mia-org/b', title: 'Org B' });
     strip.addTab({ url: 'https://github.com/x', title: 'Repo 1' });
@@ -321,7 +321,7 @@ describe('Metti sempre qui', () => {
     expect(state.notice).toEqual({ key: 'panelSiteMoved', arg: ['github.com/mia-org', 'Work', 'Dev'] });
   });
 
-  it('dopo "Sposta in…" verso una categoria offre di ricordare il sito; l\'offerta vale solo per quella risposta', async () => {
+  it('after "Move to…" toward a category it offers to remember the site; the offer applies only to that answer', async () => {
     strip.addTab({ url: 'https://github.com/a', title: 'Repo 1' });
     strip.addTab({ url: 'https://github.com/b', title: 'Repo 2' });
     const gitlab = strip.addTab({ url: 'https://www.gitlab.com/x', title: 'GitLab' });
@@ -334,7 +334,7 @@ describe('Metti sempre qui', () => {
     expect((await organizer.state()).offer).toBeUndefined();
   });
 
-  it('nessuna offerta spostando verso un gruppo che non è una categoria', async () => {
+  it('no offer when moving toward a group that is not a category', async () => {
     strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
     strip.addTab({ url: 'https://news.ycombinator.com/2', title: 'HN 2' });
     const solo = strip.addTab({ url: 'https://solo.com/', title: 'Solo' });
@@ -347,7 +347,7 @@ describe('Metti sempre qui', () => {
     expect(state.offer).toBeUndefined();
   });
 
-  it('non fa nulla per i gruppi che non sono una categoria', async () => {
+  it('does nothing for groups that are not a category', async () => {
     const hn = strip.addTab({ url: 'https://news.ycombinator.com/', title: 'HN 1' });
     strip.addTab({ url: 'https://news.ycombinator.com/2', title: 'HN 2' });
     const before = await organizer.propose(W);

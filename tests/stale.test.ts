@@ -18,7 +18,7 @@ beforeEach(async () => {
   await saveSettings({ mode: 'domain' });
 });
 
-/** Tre tab di a.com e una copia della prima: una proposta con un gruppo e un doppione. */
+/** Three tabs of a.com and a copy of the first: a proposal with a group and a duplicate. */
 function setUp() {
   const a1 = strip.addTab({ url: 'https://a.com/1', title: 'A1' });
   const a2 = strip.addTab({ url: 'https://a.com/2', title: 'A2' });
@@ -27,8 +27,8 @@ function setUp() {
   return { a1, a2, a3, copy };
 }
 
-describe('proposta scaduta', () => {
-  it('una tab aperta nel browser rende la proposta scaduta', async () => {
+describe('stale proposal', () => {
+  it('a tab opened in the browser makes the proposal stale', async () => {
     setUp();
     await organizer.propose(W);
 
@@ -37,7 +37,7 @@ describe('proposta scaduta', () => {
     expect((await organizer.checkStale()).stale).toBe(true);
   });
 
-  it('una tab chiusa nel browser la rende scaduta; chiusa dal pannello no', async () => {
+  it('a tab closed in the browser makes it stale; closed from the panel does not', async () => {
     const { a2, a3 } = setUp();
     await organizer.propose(W);
 
@@ -48,10 +48,10 @@ describe('proposta scaduta', () => {
     expect((await organizer.checkStale()).stale).toBe(true);
   });
 
-  it('"Chiudi doppioni" non la rende scaduta, anche se una tab scelta non era più un doppione', async () => {
+  it('"Close duplicates" does not make it stale, even if a chosen tab was no longer a duplicate', async () => {
     const { a1, copy } = setUp();
     await organizer.propose(W);
-    // La prima copia sparisce: "A1 copia" non è più un doppione e resta aperta.
+    // The first copy disappears: "A1 copia" is no longer a duplicate and stays open.
     await organizer.closeTab(a1);
 
     await organizer.closeDuplicates(W, [copy]);
@@ -60,7 +60,7 @@ describe('proposta scaduta', () => {
     expect((await organizer.checkStale()).stale).toBeUndefined();
   });
 
-  it("chiudere un gruppo aperto dal pannello non la rende scaduta", async () => {
+  it("closing an open group from the panel does not make it stale", async () => {
     const d1 = strip.addTab({ url: 'https://docs.com/1', title: 'Doc 1' });
     const lavoro = await strip.addGroup('Lavoro', 'blue', [d1]);
     setUp();
@@ -71,7 +71,7 @@ describe('proposta scaduta', () => {
     expect((await organizer.checkStale()).stale).toBeUndefined();
   });
 
-  it('spostare una tab nella barra non la rende scaduta', async () => {
+  it('moving a tab in the bar does not make it stale', async () => {
     const { a3 } = setUp();
     await organizer.propose(W);
 
@@ -81,7 +81,7 @@ describe('proposta scaduta', () => {
     expect((await organizer.checkStale()).stale).toBeUndefined();
   });
 
-  it('impostazioni cambiate la rendono scaduta; il nuovo calcolo la rende di nuovo attuale', async () => {
+  it('changed settings make it stale; the new computation makes it current again', async () => {
     setUp();
     await organizer.propose(W);
 
@@ -93,7 +93,7 @@ describe('proposta scaduta', () => {
     expect((await organizer.checkStale()).stale).toBeUndefined();
   });
 
-  it('torna attuale se le tab tornano come prima, e riaprendo il pannello la proposta è riusata', async () => {
+  it('becomes current again if the tabs return as before, and reopening the panel reuses the proposal', async () => {
     setUp();
     const proposed = await organizer.propose(W);
     await saveSettings({ minTabs: 3 });
@@ -105,7 +105,7 @@ describe('proposta scaduta', () => {
     expect((await createOrganizer().propose(W)).proposal).toEqual(proposed.proposal);
   });
 
-  it('senza proposta non segna nulla', async () => {
+  it('without a proposal marks nothing', async () => {
     setUp();
     const before = await organizer.state();
 
@@ -114,7 +114,7 @@ describe('proposta scaduta', () => {
     expect(await organizer.checkStale()).toEqual(before);
   });
 
-  it('dopo "Applica" le tab cambiate non segnano nulla', async () => {
+  it('after "Apply" the changed tabs mark nothing', async () => {
     setUp();
     await organizer.propose(W);
     await organizer.apply();

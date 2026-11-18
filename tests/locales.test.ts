@@ -11,18 +11,18 @@ interface Message {
 const load = (locale: string) =>
   JSON.parse(readFileSync(new URL(`../public/_locales/${locale}/messages.json`, import.meta.url), 'utf8')) as Record<string, unknown>;
 
-/** Tutte le lingue dell'interfaccia, dalle cartelle di public/_locales. */
+/** All the interface languages, from the folders of public/_locales. */
 const LOCALES = readdirSync(new URL('../public/_locales/', import.meta.url));
 
-describe('traduzioni', () => {
-  it('tutte le lingue hanno le stesse chiavi, tutte in un formato accettato da Chrome', () => {
+describe('translations', () => {
+  it('all languages have the same keys, all in a format accepted by Chrome', () => {
     const it = Object.keys(load('it')).sort();
     for (const locale of LOCALES) expect(Object.keys(load(locale)).sort(), locale).toEqual(it);
-    // Chrome rifiuta di caricare l'estensione se una chiave contiene caratteri diversi da questi.
+    // Chrome refuses to load the extension if a key contains characters other than these.
     expect(it.filter((key) => !/^[A-Za-z0-9_]+$/.test(key))).toEqual([]);
   });
 
-  it('in ogni lingua ogni testo ha gli stessi segnaposto dell\'italiano', () => {
+  it('in every language every text has the same placeholders as Italian', () => {
     const tokens = (message: string) => (message.match(/\$[A-Z_]+\$/g) ?? []).sort();
     const it = load('it') as Record<string, Message & { placeholders?: unknown }>;
     for (const locale of LOCALES) {
@@ -34,7 +34,7 @@ describe('traduzioni', () => {
     }
   });
 
-  it('il nome e la descrizione dell\'estensione stanno nei limiti del Chrome Web Store', () => {
+  it('the extension name and description are within the Chrome Web Store limits', () => {
     for (const locale of LOCALES) {
       const messages = load(locale) as Record<string, Message>;
       expect(messages.extName!.message.length, locale).toBeLessThanOrEqual(45);
@@ -43,7 +43,7 @@ describe('traduzioni', () => {
   });
 });
 
-/** Tutti i file sorgente dell'interfaccia e della logica, con il loro contenuto. */
+/** All the source files of the interface and logic, with their content. */
 function sources(): string[] {
   const roots = ['src', 'entrypoints'].map((dir) => new URL(`../${dir}/`, import.meta.url));
   const files: string[] = [];
@@ -74,12 +74,12 @@ const WARNING_CAUSES: ProposalWarning['cause'][] = [
 const PROVENANCES: Provenance[] = ['list', 'existing', 'ai', 'domain', 'manual'];
 const NANO_STATUSES: NanoAvailability[] = ['available', 'downloadable', 'downloading', 'unavailable'];
 
-describe('chiavi usate nel codice', () => {
+describe('keys used in the code', () => {
   const messages = load('it');
-  // Le chiavi scritte nel codice hanno tutte uno di questi prefissi (vedi i file in public/_locales).
+  // The keys written in the code all have one of these prefixes (see the files in public/_locales).
   const KEY_LITERAL = /['"`]((?:ext|action|popup|panel|options|onboarding|error|saveToList|userGroup)[A-Z][A-Za-z0-9_]*)['"`]|__MSG_(\w+)__/g;
 
-  it('ogni chiave scritta nel codice esiste nelle traduzioni', () => {
+  it('every key written in the code exists in the translations', () => {
     const used = new Set<string>();
     for (const source of sources()) {
       for (const match of source.matchAll(KEY_LITERAL)) used.add((match[1] ?? match[2])!);
@@ -89,7 +89,7 @@ describe('chiavi usate nel codice', () => {
     expect([...used].filter((key) => !(key in messages))).toEqual([]);
   });
 
-  it('esistono le chiavi composte a runtime (avvisi, colori, provenienze, stato di Gemini Nano, categorie)', () => {
+  it('the keys composed at runtime exist (warnings, colors, provenances, Gemini Nano status, categories)', () => {
     const categoryKeys = [...readFileSync(new URL('../src/settings/categories.ts', import.meta.url), 'utf8').matchAll(/key: '(\w+)'/g)].map((m) => m[1]!);
     const dynamic = [
       ...WARNING_CAUSES.map(warningKey),
@@ -103,7 +103,7 @@ describe('chiavi usate nel codice', () => {
     expect(dynamic.filter((key) => !(key in messages))).toEqual([]);
   });
 
-  it('ogni chiave delle traduzioni è usata: scritta nel codice o composta a runtime', () => {
+  it('every translation key is used: written in the code or composed at runtime', () => {
     const code = sources().join('\n');
     const categoryKeys = [...readFileSync(new URL('../src/settings/categories.ts', import.meta.url), 'utf8').matchAll(/key: '(\w+)'/g)].map((m) => m[1]!);
     const dynamic = new Set([
@@ -113,13 +113,13 @@ describe('chiavi usate nel codice', () => {
       ...NANO_STATUSES.map((s) => `nanoStatus_${s}`),
       ...categoryKeys.flatMap((k) => [`category_${k}_name`, `category_${k}_description`]),
     ]);
-    // Scritta tra virgolette (anche senza i prefissi, es. 'aiLanguageName') o come __MSG_chiave__.
+    // Written in quotes (even without the prefixes, e.g. 'aiLanguageName') or as __MSG_key__.
     const literal = (key: string) => new RegExp(`['"\`]${key}['"\`]|__MSG_${key}__`).test(code);
 
     expect(Object.keys(messages).filter((key) => !dynamic.has(key) && !literal(key))).toEqual([]);
   });
 
-  it('italiano e inglese usano gli stessi segnaposto', () => {
+  it('Italian and English use the same placeholders', () => {
     const en = load('en') as Record<string, Message>;
     const placeholders = (m: Message) => [...m.message.matchAll(/\$(\w+)\$/g)].map((x) => x[1]!.toLowerCase()).sort();
     const mismatched = Object.entries(messages as Record<string, Message>).filter(

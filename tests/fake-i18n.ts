@@ -7,8 +7,8 @@ const load = (locale: string): Messages =>
   JSON.parse(readFileSync(new URL(`../public/_locales/${locale}/messages.json`, import.meta.url), 'utf8'));
 
 /**
- * Sostituisce chrome.i18n con i veri file di traduzione, nella lingua indicata.
- * Il fake browser di WXT non implementa i18n.
+ * Replaces chrome.i18n with the real translation files, in the given language.
+ * WXT's fake browser does not implement i18n.
  */
 export function installFakeI18n(locale: 'it' | 'en' = 'it') {
   const messages = load(locale);
